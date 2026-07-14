@@ -1,320 +1,662 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS } from './constants';
+import { MAPS, ITEMS, TILE_SIZE } from './constants';
+
+// ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
+const C = {
+  black:    '#080808',
+  darkest:  '#111111',
+  dark:     '#1e1e1e',
+  mid:      '#3a3a3a',
+  gray:     '#606060',
+  silver:   '#909090',
+  light:    '#c0c0c0',
+  white:    '#f0f0f0',
+  bright:   '#ffffff',
+  accent:   '#e8e8e8',
+  dim:      '#505050',
+};
+
+const W = 768; const H = 576;
+
+// Draw a pixel-art style character (16×16 body, simple pixel face)
+function drawSprite(ctx: CanvasRenderingContext2D, wx: number, wy: number, col: string, eyeCol = C.black, hat = false) {
+  const px = wx + 16; const py = wy + 8;
+  // body
+  ctx.fillStyle = col;
+  ctx.fillRect(px, py + 4, 16, 16);
+  // head
+  ctx.fillStyle = col;
+  ctx.fillRect(px + 2, py - 4, 12, 12);
+  // eyes (2×2 each)
+  ctx.fillStyle = eyeCol;
+  ctx.fillRect(px + 4, py - 1, 3, 3);
+  ctx.fillRect(px + 9, py - 1, 3, 3);
+  // pixel border
+  ctx.strokeStyle = C.darkest;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px, py + 4, 16, 16);
+  ctx.strokeRect(px + 2, py - 4, 12, 12);
+  if (hat) {
+    ctx.fillStyle = C.dim;
+    ctx.fillRect(px, py - 8, 16, 4);
+    ctx.fillRect(px + 3, py - 12, 10, 4);
+  }
+}
+
+// Pixel-grid tile draw
+function drawTile(ctx: CanvasRenderingContext2D, tx: number, ty: number, tile: string, frame: number) {
+  const x = tx * TILE_SIZE; const y = ty * TILE_SIZE;
+  let base = C.dark; let detail = C.darkest; let bright = false;
+
+  if (tile === 'P')      { base = '#2e2e2e'; detail = '#222222'; }
+  else if (tile === 'G') { base = '#1e1e1e'; detail = '#161616'; }
+  else if (tile === 'T') { base = '#141414'; detail = '#0e0e0e'; }
+  else if (tile === 'W') { base = '#303030'; detail = '#242424'; }
+  else if (tile === 'H') { base = '#2a2a2a'; detail = '#1e1e1e'; }
+  else if (tile === 'V') { base = '#0c0c0c'; detail = '#060606'; }
+  else if (tile === 'M') { base = '#252525'; detail = '#1c1c1c'; }
+  else if (tile === '>' || tile === '<' || tile === '!') { base = '#e0e0e0'; detail = '#b0b0b0'; bright = true; }
+
+  ctx.fillStyle = base;
+  ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+  // pixel texture dots (dithering)
+  ctx.fillStyle = detail;
+  if (tile === 'V') {
+    // checkerboard void
+    for (let dy = 0; dy < TILE_SIZE; dy += 8) {
+      for (let dx = (dy / 8 % 2) * 8; dx < TILE_SIZE; dx += 16) {
+        ctx.fillRect(x + dx, y + dy, 8, 8);
+      }
+    }
+  } else if (tile === 'T') {
+    // forest: dark center block
+    ctx.fillRect(x + 12, y + 8, 24, 32);
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(x + 18, y + 12, 12, 20);
+  } else if (tile === 'M') {
+    // memory grass: light flecks
+    ctx.fillStyle = '#333333';
+    for (let i = 0; i < 4; i++) ctx.fillRect(x + i*12 + 2, y + (i%2)*12 + 6, 4, 4);
+  } else if (tile === 'H') {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+    // window
+    ctx.fillStyle = '#404040';
+    ctx.fillRect(x + 14, y + 12, 8, 8);
+    ctx.fillRect(x + 28, y + 12, 8, 8);
+  } else if (tile === 'W') {
+    // stone wall: horizontal mortar lines
+    ctx.fillStyle = '#222222';
+    for (let r = 0; r < 4; r++) ctx.fillRect(x + 2, y + r * 12 + 10, TILE_SIZE - 4, 2);
+  } else if (tile === 'P') {
+    // path: subtle grain dots
+    ctx.fillStyle = '#282828';
+    for (let i = 0; i < 3; i++) ctx.fillRect(x + i*16 + 6, y + (i%2)*14 + 8, 3, 3);
+  }
+
+  if (bright) {
+    // pulsing exit chevron
+    const pulse = 0.6 + 0.4 * Math.sin(frame * 0.08);
+    ctx.fillStyle = `rgba(255,255,255,${pulse})`;
+    ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(tile === '>' ? '▲' : tile === '!' ? '!' : '▼', x + TILE_SIZE/2, y + TILE_SIZE/2);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // 1px grid line
+  ctx.strokeStyle = C.darkest;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
+}
+
+// Draw a scanline overlay (8-bit CRT effect)
+function drawScanlines(ctx: CanvasRenderingContext2D) {
+  ctx.fillStyle = 'rgba(0,0,0,0.12)';
+  for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2);
+}
+
+// Draw a pixel-border box
+function pixelBox(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, fill = C.black, stroke = C.white, sw = 3) {
+  ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = stroke; ctx.lineWidth = sw; ctx.strokeRect(x, y, w, h);
+  // corner dots
+  ctx.fillStyle = stroke;
+  ctx.fillRect(x, y, 3, 3); ctx.fillRect(x + w - 3, y, 3, 3);
+  ctx.fillRect(x, y + h - 3, 3, 3); ctx.fillRect(x + w - 3, y + h - 3, 3, 3);
+}
+
+// Wrap text within a pixel-box
+function drawWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number) {
+  const words = text.split(' ');
+  let line = ''; let cy = y;
+  for (const w of words) {
+    const test = line + w + ' ';
+    if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line.trim(), x, cy); line = w + ' '; cy += lineH; }
+    else line = test;
+  }
+  ctx.fillText(line.trim(), x, cy);
+}
 
 export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  ctx.fillStyle = '#0f0518';
-  ctx.fillRect(0, 0, 768, 576);
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = C.black; ctx.fillRect(0, 0, W, H);
 
+  // ── TITLE ──────────────────────────────────────────────────────────
   if (state.mode === GameMode.TITLE) {
-    ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 48px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('ECHO REALM', 384, 250);
-    ctx.fillStyle = '#a78bfa'; ctx.font = '24px monospace';
-    ctx.fillText('A Memory Keeper\'s Tale', 384, 300);
-    
-    // Shards bg
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    for(let i=0; i<20; i++) {
-       const x = (state.frameCount * 0.5 + i * 100) % 768;
-       const y = (576 - (state.frameCount * (1 + i%3) + i * 50) % 576);
-       ctx.fillRect(x, y, 4, 4);
+    // film-grain dots
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    for (let i = 0; i < 40; i++) {
+      const gx = (state.frameCount * 0.7 + i * 83) % W;
+      const gy = (H - (state.frameCount * (1 + i % 3) * 0.3 + i * 60) % H);
+      ctx.fillRect(Math.floor(gx), Math.floor(gy), 2, 2);
     }
-    
-    if (Math.floor(state.frameCount / 30) % 2 === 0) {
-      ctx.fillStyle = '#ffffff'; ctx.fillText('Press [SPACE] to start', 384, 450);
+    // border
+    pixelBox(ctx, 30, 30, W - 60, H - 60, '#050505', C.light, 2);
+    // title
+    ctx.font = 'bold 56px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = C.white;
+    ctx.fillText('ECHO REALM', W / 2, 220);
+    ctx.font = '18px monospace'; ctx.fillStyle = C.silver;
+    ctx.fillText('A Memory Keeper\'s Tale', W / 2, 260);
+    // horizontal rule
+    ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, 285); ctx.lineTo(W - 100, 285); ctx.stroke();
+    // blink
+    if (Math.floor(state.frameCount / 25) % 2 === 0) {
+      ctx.fillStyle = C.light; ctx.font = '16px monospace';
+      ctx.fillText('[ SPACE ] to begin', W / 2, 440);
     }
+    ctx.fillStyle = C.dim; ctx.font = '13px monospace';
+    ctx.fillText('Arrow keys to move  |  SPACE to interact  |  I Inventory  |  Q Quests  |  ESC Menu', W / 2, H - 50);
+    drawScanlines(ctx);
     return;
   }
 
+  // ── GAME OVER ──────────────────────────────────────────────────────
   if (state.mode === GameMode.GAME_OVER) {
-    ctx.fillStyle = 'red'; ctx.font = 'bold 48px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('GAME OVER', 384, 250);
-    ctx.fillStyle = 'white'; ctx.font = '20px monospace';
-    ctx.fillText('The memories fade to black...', 384, 300);
-    ctx.fillText('Press [SPACE] to try again', 384, 400);
+    pixelBox(ctx, 184, 180, 400, 180, C.black, C.white, 3);
+    ctx.fillStyle = C.white; ctx.font = 'bold 40px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', W / 2, 260);
+    ctx.fillStyle = C.gray; ctx.font = '16px monospace';
+    ctx.fillText('The memories fade...', W / 2, 300);
+    if (Math.floor(state.frameCount / 25) % 2 === 0) {
+      ctx.fillStyle = C.light;
+      ctx.fillText('[ SPACE ] to continue', W / 2, 340);
+    }
+    drawScanlines(ctx);
     return;
   }
 
+  // ── VICTORY ────────────────────────────────────────────────────────
   if (state.mode === GameMode.VICTORY) {
-    ctx.fillStyle = '#fcd34d'; ctx.font = 'bold 48px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('THE REALM REMEMBERS', 384, 250);
-    ctx.fillStyle = 'white'; ctx.font = '20px monospace';
-    ctx.fillText('You have restored the light.', 384, 320);
-    ctx.fillText('Thank you for playing.', 384, 360);
+    pixelBox(ctx, 100, 160, W - 200, 240, C.black, C.white, 3);
+    ctx.fillStyle = C.white; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('THE REALM REMEMBERS', W / 2, 240);
+    ctx.fillStyle = C.silver; ctx.font = '17px monospace';
+    ctx.fillText('You have restored the light.', W / 2, 290);
+    ctx.fillText('Every memory was worth saving.', W / 2, 320);
+    ctx.fillStyle = C.gray; ctx.font = '13px monospace';
+    ctx.fillText('Thank you for playing Echo Realm.', W / 2, 370);
+    drawScanlines(ctx);
     return;
   }
 
+  // ── BATTLE ─────────────────────────────────────────────────────────
   if (state.mode === GameMode.BATTLE && state.battle) {
     renderBattle(ctx, state);
+    drawScanlines(ctx);
     return;
   }
 
-  // OVERWORLD
+  // ── OVERWORLD ──────────────────────────────────────────────────────
   const map = MAPS[state.mapId];
-  const camX = Math.floor(state.player.x - 384 + 24);
-  const camY = Math.floor(state.player.y - 288 + 24);
-  const clampX = Math.max(0, Math.min(camX, map.width * 48 - 768));
-  const clampY = Math.max(0, Math.min(camY, map.height * 48 - 576));
+  const camX = Math.max(0, Math.min(state.player.x - W / 2 + TILE_SIZE / 2, map.width * TILE_SIZE - W));
+  const camY = Math.max(0, Math.min(state.player.y - H / 2 + TILE_SIZE / 2, map.height * TILE_SIZE - H));
 
   ctx.save();
-  ctx.translate(-clampX, -clampY);
+  ctx.translate(-Math.floor(camX), -Math.floor(camY));
 
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const tile = map.layout[y][x];
-      const tx = x * 48; const ty = y * 48;
-      
-      if (tile === 'G') ctx.fillStyle = '#166534';
-      else if (tile === 'S') ctx.fillStyle = '#374151';
-      else if (tile === 'P') ctx.fillStyle = '#b45309';
-      else if (tile === 'W') ctx.fillStyle = '#111827';
-      else if (tile === 'T') { ctx.fillStyle = '#166534'; ctx.fillRect(tx, ty, 48, 48); ctx.fillStyle = '#064e3b'; }
-      else if (tile === 'V') ctx.fillStyle = '#4c1d95';
-      else if (tile === 'M') ctx.fillStyle = '#0f766e';
-      else if (tile === 'H') ctx.fillStyle = '#78350f';
-      else if (tile.startsWith('E_') || tile === 'B_D') ctx.fillStyle = '#000000';
-      
-      ctx.fillRect(tx, ty, 48, 48);
-      if (tile === 'T') { ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(tx+12, ty+12, 24, 24); }
+  // tiles
+  const startX = Math.max(0, Math.floor(camX / TILE_SIZE));
+  const endX   = Math.min(map.width,  Math.ceil((camX + W) / TILE_SIZE));
+  const startY = Math.max(0, Math.floor(camY / TILE_SIZE));
+  const endY   = Math.min(map.height, Math.ceil((camY + H) / TILE_SIZE));
+
+  for (let gy = startY; gy < endY; gy++) {
+    for (let gx = startX; gx < endX; gx++) {
+      drawTile(ctx, gx, gy, map.layout[gy][gx], state.frameCount);
     }
   }
 
+  // chests
   for (const c of map.chests) {
+    const wx = c.x * TILE_SIZE; const wy = c.y * TILE_SIZE;
+    ctx.fillStyle = state.player.flags[c.flag] ? C.dark : C.mid;
+    ctx.fillRect(wx + 8, wy + 14, 32, 24);
+    ctx.strokeStyle = state.player.flags[c.flag] ? C.dim : C.light; ctx.lineWidth = 2;
+    ctx.strokeRect(wx + 8, wy + 14, 32, 24);
     if (!state.player.flags[c.flag]) {
-      ctx.fillStyle = '#92400e'; ctx.fillRect(c.x * 48 + 8, c.y * 48 + 8, 32, 32);
-      ctx.fillStyle = '#fcd34d'; ctx.fillRect(c.x * 48 + 16, c.y * 48 + 20, 16, 8);
+      ctx.fillStyle = C.light; ctx.fillRect(wx + 20, wy + 24, 8, 4);
+      // clasp
+      ctx.fillStyle = C.white; ctx.fillRect(wx + 22, wy + 21, 4, 7);
     } else {
-      ctx.fillStyle = '#78350f'; ctx.fillRect(c.x * 48 + 8, c.y * 48 + 8, 32, 32);
-      ctx.fillStyle = 'black'; ctx.fillRect(c.x * 48 + 12, c.y * 48 + 12, 24, 24);
+      // open
+      ctx.fillStyle = C.dark; ctx.fillRect(wx + 12, wy + 18, 24, 16);
     }
   }
 
+  // NPCs
   for (const npc of map.npcs) {
-    ctx.fillStyle = npc.color;
-    const nx = npc.x * 48 + 16; const ny = npc.y * 48 + 16;
-    ctx.fillRect(nx, ny, 16, 16);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(nx + 2, ny + 4, 4, 4); ctx.fillRect(nx + 10, ny + 4, 4, 4);
+    drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, npc.color, C.black, npc.id === 'maren');
   }
 
-  ctx.fillStyle = '#c084fc';
-  const px = state.player.x + 16; const py = state.player.y + 16;
-  ctx.fillRect(px, py, 16, 16);
-  ctx.fillStyle = 'white';
-  ctx.fillRect(px + 2, py + 4, 4, 4); ctx.fillRect(px + 10, py + 4, 4, 4);
+  // player (flashing during invincibility)
+  if (state.player.invincibility <= 0 || Math.floor(state.frameCount / 4) % 2 === 0) {
+    drawSprite(ctx, state.player.x, state.player.y, C.white, C.black);
+  }
 
+  // interaction prompt (NPC key prompt — floats/bobs above target)
   if (state.adjacentInteractable && state.mode === GameMode.OVERWORLD) {
-    const bob = Math.sin(state.frameCount * 0.1) * 4;
     const int = state.adjacentInteractable;
-    const tx = int.x; const ty = int.y;
-    const promptText = int.type === 'NPC' && int.npc.type === 'SHOP' ? '[SPACE] - Shop' : 
-                       int.type === 'NPC' ? '[SPACE] - Talk' : 
-                       int.type === 'CHEST' ? '[SPACE] - Open' : '[ENTER] - Travel';
-                       
-    ctx.fillStyle = 'white'; ctx.fillRect(tx * 48 - 18, ty * 48 - 24 + bob, 84, 20);
-    ctx.strokeStyle = 'black'; ctx.strokeRect(tx * 48 - 18, ty * 48 - 24 + bob, 84, 20);
-    ctx.fillStyle = 'black'; ctx.font = '12px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(promptText, tx * 48 + 24, ty * 48 - 10 + bob);
+    const bob = Math.round(Math.sin(state.frameCount * 0.12) * 3);
+    const wx = int.x * TILE_SIZE; const wy = int.y * TILE_SIZE;
+
+    let label = '[SPACE] - Talk';
+    if (int.type === 'CHEST') label = '[SPACE] - Open';
+    else if (int.type === 'EXIT') label = '[SPACE] - Travel';
+    else if (int.type === 'NPC' && int.npc.type === 'SHOP') label = '[SPACE] - Shop';
+    else if (int.type === 'NPC' && int.npc.type === 'HEAL') label = '[SPACE] - Rest';
+    else if (int.type === 'NPC' && int.npc.type === 'BOSS') label = '[SPACE] - ???';
+
+    ctx.font = 'bold 11px monospace';
+    const tw = ctx.measureText(label).width;
+    const bw = tw + 16; const bh = 20;
+    const bx = wx + TILE_SIZE / 2 - bw / 2;
+    const by = wy - 28 + bob;
+
+    // box
+    ctx.fillStyle = C.white; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = C.black; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    // text
+    ctx.fillStyle = C.black; ctx.textAlign = 'center';
+    ctx.fillText(label, wx + TILE_SIZE / 2, by + 14);
+    // small downward triangle pointer
+    ctx.fillStyle = C.white;
+    ctx.beginPath();
+    ctx.moveTo(wx + TILE_SIZE / 2 - 5, by + bh);
+    ctx.lineTo(wx + TILE_SIZE / 2 + 5, by + bh);
+    ctx.lineTo(wx + TILE_SIZE / 2,     by + bh + 6);
+    ctx.fill();
+    ctx.strokeStyle = C.black; ctx.lineWidth = 1;
+    ctx.stroke();
   }
 
   ctx.restore();
 
-  // HUD
-  ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, 768, 40);
-  ctx.fillStyle = '#ef4444'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(`♥ ${state.player.hp}/${state.player.maxHp}`, 16, 26);
-  ctx.fillStyle = '#fbbf24'; ctx.fillText(`${state.player.echoes}ε`, 150, 26);
-  ctx.fillStyle = 'white'; ctx.textAlign = 'right'; ctx.fillText(map.name, 752, 26);
-  ctx.textAlign = 'left'; ctx.font = '12px monospace'; ctx.fillStyle = '#aaa';
-  ctx.fillText('[WASD] Move  [SPACE] Interact  [I] Inv  [Q] Quests  [ESC] Menu', 16, 560);
+  // ── HUD ────────────────────────────────────────────────────────────
+  ctx.fillStyle = 'rgba(8,8,8,0.88)'; ctx.fillRect(0, 0, W, 38);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 38); ctx.lineTo(W, 38); ctx.stroke();
 
+  ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
+  ctx.fillStyle = C.white;  ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, 14, 25);
+  ctx.fillStyle = C.silver; ctx.fillText(`|`, 100, 25);
+  ctx.fillStyle = C.light;  ctx.fillText(`${state.player.echoes} ECHOES`, 114, 25);
+  ctx.fillStyle = C.gray;   ctx.textAlign = 'right';
+  ctx.fillText(map.name.toUpperCase(), W - 14, 25);
+
+  // HP bar
+  const hpPct = state.player.hp / state.player.maxHp;
+  ctx.fillStyle = C.darkest; ctx.fillRect(14, 28, 80, 6);
+  ctx.fillStyle = hpPct > 0.5 ? C.silver : hpPct > 0.25 ? C.gray : '#666666';
+  ctx.fillRect(14, 28, Math.floor(80 * hpPct), 6);
+
+  // controls hint
+  ctx.textAlign = 'center'; ctx.font = '11px monospace'; ctx.fillStyle = C.dim;
+  ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  ESC Menu', W / 2, H - 6);
+
+  // popup message
   if (state.uiMessage) {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(184, 80, 400, 40);
-    ctx.strokeStyle = 'white'; ctx.strokeRect(184, 80, 400, 40);
-    ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = '16px monospace';
-    ctx.fillText(state.uiMessage, 384, 105);
+    const tw = ctx.measureText(state.uiMessage).width + 40;
+    const mx = (W - tw) / 2;
+    pixelBox(ctx, mx, 55, tw, 34, C.black, C.white, 2);
+    ctx.fillStyle = C.white; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(state.uiMessage, W / 2, 76);
   }
 
-  if (state.mode === GameMode.DIALOGUE) renderDialogue(ctx, state);
-  if (state.mode === GameMode.MENU) renderMenu(ctx, state);
-  if (state.mode === GameMode.SHOP) renderShop(ctx, state);
+  // overlays (dialogue, menu, shop, inventory, quest log drawn on top)
+  if (state.mode === GameMode.DIALOGUE)  renderDialogue(ctx, state);
+  if (state.mode === GameMode.MENU)      renderMenu(ctx, state);
+  if (state.mode === GameMode.SHOP)      renderShop(ctx, state);
   if (state.mode === GameMode.INVENTORY) renderInventory(ctx, state);
   if (state.mode === GameMode.QUEST_LOG) renderQuests(ctx, state);
+
+  drawScanlines(ctx);
 }
 
+// ── DIALOGUE ───────────────────────────────────────────────────────
 function renderDialogue(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  const D_BOX_Y = 410;
-  ctx.fillStyle = '#1a0a2e'; ctx.fillRect(16, D_BOX_Y, 736, 150);
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(16, D_BOX_Y, 736, 150);
+  const BY = H - 168;
+  pixelBox(ctx, 12, BY, W - 24, 154, '#030303', C.white, 3);
 
   const node = state.dialogue.currentNode!;
-  if (node.color) { ctx.fillStyle = node.color; ctx.fillRect(32, D_BOX_Y + 16, 64, 64); }
-  
-  ctx.fillStyle = 'white'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(node.speaker, 112, D_BOX_Y + 32);
-  
-  ctx.font = '16px monospace';
-  const text = node.text.substring(0, state.dialogue.charIndex);
-  const words = text.split(' ');
-  let line = ''; let ly = D_BOX_Y + 64;
-  for (let w of words) {
-    if (ctx.measureText(line + w + ' ').width > 600) { ctx.fillText(line, 112, ly); line = w + ' '; ly += 24; }
-    else { line += w + ' '; }
+  // portrait block
+  if (node.color) {
+    ctx.fillStyle = node.color; ctx.fillRect(24, BY + 14, 56, 56);
+    ctx.strokeStyle = C.dim; ctx.lineWidth = 2; ctx.strokeRect(24, BY + 14, 56, 56);
+    // pixel eyes in portrait
+    ctx.fillStyle = C.black;
+    ctx.fillRect(35, BY + 30, 8, 8); ctx.fillRect(55, BY + 30, 8, 8);
   }
-  ctx.fillText(line, 112, ly);
-  
-  if (state.dialogue.charIndex === node.text.length && node.options) {
-    ly += 24;
+  // speaker name
+  ctx.fillStyle = C.white; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'left';
+  ctx.fillText(node.speaker, 94, BY + 32);
+  // horizontal divider
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(94, BY + 38); ctx.lineTo(W - 28, BY + 38); ctx.stroke();
+  // text body
+  ctx.font = '14px monospace'; ctx.fillStyle = C.light;
+  const visible = node.text.substring(0, state.dialogue.charIndex);
+  drawWrappedText(ctx, visible, 94, BY + 58, W - 130, 22);
+  // options
+  if (state.dialogue.charIndex >= node.text.length && node.options) {
+    const optY = BY + 106;
     for (let i = 0; i < node.options.length; i++) {
-      ctx.fillStyle = state.dialogue.selectedOption === i ? '#fcd34d' : 'white';
-      ctx.fillText(`${state.dialogue.selectedOption === i ? '►' : '  '} ${node.options[i].label}`, 112, ly + i * 24);
+      const sel = state.dialogue.selectedOption === i;
+      ctx.fillStyle = sel ? C.white : C.gray;
+      ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
+      ctx.fillText((sel ? '> ' : '  ') + node.options[i].label, 94, optY + i * 22);
+    }
+  }
+  // advance prompt
+  if (state.dialogue.charIndex >= node.text.length && (!node.options || node.options.length === 0)) {
+    if (Math.floor(state.frameCount / 20) % 2 === 0) {
+      ctx.fillStyle = C.gray; ctx.font = '11px monospace'; ctx.textAlign = 'right';
+      ctx.fillText('[SPACE]', W - 28, BY + 140);
     }
   }
 }
 
+// ── BATTLE ─────────────────────────────────────────────────────────
 function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
   const b = state.battle!;
-  ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, 768, 576);
+  ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, W, H);
 
-  ctx.fillStyle = b.enemy.color; ctx.fillRect(352, 100, 64, 64);
-  ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.font = 'bold 24px monospace';
-  ctx.fillText(b.enemy.name, 384, 50);
+  // film-strip top border
+  ctx.fillStyle = '#111111'; ctx.fillRect(0, 0, W, 8);
+  ctx.fillStyle = '#111111'; ctx.fillRect(0, H - 8, W, 8);
 
+  // enemy name + HP
+  ctx.fillStyle = C.white; ctx.font = 'bold 22px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(b.enemy.name, W / 2, 40);
+  // HP bar
   const hpPct = b.enemy.hp / b.enemy.maxHp;
-  ctx.fillStyle = 'red'; ctx.fillRect(284, 60, 200, 10);
-  ctx.fillStyle = '#22c55e'; ctx.fillRect(284, 60, 200 * hpPct, 10);
+  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(260, 50, 248, 12);
+  ctx.fillStyle = C.silver;  ctx.fillRect(260, 50, Math.floor(248 * hpPct), 12);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1; ctx.strokeRect(260, 50, 248, 12);
 
-  ctx.fillStyle = '#fbbf24'; ctx.font = '16px monospace';
-  ctx.fillText('RESONANCE: ' + '★'.repeat(b.resonance) + '☆'.repeat(3 - b.resonance), 384, 90);
-
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(234, 320, 300, 200);
-
-  if (b.phase === 'MENU') {
-    const opts = ['REMEMBER', 'FORGET', 'ACT', 'ITEMS', 'FLEE'];
-    ctx.textAlign = 'left';
-    opts.forEach((opt, i) => {
-      ctx.fillStyle = b.menuIndex === i ? '#fcd34d' : 'white';
-      ctx.fillText((b.menuIndex === i ? '♥ ' : '  ') + opt, 60 + i * 130, 550);
-    });
-    ctx.textAlign = 'center'; ctx.fillStyle = 'white';
-    ctx.fillText(b.actionMsg || b.enemy.flavor, 384, 280);
-  } else if (b.phase === 'ACT_MENU') {
-    ctx.textAlign = 'left';
-    b.enemy.acts.forEach((act, i) => {
-      ctx.fillStyle = b.menuIndex === i ? '#fcd34d' : 'white';
-      ctx.fillText((b.menuIndex === i ? '♥ ' : '  ') + act.name, 234 + i * 150, 550);
-    });
-  } else if (b.phase === 'MINIGAME') {
-    ctx.fillStyle = 'white'; ctx.fillRect(284, 400, 200, 20);
-    ctx.fillStyle = b.minigame!.type === 'REMEMBER' ? '#34d399' : '#f87171';
-    ctx.fillRect(364, 400, 40, 20); // Center zone
-    const cx = 284 + b.minigame!.cursorX * 200;
-    ctx.fillStyle = 'yellow'; ctx.fillRect(cx - 2, 390, 4, 40);
-    ctx.textAlign = 'center'; ctx.fillStyle = 'white';
-    ctx.fillText("Press [SPACE] in the zone!", 384, 380);
-  } else if (b.phase === 'DODGE') {
-    for (const p of b.projectiles) {
-      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.w/2, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.fillStyle = state.player.invincibility > 0 && Math.floor(state.frameCount / 5) % 2 === 0 ? 'white' : 'red';
-    ctx.save(); ctx.translate(b.soulX, b.soulY); ctx.rotate(Math.PI / 4); ctx.fillRect(-6, -6, 12, 12); ctx.restore();
-  } else if (b.phase === 'ACTION' || b.phase === 'END') {
-    ctx.textAlign = 'center'; ctx.fillStyle = 'white';
-    ctx.fillText(b.actionMsg || "...", 384, 420);
-    if (b.phase === 'END') ctx.fillText("Press [SPACE]", 384, 460);
+  // resonance meter
+  ctx.fillStyle = C.dim; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('RESONANCE', W / 2, 78);
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < b.resonance ? C.white : '#222222';
+    ctx.fillRect(340 + i * 36, 82, 28, 10);
+    ctx.strokeStyle = C.dim; ctx.lineWidth = 1; ctx.strokeRect(340 + i * 36, 82, 28, 10);
   }
 
-  ctx.fillStyle = 'white'; ctx.font = '20px monospace'; ctx.textAlign = 'left';
-  ctx.fillText(`♥ ${state.player.hp} / ${state.player.maxHp}`, 16, 550);
+  // enemy sprite (pixel art style)
+  drawEnemySprite(ctx, b.enemy.id, W / 2, 160, state.frameCount);
+
+  // soul box (battle arena)
+  const BOX = { x: 234, y: 310, w: 300, h: 195 };
+  pixelBox(ctx, BOX.x, BOX.y, BOX.w, BOX.h, '#000000', C.white, 3);
+
+  // phase-specific content
+  if (b.phase === 'MENU') {
+    ctx.fillStyle = C.silver; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+    drawWrappedText(ctx, b.actionMsg || b.enemy.flavor, W / 2, 280, 500, 18);
+    // action menu
+    const opts = ['REMEMBER', 'FORGET', 'ACT', 'ITEMS', 'FLEE'];
+    const colors = [C.white, C.light, C.silver, C.gray, C.dim];
+    ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
+    opts.forEach((opt, i) => {
+      const sel = b.menuIndex === i;
+      ctx.fillStyle = sel ? C.white : C.dim;
+      const bx = 20 + i * 148; const by = H - 42;
+      if (sel) { ctx.fillStyle = '#111111'; ctx.fillRect(bx - 4, by - 18, ctx.measureText('  ' + opt).width + 10, 24); }
+      ctx.fillStyle = sel ? C.white : C.dim;
+      ctx.fillText((sel ? '> ' : '  ') + opt, bx, by);
+    });
+    // player HP
+    ctx.textAlign = 'left'; ctx.fillStyle = C.light; ctx.font = '13px monospace';
+    ctx.fillText(`HP  ${state.player.hp} / ${state.player.maxHp}`, 14, H - 14);
+  } else if (b.phase === 'ACT_MENU') {
+    ctx.fillStyle = C.silver; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('ACT  ---  choose an action', W / 2, 280);
+    ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
+    b.enemy.acts.forEach((act, i) => {
+      const sel = b.menuIndex === i;
+      ctx.fillStyle = sel ? C.white : C.dim;
+      ctx.fillText((sel ? '> ' : '  ') + act.name, 60 + i * 200, H - 30);
+    });
+    ctx.fillStyle = C.gray; ctx.textAlign = 'right'; ctx.font = '12px monospace';
+    ctx.fillText('[X] back', W - 20, H - 12);
+  } else if (b.phase === 'MINIGAME') {
+    ctx.fillStyle = C.silver; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    const label = b.minigame!.type === 'REMEMBER' ? 'RESONATE  --  press SPACE in the zone' : 'STRIKE  --  press SPACE in the zone';
+    ctx.fillText(label, W / 2, 280);
+    // minigame bar
+    const barX = 264; const barY = 400; const barW = 240; const barH = 24;
+    ctx.fillStyle = '#111111'; ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = C.silver; ctx.lineWidth = 2; ctx.strokeRect(barX, barY, barW, barH);
+    // zone
+    const zoneColor = b.minigame!.type === 'REMEMBER' ? '#555555' : '#444444';
+    ctx.fillStyle = zoneColor; ctx.fillRect(barX + 96, barY, 48, barH); // center zone
+    ctx.fillStyle = '#888888'; ctx.fillRect(barX + 108, barY + 4, 24, barH - 8); // perfect zone
+    // cursor
+    const cx = barX + Math.floor(b.minigame!.cursorX * barW);
+    ctx.fillStyle = C.white; ctx.fillRect(cx - 2, barY - 4, 4, barH + 8);
+    // zone labels
+    ctx.fillStyle = C.gray; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('ZONE', barX + 120, barY + barH + 16);
+  } else if (b.phase === 'DODGE') {
+    // projectiles
+    for (const p of b.projectiles) {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(Math.floor(p.x - p.w / 2), Math.floor(p.y - p.h / 2), p.w, p.h);
+    }
+    // soul (white diamond)
+    const flash = state.player.invincibility > 0 && Math.floor(state.frameCount / 4) % 2 === 0;
+    if (!flash) {
+      ctx.fillStyle = C.white;
+      ctx.save(); ctx.translate(Math.floor(b.soulX), Math.floor(b.soulY)); ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-6, -6, 12, 12);
+      ctx.strokeStyle = C.black; ctx.lineWidth = 1; ctx.strokeRect(-6, -6, 12, 12);
+      ctx.restore();
+    }
+    // HP display inside box
+    ctx.fillStyle = C.white; ctx.font = '12px monospace'; ctx.textAlign = 'left';
+    ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, BOX.x + 8, BOX.y + BOX.h - 6);
+  } else if (b.phase === 'ACTION' || b.phase === 'END') {
+    ctx.fillStyle = C.light; ctx.font = '15px monospace'; ctx.textAlign = 'center';
+    drawWrappedText(ctx, b.actionMsg || '...', W / 2, 390, 460, 24);
+    if (b.phase === 'END') {
+      if (Math.floor(state.frameCount / 20) % 2 === 0) {
+        ctx.fillStyle = C.gray; ctx.font = '13px monospace';
+        ctx.fillText('[SPACE] continue', W / 2, H - 20);
+      }
+    }
+  }
 }
 
+function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, cy: number, frame: number) {
+  const pulse = Math.sin(frame * 0.05) * 3;
+  ctx.fillStyle = C.mid;
+  if (id === 'wisp') {
+    // ellipse-ish wisp
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = `rgba(180,180,180,${0.3 + i * 0.12})`;
+      ctx.fillRect(cx - 28 + i * 4, cy - 28 + pulse + i * 3, 56 - i * 8, 40 - i * 6);
+    }
+    // eyes
+    ctx.fillStyle = C.black; ctx.fillRect(cx - 10, cy - 14 + Math.floor(pulse), 6, 6);
+    ctx.fillRect(cx + 4,  cy - 14 + Math.floor(pulse), 6, 6);
+  } else if (id === 'crawler') {
+    // blocky crab
+    ctx.fillStyle = '#444444';
+    ctx.fillRect(cx - 30, cy - 12, 60, 28); // body
+    ctx.fillStyle = '#555555';
+    ctx.fillRect(cx - 40, cy - 6, 12, 16); ctx.fillRect(cx + 28, cy - 6, 12, 16); // claws
+    ctx.fillRect(cx - 20, cy + 16, 8, 12); ctx.fillRect(cx - 6, cy + 16, 8, 12);  // legs
+    ctx.fillRect(cx + 8, cy + 16, 8, 12);  ctx.fillRect(cx + 22, cy + 16, 8, 12);
+    ctx.fillStyle = C.black; ctx.fillRect(cx - 14, cy - 6, 8, 8); ctx.fillRect(cx + 6, cy - 6, 8, 8);
+    ctx.strokeStyle = C.dark; ctx.lineWidth = 1;
+    ctx.strokeRect(cx - 30, cy - 12, 60, 28);
+  } else if (id === 'specter') {
+    // flowing ghost
+    const wave = Math.floor(Math.sin(frame * 0.08) * 4);
+    ctx.fillStyle = '#b0b0b0';
+    ctx.fillRect(cx - 20, cy - 36, 40, 52 + wave);
+    ctx.fillStyle = '#888888';
+    ctx.fillRect(cx - 28, cy - 20, 56, 28);
+    // wavy bottom
+    for (let i = 0; i < 5; i++) {
+      const ww = 10; const wx2 = cx - 24 + i * ww;
+      const wh = 8 + Math.floor(Math.sin(frame * 0.1 + i) * 4);
+      ctx.fillStyle = i % 2 === 0 ? '#999999' : '#777777';
+      ctx.fillRect(wx2, cy + 16, ww, wh);
+    }
+    ctx.fillStyle = C.black; ctx.fillRect(cx - 12, cy - 26, 8, 8); ctx.fillRect(cx + 4, cy - 26, 8, 8);
+  } else if (id === 'boss') {
+    // large wraith with tendrils
+    const flicker = Math.floor(frame * 0.2) % 2;
+    ctx.fillStyle = flicker ? '#181818' : '#202020';
+    ctx.fillRect(cx - 40, cy - 52, 80, 72);
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(cx - 24, cy - 68, 48, 20); // crown
+    // tendrils
+    ctx.fillStyle = '#2a2a2a';
+    for (let i = 0; i < 4; i++) {
+      const tx = cx - 50 + i * 32;
+      const ty2 = cy + 20 + Math.floor(Math.sin(frame * 0.07 + i) * 8);
+      ctx.fillRect(tx, ty2, 6, 20);
+    }
+    // eyes (glowing)
+    ctx.fillStyle = C.white; ctx.fillRect(cx - 18, cy - 38, 10, 10); ctx.fillRect(cx + 8, cy - 38, 10, 10);
+    ctx.fillStyle = C.black; ctx.fillRect(cx - 16, cy - 36, 6, 6); ctx.fillRect(cx + 10, cy - 36, 6, 6);
+  }
+}
+
+// ── MENU ───────────────────────────────────────────────────────────
 function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.fillRect(0, 0, 768, 576);
-  ctx.fillStyle = '#1a0a2e'; ctx.fillRect(284, 150, 200, 200);
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(284, 150, 200, 200);
-  
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 274, 140, 220, 220, C.black, C.white, 3);
+  ctx.fillStyle = C.silver; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('MENU', W / 2, 166);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(290, 174); ctx.lineTo(474, 174); ctx.stroke();
+
   const opts = ['Resume', 'Inventory', 'Quest Log', 'Title Screen'];
-  ctx.font = '20px monospace'; ctx.textAlign = 'left';
+  ctx.textAlign = 'left'; ctx.font = '16px monospace';
   opts.forEach((opt, i) => {
-    ctx.fillStyle = state.menuIndex === i ? '#fcd34d' : 'white';
-    ctx.fillText((state.menuIndex === i ? '♥ ' : '  ') + opt, 310, 200 + i * 40);
+    const sel = state.menuIndex === i;
+    ctx.fillStyle = sel ? C.white : C.dim;
+    ctx.fillText((sel ? '> ' : '  ') + opt, 305, 204 + i * 38);
   });
 }
 
+// ── SHOP ───────────────────────────────────────────────────────────
 function renderShop(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  ctx.fillStyle = '#1a0a2e'; ctx.fillRect(0, 0, 768, 576);
-  ctx.strokeStyle = '#fcd34d'; ctx.lineWidth = 6; ctx.strokeRect(10, 10, 748, 556);
-  
-  ctx.fillStyle = '#fcd34d'; ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center';
-  ctx.fillText("Zara's Memory Emporium", 384, 60);
-  
-  ctx.font = '20px monospace'; ctx.textAlign = 'right';
-  ctx.fillText(`Echoes: ${state.player.echoes}ε`, 730, 60);
-  
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 60, 50, W - 120, H - 100, C.black, C.white, 3);
+
+  ctx.fillStyle = C.white; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
+  ctx.fillText("ZARA'S MEMORY EMPORIUM", W / 2, 90);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(80, 100); ctx.lineTo(W - 80, 100); ctx.stroke();
+
+  ctx.fillStyle = C.silver; ctx.textAlign = 'right'; ctx.font = '14px monospace';
+  ctx.fillText(`Echoes: ${state.player.echoes}`, W - 90, 90);
+
   const shopItems = ['crystal', 'ward', 'spark', 'stone', 'dust'];
   ctx.textAlign = 'left';
   shopItems.forEach((id, i) => {
-    const item = ITEMS[id];
-    ctx.fillStyle = state.shopIndex === i ? '#fcd34d' : 'white';
-    ctx.fillText((state.shopIndex === i ? '► ' : '  ') + item.name, 100, 150 + i * 50);
-    ctx.fillStyle = '#aaa';
-    ctx.fillText(item.price + 'ε', 400, 150 + i * 50);
-    if (state.shopIndex === i) {
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(item.desc, 120, 150 + i * 50 + 20);
-    }
+    const item = ITEMS[id]; const sel = state.shopIndex === i;
+    const iy = 130 + i * 60;
+    if (sel) { ctx.fillStyle = '#111111'; ctx.fillRect(82, iy - 20, W - 164, 56); }
+    ctx.fillStyle = sel ? C.white : C.gray; ctx.font = 'bold 15px monospace';
+    ctx.fillText((sel ? '> ' : '  ') + item.name, 94, iy);
+    ctx.fillStyle = sel ? C.silver : C.dim; ctx.font = '13px monospace';
+    ctx.fillText(`${item.price} Echoes`, 94, iy + 18);
+    if (sel) { ctx.fillStyle = C.light; ctx.fillText(item.desc, 250, iy); }
   });
+
+  if (state.uiMessage) {
+    ctx.fillStyle = C.white; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(state.uiMessage, W / 2, H - 75);
+  }
+  ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+  ctx.fillText('[UP/DOWN] browse  |  [SPACE] buy  |  [X] exit', W / 2, H - 58);
 }
 
+// ── INVENTORY ──────────────────────────────────────────────────────
 function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, 768, 576);
-  ctx.fillStyle = '#1a0a2e'; ctx.fillRect(184, 100, 400, 350);
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(184, 100, 400, 350);
-  
-  ctx.fillStyle = 'white'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center';
-  ctx.fillText("INVENTORY", 384, 140);
-  
-  ctx.font = '18px monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 164, 90, W - 328, H - 180, C.black, C.white, 3);
+
+  ctx.fillStyle = C.white; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('INVENTORY', W / 2, 122);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(180, 130); ctx.lineTo(W - 180, 130); ctx.stroke();
+
+  ctx.textAlign = 'left'; ctx.font = '14px monospace';
   if (state.player.inventory.length === 0) {
-    ctx.fillStyle = '#aaa'; ctx.fillText("Empty", 220, 200);
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center';
+    ctx.fillText('-- empty --', W / 2, 200);
   } else {
     state.player.inventory.forEach((id, i) => {
-      ctx.fillStyle = state.inventoryIndex === i ? '#fcd34d' : 'white';
-      ctx.fillText((state.inventoryIndex === i ? '♥ ' : '  ') + ITEMS[id].name, 220, 190 + i * 30);
+      const sel = state.inventoryIndex === i;
+      ctx.fillStyle = sel ? C.white : C.gray;
+      ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
+      ctx.fillText((sel ? '> ' : '  ') + ITEMS[id].name, 188, 154 + i * 26);
     });
-    const curId = state.player.inventory[state.inventoryIndex];
-    ctx.fillStyle = '#38bdf8'; ctx.textAlign = 'center';
-    ctx.fillText(ITEMS[curId].desc, 384, 420);
+    const cur = ITEMS[state.player.inventory[state.inventoryIndex]];
+    if (cur) {
+      ctx.fillStyle = C.silver; ctx.font = '12px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(cur.desc, W / 2, H - 160);
+      ctx.fillText('[SPACE] use  |  [X] close', W / 2, H - 140);
+    }
   }
 }
 
+// ── QUESTS ─────────────────────────────────────────────────────────
 function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, 768, 576);
-  ctx.fillStyle = '#1a0a2e'; ctx.fillRect(134, 100, 500, 350);
-  ctx.strokeStyle = 'white'; ctx.lineWidth = 4; ctx.strokeRect(134, 100, 500, 350);
-  
-  ctx.fillStyle = '#fcd34d'; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center';
-  ctx.fillText("QUEST LOG", 384, 140);
-  
-  ctx.font = '16px monospace'; ctx.textAlign = 'left';
-  let y = 180;
-  
-  const qMain = state.player.quests['quest_main'];
-  if (qMain > 0) {
-    ctx.fillStyle = qMain === 2 ? '#10b981' : 'white';
-    ctx.fillText(`- The Lost Memories ${qMain===2 ? '(Done)' : `(${state.player.questProgress['shards']||0}/3 Shards)`}`, 160, y); y += 30;
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 100, 80, W - 200, H - 160, C.black, C.white, 3);
+
+  ctx.fillStyle = C.white; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('QUEST LOG', W / 2, 114);
+  ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(120, 122); ctx.lineTo(W - 120, 122); ctx.stroke();
+
+  ctx.textAlign = 'left'; ctx.font = '13px monospace';
+  let qy = 150;
+  const p = state.player;
+
+  function qLine(label: string, done: boolean) {
+    ctx.fillStyle = done ? C.silver : C.light;
+    ctx.fillText((done ? '[DONE] ' : '[ACT]  ') + label, 124, qy); qy += 26;
   }
-  const qName = state.player.quests['quest_name'];
-  if (qName > 0) {
-    ctx.fillStyle = qName === 2 ? '#10b981' : 'white';
-    ctx.fillText(`- Name for the Nameless ${qName===2 ? '(Done)' : '(Remember a Crawler)'}`, 160, y); y += 30;
+
+  if (p.quests['quest_main'] > 0) qLine(`The Lost Memories  (${p.questProgress['shards']||0}/3 Shards)`, p.quests['quest_main'] === 2);
+  if (p.quests['quest_name'] > 0) qLine(`A Name for the Nameless  (Remember a Crawler)`, p.quests['quest_name'] === 2);
+  if (p.quests['quest_hollow'] > 0) qLine(`The Hollow Heart  (${p.questProgress['specters']||0}/2 Specters)`, p.quests['quest_hollow'] === 2);
+
+  if (p.quests['quest_main'] === 0 && p.quests['quest_name'] === 0 && p.quests['quest_hollow'] === 0) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center';
+    ctx.fillText('No active quests.  Speak to villagers to begin.', W / 2, 200);
   }
-  const qHollow = state.player.quests['quest_hollow'];
-  if (qHollow > 0) {
-    ctx.fillStyle = qHollow === 2 ? '#10b981' : 'white';
-    ctx.fillText(`- The Hollow Heart ${qHollow===2 ? '(Done)' : `(${state.player.questProgress['specters']||0}/2 Specters)`}`, 160, y); y += 30;
-  }
-  
-  if (qMain === 0 && qName === 0 && qHollow === 0) {
-    ctx.fillStyle = '#aaa'; ctx.fillText("No active quests.", 160, y);
-  }
+
+  ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+  ctx.fillText('[Q] or [X] to close', W / 2, H - 110);
 }

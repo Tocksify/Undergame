@@ -1,29 +1,30 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS } from './constants';
+import { MAPS, ENEMIES, ITEMS, TILE_SIZE } from './constants';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
-import { updateBattle, handleBattleInput, updateBattlePhase } from './battle';
+import { updateBattlePhase, handleBattleInput } from './battle';
 
 export function justPressed(state: GameStateData, key: string) {
-  const isDown = state.keys[key] || state.keys[key.toUpperCase()];
-  const wasDown = state.prevKeys[key] || state.prevKeys[key.toUpperCase()];
-  return isDown && !wasDown;
+  const k = key; const K = key.toUpperCase();
+  return (state.keys[k] || state.keys[K]) && !(state.prevKeys[k] || state.prevKeys[K]);
 }
+
+function isExitTile(t: string) { return t === '>' || t === '<' || t === '!'; }
 
 export function updateGame(state: GameStateData) {
   state.frameCount++;
   if (state.player.invincibility > 0) state.player.invincibility--;
   if (state.uiMessageTimer > 0) {
-     state.uiMessageTimer--;
-     if (state.uiMessageTimer <= 0) state.uiMessage = null;
+    state.uiMessageTimer--;
+    if (state.uiMessageTimer <= 0) state.uiMessage = null;
   }
 
   if (state.mode === GameMode.TITLE || state.mode === GameMode.GAME_OVER) {
     if (justPressed(state, ' ') || justPressed(state, 'Enter')) {
       if (state.mode === GameMode.GAME_OVER) {
-         // simple respawn
-         state.player.hp = state.player.maxHp;
-         state.player.x = 8 * 48; state.player.y = 12 * 48; state.player.targetX = state.player.x; state.player.targetY = state.player.y;
-         state.mapId = 'VH';
+        state.player.hp = state.player.maxHp;
+        state.player.x = 8 * TILE_SIZE; state.player.y = 10 * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.mapId = 'VH';
       }
       state.mode = GameMode.OVERWORLD;
     }
@@ -39,41 +40,36 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.MENU) {
-    if (justPressed(state, 'ArrowUp')) state.menuIndex = Math.max(0, state.menuIndex - 1);
+    if (justPressed(state, 'ArrowUp'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
     if (justPressed(state, 'ArrowDown')) state.menuIndex = Math.min(3, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
-      if (state.menuIndex === 1) state.mode = GameMode.INVENTORY;
+      if (state.menuIndex === 1) { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; }
       if (state.menuIndex === 2) state.mode = GameMode.QUEST_LOG;
-      if (state.menuIndex === 3) window.location.reload(); // back to title
+      if (state.menuIndex === 3) window.location.reload();
     }
     return;
   }
 
   if (state.mode === GameMode.INVENTORY) {
-    if (justPressed(state, 'ArrowUp')) state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
+    if (justPressed(state, 'ArrowUp'))   state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
     if (justPressed(state, 'ArrowDown')) state.inventoryIndex = Math.min(Math.max(0, state.player.inventory.length - 1), state.inventoryIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'i')) {
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
     if ((justPressed(state, ' ') || justPressed(state, 'z')) && state.player.inventory.length > 0) {
       const id = state.player.inventory[state.inventoryIndex];
-      if (id === 'crystal') state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10);
-      else if (id === 'tonic') state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5);
+      if (id === 'crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); state.player.inventory.splice(state.inventoryIndex, 1); }
+      else if (id === 'tonic') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5); state.player.inventory.splice(state.inventoryIndex, 1); }
       else if (state.battle) {
-        if (id === 'ward') state.battle.voidWard = true;
-        if (id === 'spark') state.battle.flags.spark = true;
-        if (id === 'dust') state.battle.flags.confused = true;
+        if (id === 'ward')  { state.battle.voidWard = true; state.player.inventory.splice(state.inventoryIndex, 1); }
+        if (id === 'spark') { state.battle.flags.spark = true; state.player.inventory.splice(state.inventoryIndex, 1); }
+        if (id === 'dust')  { state.battle.flags.confused = true; state.player.inventory.splice(state.inventoryIndex, 1); }
       }
-      state.player.inventory.splice(state.inventoryIndex, 1);
-      if (state.inventoryIndex >= state.player.inventory.length) state.inventoryIndex = Math.max(0, state.player.inventory.length - 1);
-      
-      if (state.battle) {
-        state.mode = GameMode.BATTLE; state.battle.phase = 'ACTION'; state.battle.actionMsg = `Used item!`; state.battle.timer = 0;
-      } else {
-        state.uiMessage = "Used item."; state.uiMessageTimer = 60;
-      }
+      state.inventoryIndex = Math.max(0, Math.min(state.inventoryIndex, state.player.inventory.length - 1));
+      if (state.battle) { state.mode = GameMode.BATTLE; state.battle.phase = 'ACTION'; state.battle.actionMsg = "Used item!"; state.battle.timer = 0; }
+      else { state.uiMessage = "Used item."; state.uiMessageTimer = 60; }
     }
     return;
   }
@@ -85,20 +81,17 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.SHOP) {
     const shopItems = ['crystal', 'ward', 'spark', 'stone', 'dust'];
-    if (justPressed(state, 'ArrowUp')) state.shopIndex = Math.max(0, state.shopIndex - 1);
+    if (justPressed(state, 'ArrowUp'))   state.shopIndex = Math.max(0, state.shopIndex - 1);
     if (justPressed(state, 'ArrowDown')) state.shopIndex = Math.min(shopItems.length - 1, state.shopIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const item = ITEMS[shopItems[state.shopIndex]];
-      if (state.player.echoes >= item.price && state.player.inventory.length < 8) {
+      if (state.player.inventory.length >= 8) { state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60; }
+      else if (state.player.echoes >= item.price) {
         state.player.echoes -= item.price;
         state.player.inventory.push(shopItems[state.shopIndex]);
-        state.uiMessage = "Purchased " + item.name; state.uiMessageTimer = 60;
-      } else if (state.player.inventory.length >= 8) {
-        state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60;
-      } else {
-        state.uiMessage = "Not enough Echoes!"; state.uiMessageTimer = 60;
-      }
+        state.uiMessage = "Bought: " + item.name; state.uiMessageTimer = 60;
+      } else { state.uiMessage = "Not enough Echoes!"; state.uiMessageTimer = 60; }
     }
     return;
   }
@@ -117,20 +110,22 @@ export function updateGame(state: GameStateData) {
           const opt = node.options[state.dialogue.selectedOption];
           if (opt.action) opt.action(state);
           if (opt.nextId) {
-            state.dialogue.currentNode = getDialogueNode(state, opt.nextId); state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;
+            state.dialogue.currentNode = getDialogueNode(state, opt.nextId);
+            state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;
           } else {
             state.mode = GameMode.OVERWORLD;
-            if (state.pendingEncounter) startBattle(state, state.pendingEncounter);
+            if (state.pendingEncounter) { startBattle(state, state.pendingEncounter); state.pendingEncounter = null; }
           }
         }
       } else {
         if (justPressed(state, ' ') || justPressed(state, 'z')) {
           if (node.action) node.action(state);
           if (node.nextId) {
-            state.dialogue.currentNode = getDialogueNode(state, node.nextId); state.dialogue.charIndex = 0;
+            state.dialogue.currentNode = getDialogueNode(state, node.nextId);
+            state.dialogue.charIndex = 0;
           } else {
             state.mode = GameMode.OVERWORLD;
-            if (state.pendingEncounter) startBattle(state, state.pendingEncounter);
+            if (state.pendingEncounter) { startBattle(state, state.pendingEncounter); state.pendingEncounter = null; }
           }
         }
       }
@@ -138,104 +133,112 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
-  // OVERWORLD
+  // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
-  if (justPressed(state, 'i')) { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; return; }
-  if (justPressed(state, 'q')) { state.mode = GameMode.QUEST_LOG; return; }
+  if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; return; }
+  if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; return; }
 
   const map = MAPS[state.mapId];
-  if (state.player.x === state.player.targetX && state.player.y === state.player.targetY) {
-    if (state.pendingEncounter) {
-      startBattle(state, state.pendingEncounter);
-      state.pendingEncounter = null;
-      return;
-    }
 
+  // smooth movement
+  if (state.player.x !== state.player.targetX || state.player.y !== state.player.targetY) {
+    const spd = 6;
+    if (state.player.x < state.player.targetX) state.player.x = Math.min(state.player.targetX, state.player.x + spd);
+    else if (state.player.x > state.player.targetX) state.player.x = Math.max(state.player.targetX, state.player.x - spd);
+    if (state.player.y < state.player.targetY) state.player.y = Math.min(state.player.targetY, state.player.y + spd);
+    else if (state.player.y > state.player.targetY) state.player.y = Math.max(state.player.targetY, state.player.y - spd);
+    return; // don't process input while moving
+  }
+
+  // arrived at target — pending encounter?
+  if (state.pendingEncounter) {
+    startBattle(state, state.pendingEncounter);
+    state.pendingEncounter = null;
+    return;
+  }
+
+  const tx = Math.floor(state.player.x / TILE_SIZE);
+  const ty = Math.floor(state.player.y / TILE_SIZE);
+
+  // detect adjacent interactables
+  let intFound: any = null;
+  for (const npc of map.npcs) {
+    if (Math.abs(npc.x - tx) + Math.abs(npc.y - ty) === 1) { intFound = { type: 'NPC', npc, x: npc.x, y: npc.y }; break; }
+  }
+  if (!intFound) {
+    for (const chest of map.chests) {
+      if (!state.player.flags[chest.flag] && Math.abs(chest.x - tx) + Math.abs(chest.y - ty) === 1) {
+        intFound = { type: 'CHEST', chest, x: chest.x, y: chest.y }; break;
+      }
+    }
+  }
+  // standing on exit tile?
+  const curTile = map.layout[ty]?.[tx] ?? '';
+  if (isExitTile(curTile)) {
+    intFound = { type: 'EXIT', tile: curTile, x: tx, y: ty };
+  }
+  state.adjacentInteractable = intFound;
+
+  // handle SPACE interactions
+  if (intFound && (justPressed(state, ' ') || justPressed(state, 'z'))) {
+    if (intFound.type === 'EXIT') {
+      const exit = map.exits[intFound.tile];
+      if (exit) {
+        if (exit.locked || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
+          state.uiMessage = exit.lockMsg; state.uiMessageTimer = 120;
+        } else {
+          state.mapId = exit.mapId;
+          state.player.x = exit.x * TILE_SIZE; state.player.y = exit.y * TILE_SIZE;
+          state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+          state.adjacentInteractable = null;
+        }
+      }
+    } else if (intFound.type === 'NPC') {
+      if (intFound.npc.type === 'SHOP') {
+        state.mode = GameMode.SHOP; state.shopIndex = 0;
+      } else {
+        state.dialogue.currentNode = getDialogueStartNode(state, intFound.npc.id);
+        state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;
+        state.mode = GameMode.DIALOGUE;
+      }
+    } else if (intFound.type === 'CHEST') {
+      state.player.flags[intFound.chest.flag] = true;
+      if (intFound.chest.item.startsWith('echoes_')) {
+        const amt = parseInt(intFound.chest.item.split('_')[1]);
+        state.player.echoes += amt;
+        state.uiMessage = `Found ${amt} Echoes!`; state.uiMessageTimer = 120;
+      } else {
+        if (state.player.inventory.length < 8) state.player.inventory.push(intFound.chest.item);
+        state.uiMessage = `Found: ${ITEMS[intFound.chest.item]?.name ?? intFound.chest.item}!`; state.uiMessageTimer = 120;
+      }
+    }
+  }
+
+  // movement input (only when not interacting this frame)
+  if (!(intFound && (justPressed(state, ' ') || justPressed(state, 'z')))) {
     let dx = 0; let dy = 0;
-    if (state.keys['ArrowUp'] || state.keys['w']) dy = -1;
-    else if (state.keys['ArrowDown'] || state.keys['s']) dy = 1;
-    else if (state.keys['ArrowLeft'] || state.keys['a']) dx = -1;
+    if (state.keys['ArrowUp']    || state.keys['w']) dy = -1;
+    else if (state.keys['ArrowDown']  || state.keys['s']) dy = 1;
+    else if (state.keys['ArrowLeft']  || state.keys['a']) dx = -1;
     else if (state.keys['ArrowRight'] || state.keys['d']) dx = 1;
 
     if (dx !== 0 || dy !== 0) {
-      const nextTx = Math.floor(state.player.x / 48) + dx;
-      const nextTy = Math.floor(state.player.y / 48) + dy;
-      if (nextTx >= 0 && nextTx < map.width && nextTy >= 0 && nextTy < map.height) {
-        const tile = map.layout[nextTy][nextTx];
-        const npcThere = map.npcs.find((n:any) => n.x === nextTx && n.y === nextTy);
-        if (tile !== 'W' && tile !== 'T' && tile !== 'H' && !npcThere) {
-           state.player.targetX = nextTx * 48; state.player.targetY = nextTy * 48;
-           if (tile === 'V' && Math.random() < 0.15) {
-              const enemies = ['wisp', 'crawler', 'specter'];
-              state.pendingEncounter = ENEMIES[enemies[Math.floor(Math.random()*enemies.length)]];
-           }
-        }
-      }
-    }
-
-    // interactables check
-    const tx = Math.floor(state.player.x / 48); const ty = Math.floor(state.player.y / 48);
-    let intFound = null;
-    for(const npc of map.npcs) {
-      if (Math.abs(npc.x - tx) + Math.abs(npc.y - ty) === 1) { intFound = { type: 'NPC', npc, x: npc.x, y: npc.y }; break; }
-    }
-    if (!intFound) {
-      for(const chest of map.chests) {
-        if (!state.player.flags[chest.flag] && Math.abs(chest.x - tx) + Math.abs(chest.y - ty) === 1) {
-          intFound = { type: 'CHEST', chest, x: chest.x, y: chest.y }; break;
-        }
-      }
-    }
-    const curTile = map.layout[ty][tx];
-    if (curTile.startsWith('E_') || curTile === 'B_D') {
-      intFound = { type: 'EXIT', tile: curTile, x: tx, y: ty };
-    }
-    state.adjacentInteractable = intFound;
-
-    if (state.adjacentInteractable) {
-      const int = state.adjacentInteractable;
-      if (int.type === 'EXIT' && justPressed(state, 'Enter')) {
-        const exit = map.exits[int.tile];
-        if (exit) {
-          if (exit.locked || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
-             state.uiMessage = exit.lockMsg; state.uiMessageTimer = 120;
-          } else {
-             state.mapId = exit.mapId;
-             state.player.x = exit.x * 48; state.player.y = exit.y * 48;
-             state.player.targetX = state.player.x; state.player.targetY = state.player.y;
-             state.adjacentInteractable = null;
-          }
-        }
-      } else if ((justPressed(state, ' ') || justPressed(state, 'z')) && int.type !== 'EXIT') {
-        if (int.type === 'NPC') {
-          if (int.npc.type === 'BOSS') {
-            state.dialogue.currentNode = getDialogueStartNode(state, int.npc.id);
-            state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0; state.mode = GameMode.DIALOGUE;
-          } else if (int.npc.type === 'SHOP') {
-            state.mode = GameMode.SHOP; state.shopIndex = 0;
-          } else {
-            state.dialogue.currentNode = getDialogueStartNode(state, int.npc.id);
-            state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0; state.mode = GameMode.DIALOGUE;
-          }
-        } else if (int.type === 'CHEST') {
-          state.player.flags[int.chest.flag] = true;
-          if (int.chest.item.startsWith('echoes_')) {
-            const amt = parseInt(int.chest.item.split('_')[1]);
-            state.player.echoes += amt;
-            state.uiMessage = `Found ${amt} Echoes!`; state.uiMessageTimer = 120;
-          } else {
-            if (state.player.inventory.length < 8) state.player.inventory.push(int.chest.item);
-            state.uiMessage = `Found ${ITEMS[int.chest.item].name}!`; state.uiMessageTimer = 120;
+      const ntx = tx + dx; const nty = ty + dy;
+      if (ntx >= 0 && ntx < map.width && nty >= 0 && nty < map.height) {
+        const tile = map.layout[nty][ntx];
+        const npcBlocking = map.npcs.find((n: any) => n.x === ntx && n.y === nty);
+        const impassable = tile === 'W' || tile === 'T' || tile === 'H' || npcBlocking;
+        if (!impassable) {
+          state.player.targetX = ntx * TILE_SIZE;
+          state.player.targetY = nty * TILE_SIZE;
+          // random encounter on void tiles
+          if (tile === 'V' && Math.random() < 0.15) {
+            const pool = ['wisp', 'crawler', 'specter'];
+            state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[pool[Math.floor(Math.random() * pool.length)]]));
           }
         }
       }
     }
-  } else {
-    const speed = 4;
-    if (state.player.x < state.player.targetX) state.player.x = Math.min(state.player.targetX, state.player.x + speed);
-    if (state.player.x > state.player.targetX) state.player.x = Math.max(state.player.targetX, state.player.x - speed);
-    if (state.player.y < state.player.targetY) state.player.y = Math.min(state.player.targetY, state.player.y + speed);
-    if (state.player.y > state.player.targetY) state.player.y = Math.max(state.player.targetY, state.player.y - speed);
   }
 }
 
@@ -243,16 +246,10 @@ function startBattle(state: GameStateData, enemy: EnemyData) {
   state.mode = GameMode.BATTLE;
   state.battle = {
     enemy: JSON.parse(JSON.stringify(enemy)),
-    phase: 'MENU',
-    menuIndex: 0,
-    soulX: 384,
-    soulY: 420,
-    projectiles: [],
-    timer: 0,
-    resonance: 0,
-    actionMsg: null,
-    minigame: null,
-    voidWard: false,
-    flags: {}
+    phase: 'MENU', menuIndex: 0,
+    soulX: 384, soulY: 420,
+    projectiles: [], timer: 0, resonance: 0,
+    actionMsg: null, minigame: null,
+    voidWard: false, flags: {}
   };
 }
