@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, TILE_SIZE } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, TILE_SIZE, recomputeMaxHp } from './constants';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 
@@ -41,13 +41,17 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.MENU) {
     if (justPressed(state, 'ArrowUp'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
-    if (justPressed(state, 'ArrowDown')) state.menuIndex = Math.min(3, state.menuIndex + 1);
+    if (justPressed(state, 'ArrowDown')) state.menuIndex = Math.min(4, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
       if (state.menuIndex === 1) { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; }
       if (state.menuIndex === 2) state.mode = GameMode.QUEST_LOG;
-      if (state.menuIndex === 3) window.location.reload();
+      if (state.menuIndex === 3) {
+        if (state.meta.isGuest) { state.uiMessage = "Log in from the title screen to save your progress."; state.uiMessageTimer = 150; }
+        else { state.saveRequested = true; }
+      }
+      if (state.menuIndex === 4) state.exitRequested = true;
     }
     return;
   }
@@ -60,16 +64,39 @@ export function updateGame(state: GameStateData) {
     }
     if ((justPressed(state, ' ') || justPressed(state, 'z')) && state.player.inventory.length > 0) {
       const id = state.player.inventory[state.inventoryIndex];
-      if (id === 'crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); state.player.inventory.splice(state.inventoryIndex, 1); }
-      else if (id === 'tonic') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5); state.player.inventory.splice(state.inventoryIndex, 1); }
-      else if (state.battle) {
-        if (id === 'ward')  { state.battle.voidWard = true; state.player.inventory.splice(state.inventoryIndex, 1); }
-        if (id === 'spark') { state.battle.flags.spark = true; state.player.inventory.splice(state.inventoryIndex, 1); }
-        if (id === 'dust')  { state.battle.flags.confused = true; state.player.inventory.splice(state.inventoryIndex, 1); }
+      const item = ITEMS[id];
+      let consumed = false;
+      let handled = false;
+
+      if (item.category === 'weapon') {
+        state.player.equipment.weapon = state.player.equipment.weapon === id ? null : id;
+        state.uiMessage = state.player.equipment.weapon === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`;
+        state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'armor') {
+        state.player.equipment.armor = state.player.equipment.armor === id ? null : id;
+        recomputeMaxHp(state);
+        state.uiMessage = state.player.equipment.armor === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`;
+        state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'key') {
+        state.uiMessage = "A keepsake. Best not discarded."; state.uiMessageTimer = 90; handled = true;
+      } else if (id === 'crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); consumed = true; }
+      else if (id === 'tonic') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5); consumed = true; }
+      else if (id === 'greater_crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 25); consumed = true; }
+      else if (id === 'phoenix_ash') {
+        state.player.hp = state.player.maxHp;
+        if (state.battle) state.battle.flags.confused = false;
+        consumed = true;
+      } else if (state.battle) {
+        if (id === 'ward')  { state.battle.voidWard = true; consumed = true; }
+        if (id === 'spark') { state.battle.flags.spark = true; consumed = true; }
+        if (id === 'dust')  { state.battle.flags.confused = true; consumed = true; }
       }
+
+      if (consumed) { state.player.inventory.splice(state.inventoryIndex, 1); handled = true; }
       state.inventoryIndex = Math.max(0, Math.min(state.inventoryIndex, state.player.inventory.length - 1));
-      if (state.battle) { state.mode = GameMode.BATTLE; state.battle.phase = 'ACTION'; state.battle.actionMsg = "Used item!"; state.battle.timer = 0; }
-      else { state.uiMessage = "Used item."; state.uiMessageTimer = 60; }
+      if (state.battle && (consumed || handled)) { state.mode = GameMode.BATTLE; state.battle.phase = 'ACTION'; state.battle.actionMsg = "Used item!"; state.battle.timer = 0; }
+      else if (!state.battle && consumed) { state.uiMessage = "Used item."; state.uiMessageTimer = 60; }
+      else if (!handled) { state.uiMessage = "Can't use that here."; state.uiMessageTimer = 60; }
     }
     return;
   }
@@ -80,7 +107,8 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.SHOP) {
-    const shopItems = ['crystal', 'ward', 'spark', 'stone', 'dust'];
+    const shop = SHOPS[state.shopNpcId || 'zara'] ?? SHOPS['zara'];
+    const shopItems = shop.items;
     if (justPressed(state, 'ArrowUp'))   state.shopIndex = Math.max(0, state.shopIndex - 1);
     if (justPressed(state, 'ArrowDown')) state.shopIndex = Math.min(shopItems.length - 1, state.shopIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
@@ -160,9 +188,10 @@ export function updateGame(state: GameStateData) {
   const tx = Math.floor(state.player.x / TILE_SIZE);
   const ty = Math.floor(state.player.y / TILE_SIZE);
 
-  // detect adjacent interactables
+  // detect adjacent interactables (NPCs with a satisfied hideFlag are gone for good)
+  const visibleNpcs = map.npcs.filter((n: any) => !n.hideFlag || !state.player.flags[n.hideFlag]);
   let intFound: any = null;
-  for (const npc of map.npcs) {
+  for (const npc of visibleNpcs) {
     if (Math.abs(npc.x - tx) + Math.abs(npc.y - ty) === 1) { intFound = { type: 'NPC', npc, x: npc.x, y: npc.y }; break; }
   }
   if (!intFound) {
@@ -195,7 +224,7 @@ export function updateGame(state: GameStateData) {
       }
     } else if (intFound.type === 'NPC') {
       if (intFound.npc.type === 'SHOP') {
-        state.mode = GameMode.SHOP; state.shopIndex = 0;
+        state.mode = GameMode.SHOP; state.shopIndex = 0; state.shopNpcId = intFound.npc.id;
       } else {
         state.dialogue.currentNode = getDialogueStartNode(state, intFound.npc.id);
         state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;
@@ -226,14 +255,14 @@ export function updateGame(state: GameStateData) {
       const ntx = tx + dx; const nty = ty + dy;
       if (ntx >= 0 && ntx < map.width && nty >= 0 && nty < map.height) {
         const tile = map.layout[nty][ntx];
-        const npcBlocking = map.npcs.find((n: any) => n.x === ntx && n.y === nty);
+        const npcBlocking = visibleNpcs.find((n: any) => n.x === ntx && n.y === nty);
         const impassable = tile === 'W' || tile === 'T' || tile === 'H' || npcBlocking;
         if (!impassable) {
           state.player.targetX = ntx * TILE_SIZE;
           state.player.targetY = nty * TILE_SIZE;
           // random encounter on void tiles
           if (tile === 'V' && Math.random() < 0.15) {
-            const pool = ['wisp', 'crawler', 'specter'];
+            const pool = (map.encounterPool && map.encounterPool.length) ? map.encounterPool : ['wisp'];
             state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[pool[Math.floor(Math.random() * pool.length)]]));
           }
         }

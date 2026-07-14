@@ -1,0 +1,1 @@
+- [Echo Realm architecture](echo-realm-architecture.md) — canvas RPG engine patterns worth reusing: hideFlag NPCs, generic Acts, per-map encounter pools, SHOPS/QUESTS registries.

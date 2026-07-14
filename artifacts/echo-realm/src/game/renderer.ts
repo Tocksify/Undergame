@@ -1,5 +1,6 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, TILE_SIZE } from './constants';
+import { MAPS, ITEMS, SHOPS, TILE_SIZE } from './constants';
+import { QUESTS } from './quests';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
 const C = {
@@ -245,8 +246,9 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     }
   }
 
-  // NPCs
+  // NPCs (one-time NPCs whose hideFlag is set are gone for good)
   for (const npc of map.npcs) {
+    if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
     drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, npc.color, C.black, npc.id === 'maren');
   }
 
@@ -527,8 +529,8 @@ function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, 
       ctx.fillRect(wx2, cy + 16, ww, wh);
     }
     ctx.fillStyle = C.black; ctx.fillRect(cx - 12, cy - 26, 8, 8); ctx.fillRect(cx + 4, cy - 26, 8, 8);
-  } else if (id === 'boss') {
-    // large wraith with tendrils
+  } else if (id === 'boss' || id === 'archivist') {
+    // large wraith with tendrils (reused for the mid-boss too)
     const flicker = Math.floor(frame * 0.2) % 2;
     ctx.fillStyle = flicker ? '#181818' : '#202020';
     ctx.fillRect(cx - 40, cy - 52, 80, 72);
@@ -544,6 +546,15 @@ function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, 
     // eyes (glowing)
     ctx.fillStyle = C.white; ctx.fillRect(cx - 18, cy - 38, 10, 10); ctx.fillRect(cx + 8, cy - 38, 10, 10);
     ctx.fillStyle = C.black; ctx.fillRect(cx - 16, cy - 36, 6, 6); ctx.fillRect(cx + 10, cy - 36, 6, 6);
+  } else {
+    // generic fallback sprite for any enemy without a bespoke drawing above
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(cx - 26, cy - 30 + pulse, 52, 52);
+    ctx.strokeStyle = C.dim; ctx.lineWidth = 2; ctx.strokeRect(cx - 26, cy - 30 + pulse, 52, 52);
+    ctx.fillStyle = C.white;
+    ctx.fillRect(cx - 14, cy - 12 + pulse, 8, 8); ctx.fillRect(cx + 6, cy - 12 + pulse, 8, 8);
+    ctx.fillStyle = C.black;
+    ctx.fillRect(cx - 12, cy - 10 + pulse, 4, 4); ctx.fillRect(cx + 8, cy - 10 + pulse, 4, 4);
   }
 }
 
@@ -556,12 +567,12 @@ function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(290, 174); ctx.lineTo(474, 174); ctx.stroke();
 
-  const opts = ['Resume', 'Inventory', 'Quest Log', 'Title Screen'];
-  ctx.textAlign = 'left'; ctx.font = '16px monospace';
+  const opts = ['Resume', 'Inventory', 'Quest Log', state.meta.isGuest ? 'Save (login req.)' : 'Save Game', 'Exit to Title'];
+  ctx.textAlign = 'left'; ctx.font = '14px monospace';
   opts.forEach((opt, i) => {
     const sel = state.menuIndex === i;
     ctx.fillStyle = sel ? C.white : C.dim;
-    ctx.fillText((sel ? '> ' : '  ') + opt, 305, 204 + i * 38);
+    ctx.fillText((sel ? '> ' : '  ') + opt, 300, 200 + i * 32);
   });
 }
 
@@ -570,15 +581,17 @@ function renderShop(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 60, 50, W - 120, H - 100, C.black, C.white, 3);
 
+  const shop = SHOPS[state.shopNpcId || 'zara'] ?? SHOPS['zara'];
+
   ctx.fillStyle = C.white; ctx.font = 'bold 20px monospace'; ctx.textAlign = 'center';
-  ctx.fillText("ZARA'S MEMORY EMPORIUM", W / 2, 90);
+  ctx.fillText(shop.title.toUpperCase(), W / 2, 90);
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(80, 100); ctx.lineTo(W - 80, 100); ctx.stroke();
 
   ctx.fillStyle = C.silver; ctx.textAlign = 'right'; ctx.font = '14px monospace';
   ctx.fillText(`Echoes: ${state.player.echoes}`, W - 90, 90);
 
-  const shopItems = ['crystal', 'ward', 'spark', 'stone', 'dust'];
+  const shopItems = shop.items;
   ctx.textAlign = 'left';
   shopItems.forEach((id, i) => {
     const item = ITEMS[id]; const sel = state.shopIndex === i;
@@ -616,15 +629,20 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
   } else {
     state.player.inventory.forEach((id, i) => {
       const sel = state.inventoryIndex === i;
+      const equipped = state.player.equipment.weapon === id || state.player.equipment.armor === id;
       ctx.fillStyle = sel ? C.white : C.gray;
       ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
-      ctx.fillText((sel ? '> ' : '  ') + ITEMS[id].name, 188, 154 + i * 26);
+      ctx.fillText((sel ? '> ' : '  ') + ITEMS[id].name + (equipped ? ' [E]' : ''), 188, 154 + i * 26);
     });
-    const cur = ITEMS[state.player.inventory[state.inventoryIndex]];
+    const curId = state.player.inventory[state.inventoryIndex];
+    const cur = ITEMS[curId];
     if (cur) {
       ctx.fillStyle = C.silver; ctx.font = '12px monospace'; ctx.textAlign = 'center';
       ctx.fillText(cur.desc, W / 2, H - 160);
-      ctx.fillText('[SPACE] use  |  [X] close', W / 2, H - 140);
+      const actionLabel = cur.category === 'weapon' || cur.category === 'armor'
+        ? '[SPACE] equip/unequip  |  [X] close'
+        : cur.category === 'key' ? '[X] close' : '[SPACE] use  |  [X] close';
+      ctx.fillText(actionLabel, W / 2, H - 140);
     }
   }
 }
@@ -641,18 +659,16 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   ctx.textAlign = 'left'; ctx.font = '13px monospace';
   let qy = 150;
-  const p = state.player;
 
   function qLine(label: string, done: boolean) {
     ctx.fillStyle = done ? C.silver : C.light;
     ctx.fillText((done ? '[DONE] ' : '[ACT]  ') + label, 124, qy); qy += 26;
   }
 
-  if (p.quests['quest_main'] > 0) qLine(`The Lost Memories  (${p.questProgress['shards']||0}/3 Shards)`, p.quests['quest_main'] === 2);
-  if (p.quests['quest_name'] > 0) qLine(`A Name for the Nameless  (Remember a Crawler)`, p.quests['quest_name'] === 2);
-  if (p.quests['quest_hollow'] > 0) qLine(`The Hollow Heart  (${p.questProgress['specters']||0}/2 Specters)`, p.quests['quest_hollow'] === 2);
+  const active = QUESTS.filter(q => q.isActive(state));
+  for (const q of active) qLine(q.label(state), q.isDone(state));
 
-  if (p.quests['quest_main'] === 0 && p.quests['quest_name'] === 0 && p.quests['quest_hollow'] === 0) {
+  if (active.length === 0) {
     ctx.fillStyle = C.dim; ctx.textAlign = 'center';
     ctx.fillText('No active quests.  Speak to villagers to begin.', W / 2, 200);
   }

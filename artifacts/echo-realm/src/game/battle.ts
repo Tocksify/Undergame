@@ -1,5 +1,31 @@
 import { GameStateData, GameMode, EnemyData, BattleState } from './types';
 import { justPressed } from './engine';
+import { ITEMS } from './constants';
+
+function weaponAtkBonus(state: GameStateData): number {
+  const w = state.player.equipment.weapon;
+  return w && ITEMS[w] ? ITEMS[w].atk ?? 0 : 0;
+}
+
+function armorDefBonus(state: GameStateData): number {
+  const a = state.player.equipment.armor;
+  return a && ITEMS[a] ? ITEMS[a].def ?? 0 : 0;
+}
+
+// Checks whether resonance has reached the threshold to "remember" the enemy.
+// Returns true if the battle ended as a result.
+function tryCompleteRemember(state: GameStateData): boolean {
+  const b = state.battle!;
+  if (b.resonance < 3) return false;
+  if (b.enemy.id === 'boss' && !state.player.flags['used_ancient_echo']) {
+    b.actionMsg = "It rejects the resonance. You need a deeper memory.";
+    b.resonance = 0;
+    return false;
+  }
+  b.actionMsg = b.enemy.rememberText;
+  b.phase = 'END'; b.endType = 'REMEMBERED';
+  return true;
+}
 
 export function handleBattleInput(state: GameStateData) {
   const b = state.battle!;
@@ -42,18 +68,9 @@ export function handleBattleInput(state: GameStateData) {
         else if (hitType === 'GOOD') { b.actionMsg = "Good connection."; }
         else { b.actionMsg = "The memory slips away..."; }
         
-        if (b.resonance >= 3) {
-          if (b.enemy.id === 'boss' && !state.player.flags['used_ancient_echo']) {
-            b.actionMsg = "It rejects the resonance. You need a deeper memory.";
-            b.resonance = 0;
-          } else {
-            b.actionMsg = b.enemy.rememberText;
-            b.phase = 'END'; b.endType = 'REMEMBERED';
-            return;
-          }
-        }
+        if (tryCompleteRemember(state)) return;
       } else { // FORGET
-        let dmg = (hitType === 'PERFECT' ? 10 : hitType === 'GOOD' ? 5 : 2) * mult;
+        let dmg = ((hitType === 'PERFECT' ? 10 : hitType === 'GOOD' ? 5 : 2) * mult) + weaponAtkBonus(state);
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
@@ -104,7 +121,7 @@ export function updateBattlePhase(state: GameStateData) {
       const dx = p.x - b.soulX; const dy = p.y - b.soulY;
       if (dx*dx + dy*dy < 100) { // Hit
         if (state.player.invincibility <= 0) {
-          const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)));
+          const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - armorDefBonus(state));
           state.player.hp -= dmg;
           state.player.invincibility = 30;
           b.voidWard = false;
@@ -119,18 +136,55 @@ export function updateBattlePhase(state: GameStateData) {
 
 function handleAct(state: GameStateData, actId: string) {
   const b = state.battle!;
-  if (actId === 'hum') { b.enemy.atk = Math.max(1, b.enemy.atk - 1); b.actionMsg = "Its attacks weaken slightly."; }
-  if (actId === 'listen') { b.flags.confused = true; b.actionMsg = "It pauses to listen."; }
-  if (actId === 'name') {
-    if (state.player.inventory.includes('stone')) { b.resonance = 3; b.actionMsg = b.enemy.rememberText; b.phase = 'END'; b.endType = 'REMEMBERED'; return; }
+  const act = b.enemy.acts.find(a => a.id === actId);
+  if (!act) return;
+
+  // ── special-cased acts that need a specific quest item ──
+  if (act.id === 'name') {
+    if (state.player.inventory.includes('stone')) { b.resonance = 3; tryCompleteRemember(state); }
     else { b.actionMsg = "You don't have a Naming Stone."; }
+    if (b.phase !== 'END') { b.phase = 'ACTION'; b.timer = 0; }
+    return;
   }
-  if (actId === 'observe') { b.actionMsg = b.enemy.flavor; }
-  if (actId === 'reflect') { b.enemy.hp -= 5; b.actionMsg = "Reflected the echo! Dealt 5 dmg."; }
-  if (actId === 'console') { b.resonance += 1; b.actionMsg = "It feels slightly understood. Resonance +1"; }
-  if (actId === 'present_echo') {
+  if (act.id === 'present_echo') {
     if (state.player.inventory.includes('echo')) { state.player.flags['used_ancient_echo'] = true; b.actionMsg = "The Ancient Echo resonates! Its guard drops."; }
     else { b.actionMsg = "You have nothing of meaning to present."; }
+    b.phase = 'ACTION'; b.timer = 0;
+    return;
+  }
+
+  if (act.requiresItem && !state.player.inventory.includes(act.requiresItem)) {
+    b.actionMsg = `You don't have the ${ITEMS[act.requiresItem]?.name ?? act.requiresItem}.`;
+    b.phase = 'ACTION'; b.timer = 0;
+    return;
+  }
+
+  // ── generic act effects ──
+  switch (act.effect) {
+    case 'weaken':
+      b.enemy.atk = Math.max(1, b.enemy.atk - (act.power ?? 1));
+      b.actionMsg = "Its attacks weaken slightly.";
+      break;
+    case 'confuse':
+      b.flags.confused = true;
+      b.actionMsg = "It pauses, confused.";
+      break;
+    case 'damage': {
+      const dmg = (act.power ?? 5) + weaponAtkBonus(state);
+      b.enemy.hp -= dmg;
+      b.actionMsg = `Dealt ${dmg} dmg.`;
+      if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
+      break;
+    }
+    case 'resonance':
+      b.resonance += (act.power ?? 1);
+      b.actionMsg = `It feels slightly understood. Resonance +${act.power ?? 1}`;
+      if (tryCompleteRemember(state)) return;
+      break;
+    case 'flavor':
+    default:
+      b.actionMsg = b.enemy.flavor;
+      break;
   }
   if (b.phase !== 'END') { b.phase = 'ACTION'; b.timer = 0; }
 }
@@ -152,6 +206,9 @@ function spawnProjectiles(b: BattleState) {
       b.projectiles.push({ x: boxX + Math.cos(angle)*150, y: boxY + Math.sin(angle)*150, vx: -Math.cos(angle)*3, vy: -Math.sin(angle)*3, w: 14, h: 14, color: '#ef4444' });
     }
     if (t % 60 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 6, vy: 0, w: 20, h: 20, color: '#8b5cf6' });
+  } else if (t % 20 === 0) {
+    // generic fallback pattern for any enemy without a bespoke pattern above
+    b.projectiles.push({ x: 234, y: boxY - 60 + Math.random() * 120, vx: 3.5, vy: 0, w: 12, h: 12, color: b.enemy.color });
   }
 }
 
@@ -161,7 +218,8 @@ function endBattle(state: GameStateData) {
   if (b.endType === 'DEFEATED' || b.endType === 'REMEMBERED') {
     const e = b.endType === 'REMEMBERED' ? Math.floor(b.enemy.echoes * 1.5) : b.enemy.echoes;
     state.player.echoes += e;
-    
+    state.player.flags['defeated_' + b.enemy.id] = true;
+
     if (state.player.quests['quest_main'] === 1 && Math.random() < 0.35) {
       state.player.questProgress['shards'] = (state.player.questProgress['shards'] || 0) + 1;
       state.uiMessage = "Found a Memory Shard!"; state.uiMessageTimer = 120;
@@ -174,7 +232,21 @@ function endBattle(state: GameStateData) {
       state.player.quests['quest_name'] = 2; state.player.echoes += 50;
       state.uiMessage = "Quest Complete: Name for the Nameless!"; state.uiMessageTimer = 120;
     }
+    if (b.enemy.id === 'ink_wraith' && state.player.quests['quest_archive'] === 1) {
+      state.player.questProgress['archive_kills'] = (state.player.questProgress['archive_kills'] || 0) + 1;
+    }
+    if (b.enemy.id === 'frost_walker' && state.player.quests['quest_frost'] === 1) {
+      state.player.questProgress['frost_kills'] = (state.player.questProgress['frost_kills'] || 0) + 1;
+    }
+    if (b.enemy.id === 'cinder_wraith' && state.player.quests['quest_ash'] === 1) {
+      state.player.questProgress['ash_kills'] = (state.player.questProgress['ash_kills'] || 0) + 1;
+    }
+    if (b.enemy.id === 'archivist' && (state.player.quests['quest_main'] || 0) < 3) {
+      state.player.quests['quest_main'] = 3;
+      state.uiMessage = "The way north has opened."; state.uiMessageTimer = 160;
+    }
     if (b.enemy.id === 'boss' && b.endType === 'REMEMBERED') {
+      state.player.quests['quest_main'] = 7;
       state.mode = GameMode.VICTORY;
     }
   }

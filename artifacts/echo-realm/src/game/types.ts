@@ -13,6 +13,20 @@ export enum GameMode {
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
 
+export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key';
+
+export interface Item {
+  name: string;
+  desc: string;
+  price: number;
+  tier: ItemTier;
+  category: ItemCategory;
+  atk?: number;
+  def?: number;
+  maxHp?: number;
+}
+
 export interface DialogueNode {
   text: string;
   speaker: string;
@@ -20,6 +34,14 @@ export interface DialogueNode {
   options?: { label: string; nextId?: string; action?: (state: GameStateData) => void }[];
   nextId?: string;
   action?: (state: GameStateData) => void;
+}
+
+export interface EnemyAct {
+  id: string;
+  name: string;
+  effect: 'resonance' | 'weaken' | 'confuse' | 'damage' | 'flavor';
+  power?: number;
+  requiresItem?: string;
 }
 
 export interface EnemyData {
@@ -32,7 +54,7 @@ export interface EnemyData {
   flavor: string;
   rememberText: string;
   echoes: number;
-  acts: { id: string; name: string }[];
+  acts: EnemyAct[];
 }
 
 export interface Projectile {
@@ -76,7 +98,8 @@ export interface GameStateData {
     maxHp: number;
     echoes: number;
     inventory: string[];
-    quests: Record<string, number>; // 0: inactive, 1: active, 2: complete
+    equipment: { weapon: string | null; armor: string | null };
+    quests: Record<string, number>; // 0: inactive, 1: active, 2: complete (main quest uses more stages)
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
     invincibility: number;
@@ -92,6 +115,7 @@ export interface GameStateData {
   battle: BattleState | null;
   menuIndex: number;
   shopIndex: number;
+  shopNpcId: string | null;
   inventoryIndex: number;
   keys: Record<string, boolean>;
   prevKeys: Record<string, boolean>;
@@ -99,4 +123,7 @@ export interface GameStateData {
   uiMessage: string | null;
   uiMessageTimer: number;
   pendingEncounter: EnemyData | null;
+  saveRequested: boolean;
+  exitRequested: boolean;
+  meta: { isGuest: boolean };
 }
