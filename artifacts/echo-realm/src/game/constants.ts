@@ -108,28 +108,28 @@ export const BOOKS: Record<string, BookData> = {
     title: 'A Scrap of Directions',
     type: 'note',
     pages: [
-      "'...count the streets from the plaza. Six east, three south. The house looks empty. It isn't...'\n\nThe rest of the page has been burned away.",
+      "'...count the blocks from the western gate. Not four, not eight — that's a different house. Ten, if you're counting streets. The house looks empty. It isn't...'\n\nThe rest of the page has been burned away.",
     ],
   },
   'book_trail_note_2': {
     title: 'A Second Scrap',
     type: 'note',
     pages: [
-      "'...the door doesn't lock because nobody thinks there's anything worth taking. That's the point...'\n\nSomeone has drawn a small, crooked door in the margin.",
+      "'...seven, then. Seven blocks the other way. The door doesn't lock because nobody thinks there's anything worth taking. That's the point...'\n\nSomeone has drawn a small, crooked door in the margin.",
     ],
   },
   'book_trail_note_3': {
     title: 'A Third Scrap',
     type: 'note',
     pages: [
-      "'...inside, don't stop at the first room. Keep walking. The house is bigger than the street makes it look...'",
+      "'...inside, don't stop at the first room. Keep walking. The house is bigger than the street makes it look...'\n\nIn the corner, someone has written and crossed out: 'ten streets over, seven down' — then underneath, in different ink: 'or was it seven over, ten down?'",
     ],
   },
   'book_trail_note_4': {
     title: 'A Fourth Scrap',
     type: 'note',
     pages: [
-      "'...whatever is down there has been down there since before the Void. It is not evil. It is just old, and it is guarding something...'",
+      "'...whatever is down there has been down there since before the Void. It is not evil. It is just old, and it is guarding something...'\n\nFollow the numbers. Ten. Seven. Two numbers, two orders — only one door answers. If the house you find is quiet but wrong, you had them backwards.",
     ],
   },
   'book_trail_note_5': {
