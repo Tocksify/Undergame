@@ -1,11 +1,72 @@
 import { GameStateData, GameMode, DialogueNode } from './types';
-import { ENEMIES } from './constants';
+import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS } from './constants';
 
 export function getDialogueStartNode(state: GameStateData, npcId: string): DialogueNode {
   const qMain   = state.player.quests['quest_main']   || 0;
   const qName   = state.player.quests['quest_name']   || 0;
   const qHollow = state.player.quests['quest_hollow'] || 0;
   const qCity   = state.player.quests['quest_city']   || 0;
+
+  // ── GENERIC CITY SIDE-QUEST NPCS (scattered "misc" buildings) ──────
+  // Data-driven from CITY_SIDE_QUESTS — one handler covers all 10 quest-givers
+  // instead of 10 near-duplicate hand-written blocks. Stage 0 = not offered,
+  // 1 = in progress, 2 = complete (reward already granted).
+  const sideQuest = CITY_SIDE_QUESTS.find((sq) => sq.npcId === npcId);
+  if (sideQuest) {
+    const qId = `quest_${sideQuest.id}`;
+    const stage = state.player.quests[qId] || 0;
+    const kills = state.player.questProgress[`sqkills_${sideQuest.id}`] || 0;
+    if (stage >= 2) {
+      return { text: sideQuest.afterText, speaker: sideQuest.npcName, color: '#c9a9dd' };
+    }
+    if (stage === 1) {
+      if (kills >= sideQuest.requiredKills) {
+        return {
+          text: sideQuest.completeText,
+          speaker: sideQuest.npcName, color: '#c9a9dd',
+          action: (s) => {
+            s.player.quests[qId] = 2;
+            const rewardId = pickWeightedReward(sideQuest.rewardPool);
+            s.player.inventory.push(rewardId); s.player.enchantedSlots.push(null);
+            s.player.echoes += sideQuest.echoes;
+            const rewardName = ITEMS[rewardId]?.name ?? rewardId;
+            pushMessages(s, [
+              `Quest Complete: ${sideQuest.title}!`,
+              `+${sideQuest.echoes} Echoes`,
+              `+${rewardName}`,
+            ], ITEMS[rewardId]?.tier);
+          }
+        };
+      }
+      return { text: sideQuest.progressText, speaker: sideQuest.npcName, color: '#c9a9dd' };
+    }
+    return {
+      text: sideQuest.giverIntro,
+      speaker: sideQuest.npcName, color: '#c9a9dd',
+      options: [
+        { label: "I'll help.", action: (s) => { s.player.quests[qId] = 1; s.uiMessage = `Quest Added: ${sideQuest.title}`; s.uiMessageTimer = 160; } },
+        { label: "Not right now." }
+      ]
+    };
+  }
+
+  // ── ECHO WARDEN (secret dungeon mini-boss) ─────────────────────────
+  if (npcId === 'echo_warden') {
+    return {
+      text: "YOU FOUND THE QUIET HOUSE. FEW DO. FEWER LEAVE WITH WHAT IT GUARDS. TURN BACK, OR TAKE IT FROM ME.",
+      speaker: 'Echo Warden', color: '#7a6fb0',
+      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['echo_warden'])); }
+    };
+  }
+
+  // ── THE RINGKEEPER (Ashfall Ring boss) ─────────────────────────────
+  if (npcId === 'ring_boss') {
+    return {
+      text: "ANOTHER SEEKER OF THE BLESSING. THE ASH REMEMBERS EVERY ONE OF YOU. NONE HAVE TAKEN IT FROM ME YET.",
+      speaker: 'The Ringkeeper', color: '#8a5a3a',
+      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['ring_boss'])); }
+    };
+  }
 
   // ── GREGOR (innkeeper / healer) ──────────────────────────────────
   if (npcId === 'gregor') {

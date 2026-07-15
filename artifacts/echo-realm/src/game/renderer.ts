@@ -1,5 +1,5 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE } from './constants';
+import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier } from './constants';
 import { QUESTS } from './quests';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
@@ -126,6 +126,27 @@ function drawWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number,
   return cy;
 }
 
+// Draws text colored by item/reward tier. Mythic ("Mortus") renders as an
+// animated dark-blue/black moving gradient instead of a flat color, keyed off
+// frameCount so it visibly shifts over time.
+function drawTierText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tier: string, frame: number) {
+  if (tier === 'mythic') {
+    const tw = ctx.measureText(text).width;
+    const align = ctx.textAlign;
+    const startX = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+    const shift = (frame * 1.5) % (tw + 60);
+    const grad = ctx.createLinearGradient(startX - 30 + shift - (tw + 60), y, startX + 30 + shift, y);
+    grad.addColorStop(0, '#000000');
+    grad.addColorStop(0.5, '#1a2a6c');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
+    ctx.fillText(text, x, y);
+    return;
+  }
+  ctx.fillStyle = TIER_COLOR[tier] ?? C.light;
+  ctx.fillText(text, x, y);
+}
+
 // Returns the display name for an inventory item (appends [Z] if enchanted)
 function itemDisplayName(state: GameStateData, inventoryIndex: number): string {
   const id = state.player.inventory[inventoryIndex];
@@ -228,6 +249,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   // ── ENCHANT SELECT ─────────────────────────────────────────────────
   if (state.mode === GameMode.ENCHANT_SELECT) {
     renderEnchantSelect(ctx, state); drawScanlines(ctx); return;
+  }
+
+  // ── TOME CRAFT ─────────────────────────────────────────────────────
+  if (state.mode === GameMode.TOME_CRAFT) {
+    renderTomeCraft(ctx, state); drawScanlines(ctx); return;
   }
 
   // ── OVERWORLD ──────────────────────────────────────────────────────
@@ -362,6 +388,30 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     pixelBox(ctx, mx, 55, tw, 34, C.black, C.white, 2);
     ctx.fillStyle = C.white; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
     ctx.fillText(state.uiMessage, W / 2, 76);
+  }
+
+  // Stacked toast list — for multi-item pickups (boss loot, quest turn-ins with
+  // both echoes and an item, Tomes Blessing forging) that need more than one line.
+  if (state.messageStack.length > 0) {
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'center';
+    const rowH = 26;
+    const topY = 96;
+    state.messageStack.forEach((m, i) => {
+      const tw2 = ctx.measureText(m.text).width + 36;
+      const mx2 = (W - tw2) / 2;
+      const my = topY + i * rowH;
+      const fade = Math.min(1, m.timer / 30);
+      ctx.save();
+      ctx.globalAlpha = fade;
+      pixelBox(ctx, mx2, my, tw2, 22, C.black, C.white, 2);
+      if (m.tier && m.tier !== 'common' && m.tier !== 'uncommon') {
+        drawTierText(ctx, m.text, W / 2, my + 15, m.tier, state.frameCount);
+      } else {
+        ctx.fillStyle = C.white;
+        ctx.fillText(m.text, W / 2, my + 15);
+      }
+      ctx.restore();
+    });
   }
 
   if (state.mode === GameMode.DIALOGUE)  renderDialogue(ctx, state);
@@ -831,11 +881,16 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
       ctx.font = '10px monospace'; ctx.fillStyle = tagColor; ctx.textAlign = 'left';
       ctx.fillText(tag, 166, listTop + vi * rowH - 6);
 
-      // Item name
-      ctx.fillStyle = sel ? C.white : C.gray;
+      // Item name — colored by tier (rare and above get a visible tint)
       ctx.font = sel ? 'bold 13px monospace' : '13px monospace';
       const nameX = 166 + ctx.measureText(tag + ' ').width;
-      ctx.fillText(displayName + (equipped ? ' [E]' : ''), nameX, listTop + vi * rowH - 6);
+      const itemTier = ITEMS[id]?.tier ?? 'common';
+      if (itemTier === 'common' || itemTier === 'uncommon') {
+        ctx.fillStyle = sel ? C.white : C.gray;
+        ctx.fillText(displayName + (equipped ? ' [E]' : ''), nameX, listTop + vi * rowH - 6);
+      } else {
+        drawTierText(ctx, displayName + (equipped ? ' [E]' : ''), nameX, listTop + vi * rowH - 6, itemTier, state.frameCount);
+      }
     });
 
     if (scrollOffset > 0) {
@@ -903,13 +958,27 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.textAlign = 'left'; ctx.font = '13px monospace';
   let qy = 150;
 
-  function qLine(label: string, done: boolean) {
-    ctx.fillStyle = done ? C.silver : C.light;
-    ctx.fillText((done ? '[DONE] ' : '[ACT]  ') + label, 124, qy); qy += 26;
-  }
-
   const active = QUESTS.filter(q => q.isActive(state));
-  for (const q of active) qLine(q.label(state), q.isDone(state));
+  for (const q of active) {
+    const done = q.isDone(state);
+    const label = q.label(state);
+    const prefix = q.kind === 'ACT' ? '[Act] ' : q.kind === 'SACT' ? '[SACT] ' : '[SQ] ';
+    const doneMark = done ? '[DONE] ' : '';
+    ctx.font = '13px monospace';
+    ctx.fillStyle = done ? C.silver : C.light;
+    ctx.fillText(doneMark + prefix, 124, qy);
+    const prefixW = ctx.measureText(doneMark + prefix).width;
+    // Reward-tier coloring: the label text itself is tinted by the highest
+    // possible reward tier for this quest (probabilistic pools use their best case).
+    const tier = getHighestTier(q.rewardPool, q.rewardItem);
+    if (tier === 'common' || tier === 'uncommon') {
+      ctx.fillStyle = done ? C.silver : C.light;
+      ctx.fillText(label, 124 + prefixW, qy);
+    } else {
+      drawTierText(ctx, label, 124 + prefixW, qy, tier, state.frameCount);
+    }
+    qy += 26;
+  }
 
   if (active.length === 0) {
     ctx.fillStyle = C.dim; ctx.textAlign = 'center';
@@ -918,4 +987,45 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
   ctx.fillText('[Q] or [X] to close', W / 2, H - 110);
+}
+
+// ── TOME CRAFT (Tomes Blessing) ───────────────────────────────────
+function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 120, 90, W - 240, H - 180, '#050510', C.enchant, 3);
+
+  ctx.fillStyle = C.enchant; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('TOMES BLESSING', W / 2, 124);
+  ctx.fillStyle = C.silver; ctx.font = '12px monospace';
+  ctx.fillText('Craft any enchantment from scratch. The Empty Book and Blessing are consumed.', W / 2, 144);
+
+  ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(150, 156); ctx.lineTo(W - 150, 156); ctx.stroke();
+
+  ctx.textAlign = 'left';
+  CRAFTABLE_ENCHANTS.forEach((id, i) => {
+    const sel = state.tomeCraft.cursorIndex === i;
+    const item = ITEMS[id];
+    if (!item) return;
+    const iy = 184 + i * 34;
+
+    if (sel) {
+      ctx.fillStyle = '#1a1a33'; ctx.fillRect(134, iy - 18, W - 268, 30);
+      ctx.strokeStyle = C.enchant; ctx.lineWidth = 1; ctx.strokeRect(134, iy - 18, W - 268, 30);
+    }
+
+    ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
+    const prefix = sel ? '> ' : '  ';
+    ctx.fillStyle = sel ? C.white : C.gray;
+    ctx.fillText(prefix, 146, iy);
+    const prefixW = ctx.measureText(prefix).width;
+    drawTierText(ctx, `${item.name}  [${TIER_LABEL[item.tier] ?? item.tier}]`, 146 + prefixW, iy, item.tier, state.frameCount);
+
+    ctx.fillStyle = sel ? '#ffcc88' : '#886644';
+    ctx.font = '11px monospace';
+    ctx.fillText(item.desc, 146, iy + 13);
+  });
+
+  ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+  ctx.fillText('[UP/DOWN] select  |  [SPACE] forge & enchant  |  [X] cancel', W / 2, H - 96);
 }

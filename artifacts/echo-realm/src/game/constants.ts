@@ -1,4 +1,4 @@
-import { BookData, EnemyData, GameMode, GameStateData, Item } from './types';
+import { BookData, EnemyData, GameMode, GameStateData, Item, ItemTier } from './types';
 
 export const TILE_SIZE = 48;
 export const BASE_MAX_HP = 20;
@@ -103,6 +103,49 @@ export const BOOKS: Record<string, BookData> = {
       "...ANNUAL LANTERN FESTIVAL — bring a lantern, bring a memory worth keeping, the Warden's office will supply the — [torn]\n\nOn the back, in pencil: 'We should still do this. Even just the two of us. Especially just the two of us.'",
     ],
   },
+  // ── SECRET NOTE TRAIL (5 scattered clues) ────────────────────────
+  'book_trail_note_1': {
+    title: 'A Scrap of Directions',
+    type: 'note',
+    pages: [
+      "'...count the streets from the plaza. Six east, three south. The house looks empty. It isn't...'\n\nThe rest of the page has been burned away.",
+    ],
+  },
+  'book_trail_note_2': {
+    title: 'A Second Scrap',
+    type: 'note',
+    pages: [
+      "'...the door doesn't lock because nobody thinks there's anything worth taking. That's the point...'\n\nSomeone has drawn a small, crooked door in the margin.",
+    ],
+  },
+  'book_trail_note_3': {
+    title: 'A Third Scrap',
+    type: 'note',
+    pages: [
+      "'...inside, don't stop at the first room. Keep walking. The house is bigger than the street makes it look...'",
+    ],
+  },
+  'book_trail_note_4': {
+    title: 'A Fourth Scrap',
+    type: 'note',
+    pages: [
+      "'...whatever is down there has been down there since before the Void. It is not evil. It is just old, and it is guarding something...'",
+    ],
+  },
+  'book_trail_note_5': {
+    title: 'The Final Scrap',
+    type: 'note',
+    pages: [
+      "'...if you make it past what's below, you will find a book with no words. Do not despair — an empty book is not a wasted one. Something out there can still fill it...'\n\nThis is the last of the scraps. Good luck, Keeper.",
+    ],
+  },
+  'book_mysterious_note': {
+    title: 'A Mysterious Note',
+    type: 'note',
+    pages: [
+      "Folded inside the empty book, a single sheet in careful handwriting:\n\n'You found this, which means you got past him. Good. That means you're ready to hear the rest.\n\nEast of Crestfall, past the gate nobody uses anymore, there is a second city built entirely of ash and rings of stone. The people there called it Ashfall Ring. At its heart is something that guards a Blessing — the only thing that can fill an empty book.\n\nIt will not be easy. It was never meant to be.'",
+    ],
+  },
 };
 
 // ── ITEMS ──────────────────────────────────────────────────────────
@@ -139,68 +182,52 @@ export const ITEMS: Record<string, Item> = {
   'voidsteel_mail': { name: 'Voidsteel Mail',     desc: '+30 Max HP, +5 DEF',                     price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
 
   // ── READABLE BOOKS ──
-  'book_keepers_codex': {
-    name: "The Keeper's Codex",
-    desc: 'An ancient journal about Memory Keepers.',
-    price: 0, tier: 'rare', category: 'book', bookId: 'book_keepers_codex',
+  'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
+  'book_childs_letter':      { name: "A Child's Letter",          desc: 'A folded note, worn soft at the edges.',          price: 0, tier: 'common',    category: 'book', bookId: 'book_childs_letter' },
+  'book_forgotten_verse':    { name: "Verses of the Forgotten",   desc: 'A thin book of handwritten poems.',               price: 0, tier: 'uncommon',  category: 'book', bookId: 'book_forgotten_verse' },
+  'book_cipher_note':        { name: "A Strange Cipher",          desc: 'Notes in a code you almost recognize.',           price: 0, tier: 'uncommon',  category: 'book', bookId: 'book_cipher_note' },
+  'book_merchants_ledger':   { name: "Aldric's Private Ledger",   desc: "A merchant's personal journal from Crestfall.",   price: 0, tier: 'common',    category: 'book', bookId: 'book_merchants_ledger' },
+  'book_innkeepers_notice':  { name: 'A Notice Pinned to the Door', desc: 'A handwritten notice, weathered by rain.',      price: 0, tier: 'common',    category: 'book', bookId: 'book_innkeepers_notice' },
+  'book_stall_ledger_scrap': { name: "Torn Ledger Page",          desc: "A scrap torn from Zara's sales ledger.",          price: 0, tier: 'common',    category: 'book', bookId: 'book_stall_ledger_scrap' },
+  'book_sa_marginalia':      { name: 'Water-Stained Marginalia',  desc: 'Handwritten notes crowding the margins of an old book.', price: 0, tier: 'uncommon', category: 'book', bookId: 'book_sa_marginalia' },
+  'book_fr_frostnote':       { name: 'Frozen Wall Note',          desc: 'A note frozen into the stone of a ruined wall.',  price: 0, tier: 'uncommon',  category: 'book', bookId: 'book_fr_frostnote' },
+  'book_wardens_report':     { name: "City Warden's Final Report", desc: 'An official report, unfiled and unfinished.',    price: 0, tier: 'rare',      category: 'book', bookId: 'book_wardens_report' },
+  'book_survivors_diary':    { name: "A Survivor's Diary",        desc: 'A diary kept by someone who stayed.',             price: 0, tier: 'rare',      category: 'book', bookId: 'book_survivors_diary' },
+  'book_forgotten_flyer':    { name: 'Torn Festival Flyer',       desc: 'A flyer for a festival that may never happen again.', price: 0, tier: 'common',  category: 'book', bookId: 'book_forgotten_flyer' },
+
+  // ── SECRET NOTE TRAIL ──
+  'book_trail_note_1': { name: 'A Scrap of Directions', desc: 'Half-burned directions to somewhere in the city.', price: 0, tier: 'common',   category: 'book', bookId: 'book_trail_note_1' },
+  'book_trail_note_2': { name: 'A Second Scrap',        desc: 'A crooked door is drawn in the margin.',           price: 0, tier: 'uncommon', category: 'book', bookId: 'book_trail_note_2' },
+  'book_trail_note_3': { name: 'A Third Scrap',         desc: '"The house is bigger than the street makes it look."', price: 0, tier: 'uncommon', category: 'book', bookId: 'book_trail_note_3' },
+  'book_trail_note_4': { name: 'A Fourth Scrap',        desc: 'Something old is guarding something else.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_trail_note_4' },
+  'book_trail_note_5': { name: 'The Final Scrap',       desc: 'The last clue in the trail.',                      price: 0, tier: 'rare',      category: 'book', bookId: 'book_trail_note_5' },
+  'book_mysterious_note': { name: 'A Mysterious Note',  desc: 'Folded inside the empty book. Speaks of a second city.', price: 0, tier: 'legendary', category: 'book', bookId: 'book_mysterious_note' },
+
+  // ── RELIC / KEY ITEMS (easter egg chain) ──
+  'empty_book': {
+    name: 'The Empty Book',
+    desc: "A book with no words. It can't be read — but something out there can still fill it.",
+    price: 0, tier: 'legendary', category: 'book', // no bookId → "pages are unreadable"
   },
-  'book_childs_letter': {
-    name: "A Child's Letter",
-    desc: 'A folded note, worn soft at the edges.',
-    price: 0, tier: 'common', category: 'book', bookId: 'book_childs_letter',
-  },
-  'book_forgotten_verse': {
-    name: "Verses of the Forgotten",
-    desc: 'A thin book of handwritten poems.',
-    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_forgotten_verse',
-  },
-  'book_cipher_note': {
-    name: "A Strange Cipher",
-    desc: 'Notes in a code you almost recognize.',
-    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_cipher_note',
-  },
-  'book_merchants_ledger': {
-    name: "Aldric's Private Ledger",
-    desc: 'A merchant\'s personal journal from Crestfall.',
-    price: 0, tier: 'common', category: 'book', bookId: 'book_merchants_ledger',
-  },
-  'book_innkeepers_notice': {
-    name: 'A Notice Pinned to the Door',
-    desc: 'A handwritten notice, weathered by rain.',
-    price: 0, tier: 'common', category: 'book', bookId: 'book_innkeepers_notice',
-  },
-  'book_stall_ledger_scrap': {
-    name: "Torn Ledger Page",
-    desc: "A scrap torn from Zara's sales ledger.",
-    price: 0, tier: 'common', category: 'book', bookId: 'book_stall_ledger_scrap',
-  },
-  'book_sa_marginalia': {
-    name: 'Water-Stained Marginalia',
-    desc: 'Handwritten notes crowding the margins of an old book.',
-    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_sa_marginalia',
-  },
-  'book_fr_frostnote': {
-    name: 'Frozen Wall Note',
-    desc: 'A note frozen into the stone of a ruined wall.',
-    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_fr_frostnote',
-  },
-  'book_wardens_report': {
-    name: "City Warden's Final Report",
-    desc: 'An official report, unfiled and unfinished.',
-    price: 0, tier: 'rare', category: 'book', bookId: 'book_wardens_report',
-  },
-  'book_survivors_diary': {
-    name: "A Survivor's Diary",
-    desc: 'A diary kept by someone who stayed.',
-    price: 0, tier: 'rare', category: 'book', bookId: 'book_survivors_diary',
-  },
-  'book_forgotten_flyer': {
-    name: 'Torn Festival Flyer',
-    desc: 'A flyer for a festival that may never happen again.',
-    price: 0, tier: 'common', category: 'book', bookId: 'book_forgotten_flyer',
+  'tomes_blessing': {
+    name: 'Tomes Blessing',
+    desc: 'A blessing that, combined with the Empty Book, can write any enchantment into existence.',
+    price: 0, tier: 'mythic', category: 'relic',
   },
 
-  // ── ENCHANTED BOOKS ──
+  // ── ENCHANTED BOOKS (now earned only through side quests, or crafted via Tomes Blessing) ──
+  'ench_shard_frostbite': {
+    name: 'Shard of Frostbite',
+    desc: 'Enchants a weapon. Grants +2 ATK. Incompatible with armor.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2 },
+  },
+  'ench_veil_dust': {
+    name: 'Veil of Dust',
+    desc: 'Enchants armor. Grants +2 DEF. Incompatible with weapons.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 2 },
+  },
   'ench_grimoire_striking': {
     name: 'Grimoire of Striking',
     desc: 'Enchants a weapon. Grants +3 ATK. Incompatible with armor.',
@@ -213,21 +240,82 @@ export const ITEMS: Record<string, Item> = {
     price: 0, tier: 'epic', category: 'enchanted_book',
     enchantData: { compatibleCategories: ['armor'], def: 3 },
   },
+  'ench_relic_ashbound': {
+    name: 'Ashbound Relic',
+    desc: 'Enchants a weapon. Grants +6 ATK. Incompatible with armor.',
+    price: 0, tier: 'legendary', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 6 },
+  },
   'ench_codex_living_flame': {
     name: 'Codex of Living Flame',
     desc: 'Enchants armor. Grants +10 Max HP. Incompatible with weapons.',
     price: 0, tier: 'legendary', category: 'enchanted_book',
     enchantData: { compatibleCategories: ['armor'], maxHp: 10 },
   },
+  // Mortus tier — obtainable ONLY by crafting from scratch with the Tomes Blessing.
+  'ench_grimoire_mortus': {
+    name: 'Grimoire of Mortus',
+    desc: 'A weapon enchantment written from nothing. Grants +18 ATK. Incompatible with armor.',
+    price: 0, tier: 'mythic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 18 },
+  },
+  'ench_veil_mortus': {
+    name: 'Veil of Mortus',
+    desc: 'An armor enchantment written from nothing. Grants +18 DEF, +20 Max HP. Incompatible with weapons.',
+    price: 0, tier: 'mythic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 18, maxHp: 20 },
+  },
 };
 
+// Enchantments craftable from scratch via the Tomes Blessing — spans every tier.
+export const CRAFTABLE_ENCHANTS: string[] = [
+  'ench_shard_frostbite', 'ench_veil_dust',
+  'ench_grimoire_striking', 'ench_tome_iron_veil',
+  'ench_relic_ashbound', 'ench_codex_living_flame',
+  'ench_grimoire_mortus', 'ench_veil_mortus',
+];
+
 export const TIER_COLOR: Record<string, string> = {
-  common: '#909090',
-  uncommon: '#c0c0c0',
-  rare: '#e8e8e8',
-  epic: '#ffffff',
-  legendary: '#ffffff',
+  common: '#9ca3af',
+  uncommon: '#4ade80',
+  rare: '#38bdf8',
+  epic: '#c084fc',
+  legendary: '#f59e0b',
+  mythic: '#1a1a3a', // fallback; mythic is drawn as an animated gradient — see renderer's drawTierText
 };
+
+// Display label for tiers — the top tier is branded "Mortus" in-world.
+export const TIER_LABEL: Record<string, string> = {
+  common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary', mythic: 'Mortus',
+};
+
+const TIER_RANK: Record<string, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
+
+// Given a probabilistic reward pool, returns the tier of the highest-tier
+// possible reward — used to color quest/reward text by its best-case payout.
+export function getHighestTier(pool?: { itemId: string; chance: number }[], fallbackItemId?: string): string {
+  if (pool && pool.length > 0) {
+    let best = 'common';
+    for (const p of pool) {
+      const t = ITEMS[p.itemId]?.tier ?? 'common';
+      if (TIER_RANK[t] > TIER_RANK[best]) best = t;
+    }
+    return best;
+  }
+  if (fallbackItemId && ITEMS[fallbackItemId]) return ITEMS[fallbackItemId].tier;
+  return 'common';
+}
+
+// Weighted-random pick from a reward pool (chances need not sum to exactly 1).
+export function pickWeightedReward(pool: { itemId: string; chance: number }[]): string {
+  const total = pool.reduce((s, p) => s + p.chance, 0);
+  let r = Math.random() * total;
+  for (const p of pool) {
+    r -= p.chance;
+    if (r <= 0) return p.itemId;
+  }
+  return pool[pool.length - 1].itemId;
+}
 
 export function recomputeMaxHp(state: GameStateData) {
   const armor = state.player.equipment.armor;
@@ -258,13 +346,25 @@ export function getArmorDefBonus(state: GameStateData): number {
   return base + enchBonus;
 }
 
+// Stacks a set of short-lived toast notifications so simultaneous rewards
+// (e.g. a boss dropping two items at once) show as a list instead of
+// overwriting each other via the single uiMessage field.
+export function pushMessages(state: GameStateData, texts: string[], tier?: ItemTier) {
+  for (const text of texts) {
+    state.messageStack.push({ text, timer: 150, tier });
+  }
+  // cap so the stack never grows unbounded
+  if (state.messageStack.length > 6) state.messageStack.splice(0, state.messageStack.length - 6);
+}
+
 // ── SHOPS ──────────────────────────────────────────────────────────
 export const SHOPS: Record<string, { title: string; items: string[] }> = {
   'zara':         { title: "Zara's Memory Emporium",    items: ['crystal', 'ward', 'spark', 'stone', 'dust', 'rusty_shard', 'cloth_wrap'] },
   'old_thom':     { title: "Old Thom's Sunken Wares",   items: ['greater_crystal', 'ward', 'dust', 'bone_edge', 'traveler_cloak'] },
   'peddler_oren': { title: "Oren's Frostbound Pack",    items: ['greater_crystal', 'phoenix_ash', 'spark', 'bone_edge', 'traveler_cloak'] },
   'ashen_trader': { title: 'The Ashen Trader',          items: ['greater_crystal', 'phoenix_ash', 'ward', 'spark', 'traveler_cloak'] },
-  'relic_broker': { title: "Crestfall Relic Broker",    items: ['crystal', 'greater_crystal', 'ward', 'spark', 'ench_grimoire_striking', 'ench_tome_iron_veil'] },
+  // Enchanted tomes are no longer for sale — they're earned through side quests now.
+  'relic_broker': { title: "Crestfall Relic Broker",    items: ['crystal', 'greater_crystal', 'ward', 'spark', 'dust'] },
 };
 
 // ── ENEMIES ────────────────────────────────────────────────────────
@@ -401,7 +501,28 @@ export const ENEMIES: Record<string, EnemyData> = {
     flavor: 'The source of all forgetting. It was once the first Memory Keeper.',
     rememberText: 'You show it its own memories. Its form shudders. Then... silence. Then light.',
     echoes: 0, acts: [{ id: 'present_echo', name: 'Present Echo', effect: 'flavor', requiresItem: 'echo' }]
-  }
+  },
+  // ── Easter-egg dungeon boss (secret building beneath Crestfall) ──
+  'echo_warden': {
+    id: 'echo_warden', name: 'The Echo Warden', hp: 55, maxHp: 55, atk: 11, color: '#6d28d9',
+    flavor: 'It has guarded this hollow since before the city had a name.',
+    rememberText: 'It lowers its guard. "...you may have it, then. Few come looking."',
+    echoes: 90, acts: [
+      { id: 'guard', name: 'Guard', effect: 'weaken', power: 2 },
+      { id: 'reckon', name: 'Reckon', effect: 'resonance', power: 1 },
+    ]
+  },
+  // ── Ring boss (Ashfall Ring, second city) ──
+  'ring_boss': {
+    id: 'ring_boss', name: 'The Ringkeeper', hp: 85, maxHp: 85, atk: 16, color: '#0ea5e9',
+    flavor: 'It circles the ring endlessly, bound to a blessing it can no longer use.',
+    rememberText: 'It stops circling for the first time in memory. "...take it. I was only ever waiting for someone."',
+    echoes: 160, acts: [
+      { id: 'circle', name: 'Circle', effect: 'damage', power: 7 },
+      { id: 'bind', name: 'Bind', effect: 'confuse' },
+      { id: 'entreat', name: 'Entreat', effect: 'resonance', power: 1 },
+    ]
+  },
 };
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────
@@ -589,42 +710,117 @@ function buildVN(): string[][] {
   return L;
 }
 
-// ── CRESTFALL CITY (24 × 18) — real city blocks around a plaza
-function buildCT(): string[][] {
-  const W = 24, H = 18;
+// ── PROCEDURAL CITY BLOCK HELPERS ────────────────────────────────────
+// Used by both Crestfall City (100×100) and Ashfall Ring (50×50) to lay
+// out a grid of streets and drop buildings into the resulting blocks,
+// each with a recorded door tile so the caller can wire up MAPS doors.
+interface BlockPlacement { role: string; ox: number; oy: number; w: number; h: number; doorX: number; doorY: number; bx: number; by: number; }
+
+function bandStart(i: number, spacing: number) { return i * spacing + 1; }
+
+function placeBuilding(L: string[][], bx: number, by: number, spacing: number, w: number, h: number): { ox: number; oy: number; doorX: number; doorY: number } {
+  const ox = bandStart(bx, spacing) + 1;
+  const oy = bandStart(by, spacing) + 1;
+  rect(L, ox, oy, ox + w - 1, oy + h - 1, 'H');
+  const doorX = ox + Math.floor(w / 2);
+  const doorY = oy + h - 1;
+  return { ox, oy, doorX, doorY };
+}
+
+// ── CRESTFALL CITY (100 × 100) — a sprawling city of streets and blocks ──
+function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPlacement> } {
+  const W = 100, H = 100;
+  const SPACING = 10;
+  const BLOCKS = 10;
   const L = buildMap(W, H, 'G');
   rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
   vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
 
-  hline(L, 4, 1, W - 2, 'P'); hline(L, 9, 1, W - 2, 'P'); hline(L, 14, 1, W - 2, 'P');
-  vline(L, 6, 1, H - 2, 'P'); vline(L, 12, 1, H - 2, 'P'); vline(L, 18, 1, H - 2, 'P');
+  for (let i = 1; i < BLOCKS; i++) {
+    hline(L, i * SPACING, 1, W - 2, 'P');
+    vline(L, i * SPACING, 1, H - 2, 'P');
+  }
 
-  poke(L, 0, 9, '<'); poke(L, 1, 9, 'P'); // west gate -> Verdant Hollow
+  // central plaza — void seeping into the heart of the city
+  const cx = 50, cy = 50;
+  rect(L, cx - 8, cy - 6, cx + 8, cy + 6, 'V');
+  for (let i = -2; i <= 2; i++) poke(L, cx + i * 2, cy, 'M');
 
-  rect(L, 2, 1, 4, 3, 'H'); rect(L, 8, 1, 10, 3, 'H');
-  rect(L, 14, 1, 16, 3, 'H'); rect(L, 20, 1, 22, 3, 'H');
+  // west gate -> Verdant Hollow
+  poke(L, 0, cy, '<'); poke(L, 1, cy, 'P');
+  // secret eastern gate -> Ashfall Ring (requires the Mysterious Note)
+  poke(L, W - 1, 20, '@'); poke(L, W - 2, 20, 'P');
 
-  rect(L, 2, 5, 4, 8, 'H');   // Scholar's Refuge
-  rect(L, 8, 5, 10, 8, 'H');
-  rect(L, 14, 5, 16, 8, 'H'); // Abandoned Home
-  rect(L, 20, 5, 22, 8, 'H');
+  const roleQueue: string[] = [
+    'scholar', 'abandoned', 'study', 'wardenoffice', 'shelter',
+    ...Array.from({ length: 10 }, (_, i) => `sq${i + 1}`),
+    'secret',
+    ...Array.from({ length: 5 }, (_, i) => `note${i + 1}`),
+    ...Array.from({ length: 15 }, (_, i) => `misc${i + 1}`),
+  ];
 
-  rect(L, 8, 10, 16, 13, 'V'); // central plaza — void seeping in
-  poke(L, 12, 11, 'M'); poke(L, 12, 12, 'M');
+  const placements: Record<string, BlockPlacement> = {};
+  let qi = 0;
+  for (let by = 0; by < BLOCKS && qi < roleQueue.length; by++) {
+    for (let bx = 0; bx < BLOCKS && qi < roleQueue.length; bx++) {
+      // skip the plaza blocks
+      if (bx >= 4 && bx <= 5 && by >= 4 && by <= 5) continue;
+      const role = roleQueue[qi++];
+      const big = role === 'scholar' || role === 'abandoned';
+      const size = big ? 7 : 5;
+      const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, size, size);
+      placements[role] = { role, ox, oy, w: size, h: size, doorX, doorY, bx, by };
+    }
+  }
 
-  rect(L, 2, 10, 4, 13, 'H');  // Old Study
-  rect(L, 20, 10, 22, 13, 'H');
+  return { layout: L, placements };
+}
 
-  rect(L, 2, 15, 4, 16, 'H');   // former Warden's office
-  rect(L, 8, 15, 10, 16, 'H');
-  rect(L, 14, 15, 16, 16, 'H'); // survivor's shelter
-  rect(L, 20, 15, 22, 16, 'H');
+// ── ASHFALL RING (50 × 50) — the second city, reached through the secret gate ──
+function buildARFull(): { layout: string[][]; placements: Record<string, BlockPlacement> } {
+  const W = 50, H = 50;
+  const SPACING = 10;
+  const BLOCKS = 5;
+  const L = buildMap(W, H, 'V'); // ash-choked ground
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
 
-  return L;
+  for (let i = 1; i < BLOCKS; i++) {
+    hline(L, i * SPACING, 1, W - 2, 'P');
+    vline(L, i * SPACING, 1, H - 2, 'P');
+  }
+
+  // west gate back to Crestfall City
+  poke(L, 0, 20, '<'); poke(L, 1, 20, 'P');
+
+  const roleQueue: string[] = [
+    'arena',
+    ...Array.from({ length: 10 }, (_, i) => `misc${i + 1}`),
+  ];
+
+  const placements: Record<string, BlockPlacement> = {};
+  let qi = 0;
+  for (let by = 0; by < BLOCKS && qi < roleQueue.length; by++) {
+    for (let bx = 0; bx < BLOCKS && qi < roleQueue.length; bx++) {
+      if (bx === 0 && by === 2) continue; // keep the gate lane clear
+      if (bx === 2 && by === 2) continue; // center block reserved as ash plaza
+      const role = roleQueue[qi++];
+      const big = role === 'arena';
+      const size = big ? 8 : 5;
+      const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, size, size);
+      placements[role] = { role, ox, oy, w: size, h: size, doorX, doorY, bx, by };
+    }
+  }
+
+  // ash plaza decor at the center block
+  rect(L, 22, 22, 27, 27, 'V');
+  poke(L, 24, 24, 'M'); poke(L, 25, 25, 'M');
+
+  return { layout: L, placements };
 }
 
 // ── HOUSE INTERIOR (14 × 9) — real furnished rooms, several variants
-function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet'): string[][] {
+function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet' | 'misc' | 'secret'): string[][] {
   const W = 14, H = 9;
   const L = buildMap(W, H, 'W');
   rect(L, 1, 1, W - 2, H - 2, 'P');
@@ -645,10 +841,72 @@ function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet'): st
     poke(L, 2, 3, 'P'); poke(L, 2, 4, 'P');
     vline(L, W - 3, 2, 6, 'W');
     poke(L, W - 3, 3, 'P'); poke(L, W - 3, 5, 'P');
-  } else if (variant === 'quiet') {
+  } else if (variant === 'quiet' || variant === 'misc') {
     poke(L, 3, 6, 'M'); poke(L, W - 4, 6, 'M');
+  } else if (variant === 'secret') {
+    // A back room hides the entrance to the dungeon below.
+    rect(L, 1, 2, 3, 5, 'W');
+    poke(L, 2, 4, 'P');
   }
   poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
+// ── BIG HOUSE INTERIOR (20 × 14) — for buildings with a second floor
+function buildBigInterior(): string[][] {
+  const W = 20, H = 14;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  rect(L, 8, 4, 11, 6, 'W');
+  poke(L, 9, 4, 'M'); poke(L, 10, 4, 'M');
+  rect(L, 2, 2, 4, 3, 'W'); rect(L, W - 5, 2, W - 3, 3, 'W');
+  poke(L, 4, 10, 'ST'); // stairs up to the second floor
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
+// ── UPPER FLOOR (14 × 9) — reached by stairs from a big interior
+function buildUpperFloor(): string[][] {
+  const W = 14, H = 9;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  rect(L, 5, 3, 8, 4, 'W');
+  poke(L, 6, 3, 'M');
+  poke(L, Math.floor(W / 2), H - 1, 'ST'); // stairs down
+  return L;
+}
+
+// ── SECRET DUNGEON (16 × 12) — beneath the secret building
+function buildSecretDungeon(): string[][] {
+  const W = 16, H = 12;
+  const L = buildMap(W, H, 'V');
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
+  rect(L, 2, 2, 13, 9, 'P');
+  rect(L, 6, 5, 9, 6, 'W');
+  poke(L, 3, 3, 'M'); poke(L, 12, 3, 'M');
+  poke(L, 3, 8, 'M'); poke(L, 12, 8, 'M');
+  poke(L, 7, 10, '<'); // back up to the secret building
+  return L;
+}
+
+// ── RING ARENA — ground floor (14×9) and boss floor (16×12) ──
+function buildArenaGround(): string[][] {
+  const W = 14, H = 9;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  poke(L, 4, 4, 'ST');
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+function buildArenaBoss(): string[][] {
+  const W = 16, H = 12;
+  const L = buildMap(W, H, 'V');
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
+  rect(L, 2, 2, 13, 9, 'P');
+  for (const [cx, cyy] of [[3, 3], [12, 3], [3, 8], [12, 8]]) poke(L, cx, cyy, 'M');
+  poke(L, 7, 10, 'ST'); poke(L, 8, 10, 'ST');
   return L;
 }
 
@@ -659,12 +917,108 @@ const saLayout = buildSA();
 const frLayout = buildFR();
 const adLayout = buildAD();
 const vnLayout = buildVN();
-const ctLayout = buildCT();
-const ctH1Layout = buildInterior('scholar');
-const ctH2Layout = buildInterior('abandoned');
+const ctBuild = buildCTFull();
+const ctLayout = ctBuild.layout;
+const ctP = ctBuild.placements;
+const arBuild = buildARFull();
+const arLayout = arBuild.layout;
+const arP = arBuild.placements;
+
+const ctH1Layout = buildBigInterior();          // Scholar's Refuge (2 floors)
+const ctH1F2Layout = buildUpperFloor();
+const ctH2Layout = buildBigInterior();          // Abandoned Home (2 floors)
+const ctH2F2Layout = buildUpperFloor();
 const ctH3Layout = buildInterior('study');
 const ctH4Layout = buildInterior('quiet');
 const ctH5Layout = buildInterior('quiet');
+const ctSecretLayout = buildInterior('secret');
+const secretDungeonLayout = buildSecretDungeon();
+const arenaGroundLayout = buildArenaGround();
+const arenaBossLayout = buildArenaBoss();
+
+// Generic side-quest interiors and note-holding interiors — reuse the misc variant.
+const sqInteriors: Record<string, string[][]> = {};
+for (let i = 1; i <= 10; i++) sqInteriors[`sq${i}`] = buildInterior('misc');
+const noteInteriors: Record<string, string[][]> = {};
+for (let i = 1; i <= 5; i++) noteInteriors[`note${i}`] = buildInterior('misc');
+const miscInteriors: Record<string, string[][]> = {};
+for (let i = 1; i <= 15; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
+const arMiscInteriors: Record<string, string[][]> = {};
+for (let i = 1; i <= 10; i++) arMiscInteriors[`misc${i}`] = buildInterior('misc');
+
+// ── CITY SIDE QUESTS ──────────────────────────────────────────────
+// Data-driven so the 10 buildings scattered through Crestfall don't
+// each need hand-written dialogue — see dialogue.ts's generic handler.
+export interface CitySideQuest {
+  id: string;             // suffix — full quest id is `quest_${id}`
+  npcId: string;
+  npcName: string;
+  title: string;
+  giverIntro: string;
+  progressText: string;
+  completeText: string;
+  afterText: string;
+  requiredKills: number;
+  enemyPool: string[];
+  rewardPool: { itemId: string; chance: number }[];
+  echoes: number;
+}
+
+export const CITY_SIDE_QUESTS: CitySideQuest[] = [
+  { id: 'sq1', npcId: 'npc_sq1', npcName: 'A Tired Locksmith', title: 'Locks Without Doors',
+    giverIntro: "Every lock in this quarter still works. Trouble is, half the shades wandering out there don't remember which door is theirs. Thin them out, would you?",
+    progressText: 'Still a few shades pacing the block out there.', completeText: "You've quieted the block. Here — I never use this anymore.",
+    afterText: 'Quiet enough now. Thank you.', requiredKills: 2, enemyPool: ['city_shade'],
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.6 }, { itemId: 'ench_grimoire_striking', chance: 0.3 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 40 },
+  { id: 'sq2', npcId: 'npc_sq2', npcName: 'A Boarded-Up Baker', title: "Flour and Silence",
+    giverIntro: "I used to hear the street wraiths pacing at night through these boards. Can't sleep. If you'd silence a few, I'd sleep, and I'd pay you for the privilege.",
+    progressText: 'Still pacing out there, some nights.', completeText: "Silence, finally. Take this — payment, and thanks.",
+    afterText: 'I slept last night. First time in weeks.', requiredKills: 3, enemyPool: ['street_wraith'],
+    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.6 }, { itemId: 'ench_tome_iron_veil', chance: 0.3 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 50 },
+  { id: 'sq3', npcId: 'npc_sq3', npcName: "A Retired Guard", title: 'One Last Post',
+    giverIntro: "I used to stand post two streets from here. A Hollow Guard's still standing mine, I think — never relieved. Relieve him, one way or another.",
+    progressText: "He's still standing his post, poor thing.", completeText: "Relieved at last. Take my old kit — I've no more use for it.",
+    afterText: 'Post is empty now. As it should be.', requiredKills: 1, enemyPool: ['hollow_guard'],
+    rewardPool: [{ itemId: 'ench_grimoire_striking', chance: 0.5 }, { itemId: 'ench_tome_iron_veil', chance: 0.4 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 60 },
+  { id: 'sq4', npcId: 'npc_sq4', npcName: 'A Nervous Clerk', title: 'The Ledger Alley',
+    giverIntro: "The alley behind the old records office is thick with shades. I need to get back in there for the deeds. Clear a path?",
+    progressText: 'Still too many out there for me.', completeText: "Path's clear. Here, take this — found it while filing.",
+    afterText: "I got my deeds back, thanks to you.", requiredKills: 3, enemyPool: ['city_shade', 'street_wraith'],
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.5 }, { itemId: 'ench_veil_dust', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 45 },
+  { id: 'sq5', npcId: 'npc_sq5', npcName: 'An Old Gardener', title: "Weeds and Wraiths",
+    giverIntro: "My garden's overgrown with more than weeds these days. A couple of wraiths took root by the fence. Dig them out?",
+    progressText: 'Still rooted by the fence, last I checked.', completeText: "Cleared! Here — this has been in my shed for years, might as well be useful.",
+    afterText: 'The garden feels like mine again.', requiredKills: 2, enemyPool: ['street_wraith'],
+    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.55 }, { itemId: 'ench_grimoire_striking', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 45 },
+  { id: 'sq6', npcId: 'npc_sq6', npcName: 'A Shaken Courier', title: "Undeliverable Mail",
+    giverIntro: "I've got letters three years undelivered because the route's crawling with shades. If you cleared it, I could finally close out my route.",
+    progressText: 'Route is still too dangerous.', completeText: "Route's clear — finally. Take this, it's the least I owe you.",
+    afterText: 'Delivered every last letter. Feels good.', requiredKills: 3, enemyPool: ['city_shade'],
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.6 }, { itemId: 'ench_tome_iron_veil', chance: 0.3 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 50 },
+  { id: 'sq7', npcId: 'npc_sq7', npcName: 'A Watchful Widow', title: "The Empty Rocking Chair",
+    giverIntro: "A Hollow Guard patrols right past my window every night, same time, like clockwork. It's not him I'm afraid of. It's the memory of who used to walk that route. End his round, gently.",
+    progressText: 'Still walking his round, same as ever.', completeText: "Thank you for ending it kindly. Take this, for your trouble.",
+    afterText: 'The street is finally still at night.', requiredKills: 1, enemyPool: ['hollow_guard'],
+    rewardPool: [{ itemId: 'ench_tome_iron_veil', chance: 0.5 }, { itemId: 'ench_grimoire_striking', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 55 },
+  { id: 'sq8', npcId: 'npc_sq8', npcName: 'A Restless Apprentice', title: "Unfinished Errand",
+    giverIntro: "My master sent me on an errand the day the Void came through. I never finished it — too many shades between here and the market square. Would you clear the way?",
+    progressText: 'Still too many shades on the route.', completeText: "Errand complete, three years late. Here, take this for helping me finish it.",
+    afterText: "I can finally stop carrying that errand around.", requiredKills: 3, enemyPool: ['city_shade', 'hollow_guard'],
+    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.5 }, { itemId: 'ench_relic_ashbound', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 60 },
+  { id: 'sq9', npcId: 'npc_sq9', npcName: 'A Quiet Fisherman', title: "Nets in the Canal",
+    giverIntro: "The old canal draws wraiths like fish to a net. I can't check my traps without one snapping at me. Clear a few and I'll pay you in whatever I've got left.",
+    progressText: 'Still too many wraiths by the water.', completeText: "Nets are clear. Here — my last good hook, and this.",
+    afterText: "Caught something good today. First time in a while.", requiredKills: 2, enemyPool: ['street_wraith'],
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.55 }, { itemId: 'ench_veil_dust', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 40 },
+  { id: 'sq10', npcId: 'npc_sq10', npcName: 'The Last Lamplighter', title: "Keep the Lanterns Lit",
+    giverIntro: "I still light the lanterns every night, even with no one left to see them. The Guards keep knocking them over on their rounds. End a couple of their rounds for me?",
+    progressText: 'The lanterns keep getting knocked over.', completeText: "The lanterns stayed lit tonight. First time in ages. Take this — you earned it.",
+    afterText: 'The streets glow again, at least a little.', requiredKills: 2, enemyPool: ['hollow_guard', 'street_wraith'],
+    rewardPool: [{ itemId: 'ench_relic_ashbound', chance: 0.45 }, { itemId: 'ench_codex_living_flame', chance: 0.45 }, { itemId: 'ench_grimoire_striking', chance: 0.1 }], echoes: 70 },
+];
+
+const W_MINUS_2 = 98;
+
 // ── MAPS ───────────────────────────────────────────────────────────
 export const MAPS: Record<string, any> = {
   // ── VERDANT HOLLOW (24 × 16) — a real village square with four buildings ──
@@ -689,7 +1043,7 @@ export const MAPS: Record<string, any> = {
     encounterPool: [],
     exits: {
       '>': { mapId: 'WW', x: 11, y: 13 },
-      '!': { mapId: 'CT', x: 1, y: 9 },
+      '!': { mapId: 'CT', x: 1, y: 50 },
       '<': { mapId: 'VH', x: 12, y: 8, locked: true, lockMsg: "Void energy seals the south road." }
     }
   },
@@ -814,68 +1168,90 @@ export const MAPS: Record<string, any> = {
     }
   },
 
-  // ── CRESTFALL CITY (24 × 18) — real city blocks, streets and a plaza ──
+  // ── CRESTFALL CITY (100 × 100) — a sprawling city of streets and blocks ──
   'CT': {
-    id: 'CT', name: 'Crestfall City', width: 24, height: 18,
+    id: 'CT', name: 'Crestfall City', width: 100, height: 100,
     layout: ctLayout,
     npcs: [
-      { id: 'city_warden',   x: 17, y: 10, color: '#aaaaff', name: 'City Warden',    type: 'TALK' },
-      { id: 'relic_broker',  x: 5,  y: 2,  color: '#ffcc88', name: 'Relic Broker',   type: 'SHOP' },
-      { id: 'city_survivor', x: 19, y: 6,  color: '#cccccc', name: 'A Survivor',     type: 'TALK' },
+      { id: 'city_warden',   x: ctP.wardenoffice.doorX,  y: ctP.wardenoffice.doorY - 1, color: '#aaaaff', name: 'City Warden',    type: 'TALK' },
+      { id: 'relic_broker',  x: ctP.study.doorX,  y: ctP.study.doorY - 1,  color: '#ffcc88', name: 'Relic Broker',   type: 'SHOP' },
+      { id: 'city_survivor', x: ctP.shelter.doorX,  y: ctP.shelter.doorY - 1,  color: '#cccccc', name: 'A Survivor',     type: 'TALK' },
+      ...CITY_SIDE_QUESTS.map(sq => ({ id: sq.npcId, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY - 1, color: '#c9a9dd', name: sq.npcName, type: 'TALK' })),
     ],
     chests: [
-      { id: 'ch_ct1',      flag: 'ch_ct1',      x: 5,  y: 11, item: 'echoes_80' },
-      { id: 'ch_ct2',      flag: 'ch_ct2',      x: 11, y: 2,  item: 'ench_codex_living_flame' },
-      { id: 'ch_ct3',      flag: 'ch_ct3',      x: 13, y: 11, item: 'ench_grimoire_striking' },
-      { id: 'ch_ct_note',  flag: 'ch_ct_note',  x: 19, y: 11, item: 'book_forgotten_flyer' },
+      { id: 'ch_ct1',      flag: 'ch_ct1',      x: 50,  y: 46, item: 'echoes_80' },
+      { id: 'ch_ct_note',  flag: 'ch_ct_note',  x: 52,  y: 54,  item: 'book_forgotten_flyer' },
+      ...Array.from({ length: 5 }, (_, i) => {
+        const p = ctP[`note${i + 1}`];
+        return { id: `ch_ct_trail${i + 1}`, flag: `trail_note_${i + 1}`, x: p.doorX, y: p.doorY - 1, item: `book_trail_note_${i + 1}` };
+      }),
     ],
     // doors: enterable buildings. Player must be adjacent (manhattan dist = 1) to enter.
     doors: [
-      { id: 'door_h1', x: 4,  y: 6,  targetMapId: 'CT_H1', targetX: 7, targetY: 6, label: "Scholar's Refuge" },
-      { id: 'door_h2', x: 14, y: 6,  targetMapId: 'CT_H2', targetX: 7, targetY: 6, label: "Abandoned Home" },
-      { id: 'door_h3', x: 4,  y: 11, targetMapId: 'CT_H3', targetX: 7, targetY: 6, label: "Old Study" },
-      { id: 'door_h4', x: 4,  y: 15, targetMapId: 'CT_H4', targetX: 7, targetY: 6, label: "Warden's Old Office" },
-      { id: 'door_h5', x: 14, y: 15, targetMapId: 'CT_H5', targetX: 7, targetY: 6, label: "Survivor's Shelter" },
+      { id: 'door_h1', x: ctP.scholar.doorX,      y: ctP.scholar.doorY,      targetMapId: 'CT_H1',     targetX: 10, targetY: 12, label: "Scholar's Refuge" },
+      { id: 'door_h2', x: ctP.abandoned.doorX,    y: ctP.abandoned.doorY,    targetMapId: 'CT_H2',     targetX: 10, targetY: 12, label: "Abandoned Home" },
+      { id: 'door_h3', x: ctP.study.doorX,        y: ctP.study.doorY,        targetMapId: 'CT_H3',     targetX: 7,  targetY: 6,  label: "Old Study" },
+      { id: 'door_h4', x: ctP.wardenoffice.doorX, y: ctP.wardenoffice.doorY, targetMapId: 'CT_H4',     targetX: 7,  targetY: 6,  label: "Warden's Old Office" },
+      { id: 'door_h5', x: ctP.shelter.doorX,      y: ctP.shelter.doorY,      targetMapId: 'CT_H5',     targetX: 7,  targetY: 6,  label: "Survivor's Shelter" },
+      { id: 'door_secret', x: ctP.secret.doorX,   y: ctP.secret.doorY,       targetMapId: 'CT_SECRET', targetX: 7,  targetY: 6,  label: "A Quiet House" },
+      ...CITY_SIDE_QUESTS.map(sq => ({ id: `door_${sq.id}`, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY, targetMapId: `CT_${sq.id.toUpperCase()}`, targetX: 7, targetY: 6, label: sq.title })),
+      ...Array.from({ length: 5 }, (_, i) => ({ id: `door_note${i + 1}`, x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY, targetMapId: `CT_NOTE${i + 1}`, targetX: 7, targetY: 6, label: 'An Old House' })),
+      ...Array.from({ length: 15 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
     ],
     books: [],
     encounterPool: ['city_shade', 'street_wraith', 'hollow_guard'],
     exits: {
-      '<': { mapId: 'VH', x: 22, y: 8 }
+      '<': { mapId: 'VH', x: 22, y: 8 },
+      '@': { mapId: 'AR', x: 1, y: 20, reqItem: 'book_mysterious_note', lockMsg: "This old gate is rusted shut. Something more than strength must be needed to open it." },
     }
   },
 
-  // ── SCHOLAR'S REFUGE (14 × 9 interior) ──
+  // ── SCHOLAR'S REFUGE (20 × 14, 2 floors) ──
   'CT_H1': {
-    id: 'CT_H1', name: "Scholar's Refuge", width: 14, height: 9,
+    id: 'CT_H1', name: "Scholar's Refuge", width: 20, height: 14,
     layout: ctH1Layout,
     npcs: [],
     chests: [
-      { id: 'ch_h1_book', flag: 'ch_h1_book', x: 3,  y: 1, item: 'book_keepers_codex' },
-      { id: 'ch_h1_enc',  flag: 'ch_h1_enc',  x: 10, y: 1, item: 'ench_tome_iron_veil' },
+      { id: 'ch_h1_book', flag: 'ch_h1_book', x: 3,  y: 2, item: 'book_keepers_codex' },
     ],
-    doors: [],
+    doors: [ { id: 'stairs_h1', x: 4, y: 10, targetMapId: 'CT_H1_F2', targetX: 7, targetY: 7, label: 'Stairs Up' } ],
     books: [],
     encounterPool: [],
-    exits: {
-      '<': { mapId: 'CT', x: 5, y: 6 }
-    }
+    exits: { '<': { mapId: 'CT', x: ctP.scholar.doorX, y: ctP.scholar.doorY + 1 } }
+  },
+  'CT_H1_F2': {
+    id: 'CT_H1_F2', name: "Scholar's Refuge — Upper Floor", width: 14, height: 9,
+    layout: ctH1F2Layout,
+    npcs: [],
+    chests: [ { id: 'ch_h1_f2', flag: 'ch_h1_f2', x: 10, y: 1, item: 'book_forgotten_verse' } ],
+    doors: [ { id: 'stairs_h1_down', x: 7, y: 8, targetMapId: 'CT_H1', targetX: 4, targetY: 9, label: 'Stairs Down' } ],
+    books: [],
+    encounterPool: [],
+    exits: {}
   },
 
-  // ── ABANDONED HOME (14 × 9 interior) ──
+  // ── ABANDONED HOME (20 × 14, 2 floors) ──
   'CT_H2': {
-    id: 'CT_H2', name: 'Abandoned Home', width: 14, height: 9,
+    id: 'CT_H2', name: 'Abandoned Home', width: 20, height: 14,
     layout: ctH2Layout,
     npcs: [],
     chests: [
-      { id: 'ch_h2_letter', flag: 'ch_h2_letter', x: 3,  y: 1, item: 'book_childs_letter' },
-      { id: 'ch_h2_verse',  flag: 'ch_h2_verse',  x: 10, y: 1, item: 'book_forgotten_verse' },
+      { id: 'ch_h2_letter', flag: 'ch_h2_letter', x: 3,  y: 2, item: 'book_childs_letter' },
     ],
-    doors: [],
+    doors: [ { id: 'stairs_h2', x: 4, y: 10, targetMapId: 'CT_H2_F2', targetX: 7, targetY: 7, label: 'Stairs Up' } ],
     books: [],
     encounterPool: [],
-    exits: {
-      '<': { mapId: 'CT', x: 13, y: 6 }
-    }
+    exits: { '<': { mapId: 'CT', x: ctP.abandoned.doorX, y: ctP.abandoned.doorY + 1 } }
+  },
+  'CT_H2_F2': {
+    id: 'CT_H2_F2', name: 'Abandoned Home — Upper Floor', width: 14, height: 9,
+    layout: ctH2F2Layout,
+    npcs: [],
+    chests: [ { id: 'ch_h2_f2', flag: 'ch_h2_f2', x: 10, y: 1, item: 'echoes_50' } ],
+    doors: [ { id: 'stairs_h2_down', x: 7, y: 8, targetMapId: 'CT_H2', targetX: 4, targetY: 9, label: 'Stairs Down' } ],
+    books: [],
+    encounterPool: [],
+    exits: {}
   },
 
   // ── OLD STUDY (14 × 9 interior) ──
@@ -890,9 +1266,7 @@ export const MAPS: Record<string, any> = {
     doors: [],
     books: [],
     encounterPool: [],
-    exits: {
-      '<': { mapId: 'CT', x: 5, y: 11 }
-    }
+    exits: { '<': { mapId: 'CT', x: ctP.study.doorX, y: ctP.study.doorY + 1 } }
   },
 
   // ── WARDEN'S OLD OFFICE (14 × 9 interior) ──
@@ -907,9 +1281,7 @@ export const MAPS: Record<string, any> = {
     doors: [],
     books: [],
     encounterPool: [],
-    exits: {
-      '<': { mapId: 'CT', x: 5, y: 15 }
-    }
+    exits: { '<': { mapId: 'CT', x: ctP.wardenoffice.doorX, y: ctP.wardenoffice.doorY + 1 } }
   },
 
   // ── SURVIVOR'S SHELTER (14 × 9 interior) ──
@@ -924,10 +1296,114 @@ export const MAPS: Record<string, any> = {
     doors: [],
     books: [],
     encounterPool: [],
+    exits: { '<': { mapId: 'CT', x: ctP.shelter.doorX, y: ctP.shelter.doorY + 1 } }
+  },
+
+  // ── A QUIET HOUSE (secret — hides the entrance to the dungeon below) ──
+  'CT_SECRET': {
+    id: 'CT_SECRET', name: 'A Quiet House', width: 14, height: 9,
+    layout: ctSecretLayout,
+    npcs: [],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 13, y: 15 }
+      '<': { mapId: 'CT', x: ctP.secret.doorX, y: ctP.secret.doorY + 1 },
+      // hidden passage — reachable by walking to the back room
+      '>': { mapId: 'SECRET_DUNGEON', x: 7, y: 2 },
     }
   },
+  // Poke a hidden passage tile into the back room of the secret house.
+  ...(() => { poke(ctSecretLayout, 2, 4, '>'); return {}; })(),
+
+  // ── SECRET DUNGEON ──
+  'SECRET_DUNGEON': {
+    id: 'SECRET_DUNGEON', name: 'A Hollow Beneath the City', width: 16, height: 12,
+    layout: secretDungeonLayout,
+    npcs: [
+      { id: 'echo_warden', x: 7, y: 5, color: '#6d28d9', name: 'The Echo Warden', type: 'BOSS', hideFlag: 'defeated_echo_warden' },
+    ],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'CT_SECRET', x: 2, y: 3 } }
+  },
+
+  // ── ASHFALL RING (50 × 50) — second city, reached through the secret eastern gate ──
+  'AR': {
+    id: 'AR', name: 'Ashfall Ring', width: 50, height: 50,
+    layout: arLayout,
+    npcs: [],
+    chests: [],
+    doors: [
+      { id: 'door_arena', x: arP.arena.doorX, y: arP.arena.doorY, targetMapId: 'AR_ARENA', targetX: 7, targetY: 7, label: 'The Ring Arena' },
+      ...Array.from({ length: 10 }, (_, i) => ({ id: `door_ar_misc${i + 1}`, x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY, targetMapId: `AR_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'An Ashen House' })),
+    ],
+    books: [],
+    encounterPool: ['void_sentinel', 'ash_hound', 'cinder_wraith'],
+    exits: { '<': { mapId: 'CT', x: W_MINUS_2, y: 20 } }
+  },
+
+  // ── RING ARENA (2 floors, boss at the top) ──
+  'AR_ARENA': {
+    id: 'AR_ARENA', name: 'The Ring Arena', width: 14, height: 9,
+    layout: arenaGroundLayout,
+    npcs: [],
+    chests: [],
+    doors: [ { id: 'stairs_arena', x: 4, y: 4, targetMapId: 'AR_ARENA_BOSS', targetX: 7, targetY: 2, label: 'Stairs Up' } ],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'AR', x: arP.arena.doorX, y: arP.arena.doorY + 1 } }
+  },
+  'AR_ARENA_BOSS': {
+    id: 'AR_ARENA_BOSS', name: 'The Ring Arena — Inner Circle', width: 16, height: 12,
+    layout: arenaBossLayout,
+    npcs: [
+      { id: 'ring_boss', x: 7, y: 5, color: '#0ea5e9', name: 'The Ringkeeper', type: 'BOSS', hideFlag: 'defeated_ring_boss' },
+    ],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'AR_ARENA', x: 4, y: 3 } }
+  },
+
+  // ── Generated side-quest / note / misc building interiors ──
+  ...Object.fromEntries(CITY_SIDE_QUESTS.map(sq => [
+    `CT_${sq.id.toUpperCase()}`, {
+      id: `CT_${sq.id.toUpperCase()}`, name: sq.title, width: 14, height: 9,
+      layout: sqInteriors[sq.id],
+      npcs: [{ id: sq.npcId, x: 6, y: 3, color: '#c9a9dd', name: sq.npcName, type: 'TALK' }],
+      chests: [], doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'CT', x: ctP[sq.id].doorX, y: ctP[sq.id].doorY + 1 } }
+    }
+  ])),
+  ...Object.fromEntries(Array.from({ length: 5 }, (_, i) => [
+    `CT_NOTE${i + 1}`, {
+      id: `CT_NOTE${i + 1}`, name: 'An Old House', width: 14, height: 9,
+      layout: noteInteriors[`note${i + 1}`],
+      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'CT', x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY + 1 } }
+    }
+  ])),
+  ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => [
+    `CT_MISC${i + 1}`, {
+      id: `CT_MISC${i + 1}`, name: 'A House', width: 14, height: 9,
+      layout: miscInteriors[`misc${i + 1}`],
+      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'CT', x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY + 1 } }
+    }
+  ])),
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [
+    `AR_MISC${i + 1}`, {
+      id: `AR_MISC${i + 1}`, name: 'An Ashen House', width: 14, height: 9,
+      layout: arMiscInteriors[`misc${i + 1}`],
+      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'AR', x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY + 1 } }
+    }
+  ])),
 };
 
 export const INITIAL_STATE: GameStateData = {
@@ -947,6 +1423,7 @@ export const INITIAL_STATE: GameStateData = {
       'quest_main': 0, 'quest_name': 0, 'quest_hollow': 0,
       'quest_archive': 0, 'quest_frost': 0, 'quest_ash': 0,
       'quest_city': 0,
+      ...Object.fromEntries(CITY_SIDE_QUESTS.map(sq => [`quest_${sq.id}`, 0])),
     },
     questProgress: {
       'shards': 0, 'specters': 0, 'archive_kills': 0, 'frost_kills': 0, 'ash_kills': 0,
@@ -963,6 +1440,7 @@ export const INITIAL_STATE: GameStateData = {
   keys: {}, prevKeys: {},
   frameCount: 0,
   uiMessage: null, uiMessageTimer: 0,
+  messageStack: [],
   pendingEncounter: null,
   saveRequested: false,
   exitRequested: false,
@@ -970,4 +1448,5 @@ export const INITIAL_STATE: GameStateData = {
   meta: { isGuest: true },
   bookRead: { bookId: null, page: 0, fromInventoryIndex: 0 },
   enchantSelect: { enchantBookSlot: 0, cursorIndex: 0 },
+  tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
 };

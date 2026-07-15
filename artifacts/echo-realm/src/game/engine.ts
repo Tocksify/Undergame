@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS } from './constants';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 
@@ -8,7 +8,7 @@ export function justPressed(state: GameStateData, key: string) {
   return (state.keys[k] || state.keys[K]) && !(state.prevKeys[k] || state.prevKeys[K]);
 }
 
-function isExitTile(t: string) { return t === '>' || t === '<' || t === '!'; }
+function isExitTile(t: string) { return t === '>' || t === '<' || t === '!' || t === '@'; }
 
 // Remove item at slot i from inventory, keeping enchantedSlots in sync
 export function removeInventoryItem(state: GameStateData, index: number) {
@@ -28,6 +28,10 @@ export function updateGame(state: GameStateData) {
   if (state.uiMessageTimer > 0) {
     state.uiMessageTimer--;
     if (state.uiMessageTimer <= 0) state.uiMessage = null;
+  }
+  if (state.messageStack.length > 0) {
+    for (const m of state.messageStack) m.timer--;
+    state.messageStack = state.messageStack.filter((m) => m.timer > 0);
   }
 
   if (state.mode === GameMode.TITLE || state.mode === GameMode.GAME_OVER) {
@@ -140,6 +144,45 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── TOME CRAFT (Tomes Blessing: craft any enchantment from scratch) ──
+  if (state.mode === GameMode.TOME_CRAFT) {
+    const maxIdx = CRAFTABLE_ENCHANTS.length - 1;
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))
+      state.tomeCraft.cursorIndex = Math.max(0, state.tomeCraft.cursorIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's'))
+      state.tomeCraft.cursorIndex = Math.min(maxIdx, state.tomeCraft.cursorIndex + 1);
+
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      // Cancel: nothing consumed, player-friendly.
+      state.mode = GameMode.INVENTORY;
+      return;
+    }
+
+    if (justPressed(state, ' ') || justPressed(state, 'z')) {
+      const chosenId = CRAFTABLE_ENCHANTS[state.tomeCraft.cursorIndex];
+      const blessingIdx = state.player.inventory.indexOf('tomes_blessing');
+      const bookIdx = state.player.inventory.indexOf('empty_book');
+      if (blessingIdx === -1 || bookIdx === -1) {
+        state.uiMessage = "You need both a Tomes Blessing and an Empty Book."; state.uiMessageTimer = 120;
+        state.mode = GameMode.INVENTORY;
+        return;
+      }
+      // Consume both (remove higher index first to keep the other index valid)
+      const first = Math.max(blessingIdx, bookIdx);
+      const second = Math.min(blessingIdx, bookIdx);
+      removeInventoryItem(state, first);
+      removeInventoryItem(state, second);
+      addInventoryItem(state, chosenId);
+      state.player.flags['tomes_blessing_used'] = true;
+      const newSlot = state.player.inventory.length - 1;
+      const itemName = ITEMS[chosenId]?.name ?? chosenId;
+      state.uiMessage = `Forged: ${itemName}! Choose an item to enchant.`; state.uiMessageTimer = 150;
+      state.enchantSelect = { enchantBookSlot: newSlot, cursorIndex: 0 };
+      state.mode = GameMode.ENCHANT_SELECT;
+    }
+    return;
+  }
+
   if (state.mode === GameMode.MENU) {
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
     if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(5, state.menuIndex + 1);
@@ -206,6 +249,21 @@ export function updateGame(state: GameStateData) {
         }
         state.enchantSelect = { enchantBookSlot: idx, cursorIndex: 0 };
         state.mode = GameMode.ENCHANT_SELECT;
+        return;
+      }
+
+      // ── RELIC: Tomes Blessing (craft an enchantment from scratch) ──
+      if (item.category === 'relic' && id === 'tomes_blessing') {
+        if (state.battle) {
+          state.uiMessage = "Can't use that in battle."; state.uiMessageTimer = 90;
+          return;
+        }
+        if (!inv.includes('empty_book')) {
+          state.uiMessage = "The Tomes Blessing needs an Empty Book to draw from."; state.uiMessageTimer = 140;
+          return;
+        }
+        state.tomeCraft = { cursorIndex: 0, chosenEnchantId: null };
+        state.mode = GameMode.TOME_CRAFT;
         return;
       }
 
@@ -374,7 +432,8 @@ export function updateGame(state: GameStateData) {
     if (intFound.type === 'EXIT') {
       const exit = map.exits[intFound.tile];
       if (exit) {
-        if (exit.locked || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
+        const missingItem = exit.reqItem && !state.player.inventory.includes(exit.reqItem);
+        if (exit.locked || missingItem || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
           state.uiMessage = exit.lockMsg; state.uiMessageTimer = 120;
         } else {
           state.mapId = exit.mapId;

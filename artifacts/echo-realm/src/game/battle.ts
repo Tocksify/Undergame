@@ -1,6 +1,6 @@
 import { GameStateData, GameMode, EnemyData, BattleState } from './types';
-import { justPressed } from './engine';
-import { ITEMS, getWeaponAtkBonus, getArmorDefBonus } from './constants';
+import { justPressed, addInventoryItem } from './engine';
+import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, CITY_SIDE_QUESTS, pushMessages } from './constants';
 
 // Checks whether resonance has reached the threshold to "remember" the enemy.
 function tryCompleteRemember(state: GameStateData): boolean {
@@ -241,6 +241,32 @@ function endBattle(state: GameStateData) {
         state.player.quests['quest_city'] = 2;
         state.uiMessage = "The city grows quieter. Report to the Warden."; state.uiMessageTimer = 180;
       }
+    }
+
+    // Generic side-quest kill tracking — 10 quest-givers scattered through
+    // Crestfall's misc buildings, all sharing this one loop (see CITY_SIDE_QUESTS).
+    for (const sq of CITY_SIDE_QUESTS) {
+      const qId = `quest_${sq.id}`;
+      if (state.player.quests[qId] === 1 && sq.enemyPool.includes(b.enemy.id)) {
+        const kKey = `sqkills_${sq.id}`;
+        state.player.questProgress[kKey] = (state.player.questProgress[kKey] || 0) + 1;
+        // Turn-in/reward happens back in dialogue.ts once the player reports to the NPC.
+      }
+    }
+
+    // Echo Warden (secret dungeon mini-boss) — grants the empty book + mysterious note
+    // that kick off the Ashfall Ring storyline. Guarded so it can't be farmed twice.
+    if (b.enemy.id === 'echo_warden' && !state.player.inventory.includes('empty_book')) {
+      addInventoryItem(state, 'empty_book');
+      addInventoryItem(state, 'book_mysterious_note');
+      pushMessages(state, ['The Echo Warden falls silent.', '+Empty Book', '+A Mysterious Note'], ITEMS['empty_book']?.tier);
+    }
+
+    // The Ringkeeper (Ashfall Ring boss) — grants the Tomes Blessing.
+    if (b.enemy.id === 'ring_boss' && !state.player.inventory.includes('tomes_blessing')) {
+      state.player.flags['ar_ring_boss_defeated'] = true;
+      addInventoryItem(state, 'tomes_blessing');
+      pushMessages(state, ['The Ringkeeper is remembered no more.', '+Tomes Blessing'], ITEMS['tomes_blessing']?.tier);
     }
   }
   state.battle = null;

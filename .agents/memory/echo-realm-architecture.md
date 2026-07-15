@@ -32,3 +32,15 @@ description: Key patterns, decisions, and gotchas for the Echo Realm RPG codebas
 
 ## Pre-existing TS errors (not game files)
 - `src/App.tsx` has 3 pre-existing errors (api-client-react build, implicit any) — these are not regressions
+
+## Procedural city generation
+- Large maps (100×100 Crestfall City, 50×50 Ashfall Ring) are generated in constants.ts via `buildMap`/`rect`/`hline`/`vline`/`poke` grid helpers plus a `placeBuilding`/block-grid pattern (`bandStart`, `BlockPlacement`), not hand-authored tile-by-tile. Reuse this pattern for any future large procedurally-laid-out map instead of writing tiles by hand.
+- Each generated building gets a role name (e.g. `sq3`, `misc7`, `note2`) recorded in a `placements` map with `doorX/doorY`; the matching interior `MAPS[...]` entry and its return exit are both derived from that same placement object via `Object.fromEntries(...)` generation, so door coords and return-exit coords can never drift out of sync — keep new building types on this same generated-both-ends pattern.
+
+## Tier system (reward/item rarity)
+- Tiers are internal ids (`common|uncommon|rare|epic|mythic`) mapped to display labels via `TIER_LABEL` (mythic displays as "Mortus") and colors via `TIER_COLOR`, both in constants.ts. `getHighestTier(pool, item?)` picks the best-case tier for a reward pool/quest.
+- Mythic-tier text renders as an animated moving dark-blue/black gradient (`drawTierText` in renderer.ts, keyed off `frameCount`) instead of a flat color — reuse `drawTierText` for any new mythic-tier UI text rather than re-implementing the gradient.
+- Mythic enchantments are craft-only (via a consumable "blessing" relic + catalyst item, never dropped by quests/chests) — keep that scarcity rule if adding more mythic items.
+
+## Multi-item notifications
+- The single `state.uiMessage`/`uiMessageTimer` field is for one-line toasts only. For multi-item drops (boss loot, quest turn-ins with several rewards), use the separate `state.messageStack` array + `pushMessages(state, texts, tier?)` helper (constants.ts) — renders as a stacked list in renderer.ts, independent of `uiMessage`. Don't overload `uiMessage` for multi-line content.

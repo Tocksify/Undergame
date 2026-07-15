@@ -10,13 +10,14 @@ export enum GameMode {
   GAME_OVER,
   VICTORY,
   BOOK_READ,    // 10 - reading a collected book
-  ENCHANT_SELECT // 11 - picking an item to enchant
+  ENCHANT_SELECT, // 11 - picking an item to enchant
+  TOME_CRAFT    // 12 - Tomes Blessing: choosing an enchantment to create from an empty book
 }
 
-export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
+export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
 
-export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key' | 'book' | 'enchanted_book';
+export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
+export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key' | 'book' | 'enchanted_book' | 'relic';
 export type ItemSubcategory = 'medical' | 'def' | 'utility';
 
 export interface Item {
@@ -141,6 +142,9 @@ export interface GameStateData {
   frameCount: number;
   uiMessage: string | null;
   uiMessageTimer: number;
+  // Stacked toast notifications, used when multiple items/rewards are granted at once
+  // so messages don't overwrite/overlap each other.
+  messageStack: { text: string; timer: number; tier?: ItemTier }[];
   pendingEncounter: EnemyData | null;
   saveRequested: boolean;
   exitRequested: boolean;
@@ -156,5 +160,10 @@ export interface GameStateData {
   enchantSelect: {
     enchantBookSlot: number; // inventory index of the enchanted_book being applied
     cursorIndex: number;     // which compatible item is highlighted
+  };
+  // Tomes Blessing crafting: pick any enchantment from scratch, then apply it
+  tomeCraft: {
+    cursorIndex: number;      // which craftable enchantment is highlighted
+    chosenEnchantId: string | null; // enchant item id chosen, then routes into enchantSelect
   };
 }
