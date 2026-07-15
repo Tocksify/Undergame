@@ -1,15 +1,16 @@
-// ── ERSAV — local save file management ───────────────────────────────
-// Unlimited named save slots stored in localStorage. Each slot has a
-// unique string ID. The list of IDs is stored in an index key.
+// ── ERSAV — save slot management ─────────────────────────────────────
+// Two backends, same async API:
+//   • Electron — file system via IPC (window.electronAPI)
+//   • Browser  — localStorage fallback (dev server / web play)
 //
-// .ersav files are exported without the internal `id` field so they
-// stay portable across installs / players.
+// Slot layout on disk (Electron):
+//   saves/<slot-id>/progress.ersav
 
 import { SavedGameState } from './game/save';
 
-// ── Types ─────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────
 
-/** Portable save file format (used for .ersav export/import). */
+/** Portable save file format — what lives inside progress.ersav / .ersav exports. */
 export interface ErsavFile {
   version: 1;
   name: string;
@@ -18,105 +19,119 @@ export interface ErsavFile {
   state: SavedGameState;
 }
 
-/** An ErsavFile that lives in a local slot (has an internal ID). */
+/** An ErsavFile that has been assigned a slot ID. */
 export interface LocalSlot extends ErsavFile {
   id: string;
 }
 
-// ── Internal storage helpers ──────────────────────────────────────────
+// ── Electron detection ────────────────────────────────────────────────
+
+function el() {
+  return typeof window !== 'undefined' ? window.electronAPI : undefined;
+}
+
+// ── localStorage helpers (browser fallback) ───────────────────────────
 
 const INDEX_KEY = 'er-save-index';
-const slotKey   = (id: string) => `er-save-${id}`;
+const lsKey     = (id: string) => `er-save-${id}`;
 
-function getIndex(): string[] {
+function lsGetIndex(): string[] {
   try { return JSON.parse(localStorage.getItem(INDEX_KEY) ?? '[]'); }
   catch { return []; }
 }
-
-function setIndex(ids: string[]): void {
+function lsSetIndex(ids: string[]) {
   try { localStorage.setItem(INDEX_KEY, JSON.stringify(ids)); } catch {}
 }
-
-function readSlot(id: string): LocalSlot | null {
+function lsRead(id: string): LocalSlot | null {
   try {
-    const raw = localStorage.getItem(slotKey(id));
-    if (!raw) return null;
-    return { ...JSON.parse(raw), id } as LocalSlot;
+    const raw = localStorage.getItem(lsKey(id));
+    return raw ? { ...JSON.parse(raw) as ErsavFile, id } : null;
   } catch { return null; }
 }
-
-function writeSlot(slot: LocalSlot): void {
-  try { localStorage.setItem(slotKey(slot.id), JSON.stringify(slot)); } catch {}
+function lsWrite(slot: LocalSlot) {
+  try { localStorage.setItem(lsKey(slot.id), JSON.stringify(slot)); } catch {}
 }
 
 /** One-time migration from the old fixed-slot (er-save-1/2/3) format. */
-function migrateOldSlots(): void {
-  const index = getIndex();
+function lsMigrateOld() {
+  const index = lsGetIndex();
   const newIds: string[] = [];
-
   for (const n of [1, 2, 3]) {
     const oldKey = `er-save-${n}`;
     try {
       const raw = localStorage.getItem(oldKey);
       if (!raw) continue;
-      const data = JSON.parse(raw) as ErsavFile;
-      const id = `migrated-slot-${n}`;
-      // Don't migrate if already in index
+      const id = `migrated-${n}`;
       if (index.includes(id)) { localStorage.removeItem(oldKey); continue; }
-      writeSlot({ ...data, id });
+      lsWrite({ ...JSON.parse(raw) as ErsavFile, id });
       newIds.push(id);
       localStorage.removeItem(oldKey);
     } catch {}
   }
-
-  if (newIds.length) setIndex([...newIds, ...index]);
+  if (newIds.length) lsSetIndex([...newIds, ...index]);
 }
 
-// ── Public API ────────────────────────────────────────────────────────
+// ── Public async API ──────────────────────────────────────────────────
 
-/** Return all slots in creation order. */
-export function listSlots(): LocalSlot[] {
-  migrateOldSlots();
-  return getIndex().map(readSlot).filter(Boolean) as LocalSlot[];
+/** Return all slots, sorted most-recently-saved first. */
+export async function listSlots(): Promise<LocalSlot[]> {
+  const e = el();
+  if (e) return e.listSlots() as Promise<LocalSlot[]>;
+  lsMigrateOld();
+  const slots = lsGetIndex().map(lsRead).filter(Boolean) as LocalSlot[];
+  return slots.sort(
+    (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
+  );
 }
 
-/** Read a single slot by ID. */
-export function getSlotById(id: string): LocalSlot | null {
-  return readSlot(id);
+/** Get one slot by ID. */
+export async function getSlotById(id: string): Promise<LocalSlot | null> {
+  const e = el();
+  if (e) return e.getSlot(id) as Promise<LocalSlot | null>;
+  return lsRead(id);
 }
 
-/** Create a new slot. Returns the new slot's ID. */
-export function createSlot(data: ErsavFile): string {
+/** Create a new slot. Returns the new slot ID. */
+export async function createSlot(data: ErsavFile): Promise<string> {
+  const e = el();
+  if (e) return e.createSlot(data) as Promise<string>;
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  const slot: LocalSlot = { ...data, id };
-  writeSlot(slot);
-  setIndex([...getIndex(), id]);
+  lsWrite({ ...data, id });
+  lsSetIndex([...lsGetIndex(), id]);
   return id;
 }
 
-/** Overwrite an existing slot's data (preserves ID and position in list). */
-export function updateSlot(id: string, data: ErsavFile): void {
-  writeSlot({ ...data, id });
+/** Overwrite a slot's data (autosave). */
+export async function updateSlot(id: string, data: ErsavFile): Promise<void> {
+  const e = el();
+  if (e) { await e.updateSlot(id, data); return; }
+  lsWrite({ ...data, id });
 }
 
-/** Rename a slot without touching its game state. */
-export function renameSlot(id: string, name: string): void {
-  const slot = readSlot(id);
-  if (slot) writeSlot({ ...slot, name });
+/** Update only the name field. */
+export async function renameSlot(id: string, name: string): Promise<void> {
+  const e = el();
+  if (e) { await e.renameSlot(id, name); return; }
+  const slot = lsRead(id);
+  if (slot) lsWrite({ ...slot, name });
 }
 
 /** Permanently delete a slot. */
-export function deleteSlotById(id: string): void {
-  setIndex(getIndex().filter(x => x !== id));
-  try { localStorage.removeItem(slotKey(id)); } catch {}
+export async function deleteSlotById(id: string): Promise<void> {
+  const e = el();
+  if (e) { await e.deleteSlot(id); return; }
+  lsSetIndex(lsGetIndex().filter(x => x !== id));
+  try { localStorage.removeItem(lsKey(id)); } catch {}
 }
 
 // ── File I/O ──────────────────────────────────────────────────────────
 
-/** Trigger a browser download of the save as a .ersav file. */
-export function exportErsav(slot: LocalSlot): void {
-  // Strip internal `id` from the exported file so it's portable
-  const { id: _id, ...file }: { id: string } & ErsavFile = slot;
+/** Export a slot as a .ersav file (native dialog in Electron, download in browser). */
+export async function exportErsav(slot: LocalSlot): Promise<void> {
+  const e = el();
+  if (e) { await e.exportErsav(slot); return; }
+  // Browser: trigger a download
+  const { id: _id, ...file } = slot;
   const safeName = (slot.name || 'save').replace(/[^a-z0-9_\-]/gi, '_');
   const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
@@ -126,12 +141,14 @@ export function exportErsav(slot: LocalSlot): void {
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
-/** Open a file picker for .ersav files and parse the selection. */
-export function importErsav(): Promise<ErsavFile | null> {
-  return new Promise((resolve) => {
+/** Import a .ersav file (native dialog in Electron, file-picker in browser). */
+export async function importErsav(): Promise<ErsavFile | null> {
+  const e = el();
+  if (e) return e.importErsav() as Promise<ErsavFile | null>;
+  // Browser fallback
+  return new Promise<ErsavFile | null>((resolve) => {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.ersav';
-
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) { resolve(null); return; }
@@ -144,7 +161,6 @@ export function importErsav(): Promise<ErsavFile | null> {
       reader.readAsText(file);
     };
     input.oncancel = () => resolve(null);
-
     document.body.appendChild(input); input.click();
     setTimeout(() => { try { document.body.removeChild(input); } catch {} }, 500);
   });

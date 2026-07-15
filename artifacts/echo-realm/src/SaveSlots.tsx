@@ -7,11 +7,8 @@ import {
 
 interface Props {
   onBack: () => void;
-  /** User wants to load an existing slot. */
   onLoadSlot: (slot: LocalSlot) => void;
-  /** User wants to start a brand-new game (will open customization). */
   onNewSlot: () => void;
-  /** User imported a .ersav file — create a slot for it and start. */
   onLoadFromFile: (file: ErsavFile) => void;
 }
 
@@ -24,33 +21,33 @@ function formatDate(iso: string) {
 }
 
 export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFile }: Props) {
-  const [slots, setSlots]             = useState<LocalSlot[]>([]);
-  const [editingId, setEditingId]     = useState<string | null>(null);
-  const [editName, setEditName]       = useState('');
+  const [slots, setSlots]                     = useState<LocalSlot[]>([]);
+  const [editingId, setEditingId]             = useState<string | null>(null);
+  const [editName, setEditName]               = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [importError, setImportError] = useState<string | null>(null);
+  const [importError, setImportError]         = useState<string | null>(null);
 
-  const refresh = useCallback(() => setSlots(listSlots()), []);
-  useEffect(() => { refresh(); }, [refresh]);
+  const refresh = useCallback(async () => {
+    setSlots(await listSlots());
+  }, []);
 
-  // Dismiss confirm-delete when clicking elsewhere
-  const dismissConfirm = useCallback(() => setConfirmDeleteId(null), []);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   function startEdit(id: string, current: string) {
     setEditingId(id); setEditName(current);
   }
 
-  function commitEdit(id: string) {
+  async function commitEdit(id: string) {
     const trimmed = editName.trim();
-    if (trimmed) { renameSlot(id, trimmed); refresh(); }
+    if (trimmed) { await renameSlot(id, trimmed); await refresh(); }
     setEditingId(null);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (confirmDeleteId === id) {
       audio.playSfx('cancel');
-      deleteSlotById(id);
-      refresh();
+      await deleteSlotById(id);
+      await refresh();
       setConfirmDeleteId(null);
     } else {
       setConfirmDeleteId(id);
@@ -68,6 +65,8 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
     onLoadFromFile(file);
   }
 
+  const dismissConfirm = useCallback(() => setConfirmDeleteId(null), []);
+
   return (
     <div className="menu-root" onClick={dismissConfirm}>
       <div className="crt-bars"      aria-hidden="true" />
@@ -76,7 +75,7 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
 
       <div className="slots-layout">
 
-        {/* ── Header ─────────────────────────────────────────────── */}
+        {/* Header */}
         <div className="slots-header">
           <button
             className="slots-back-btn"
@@ -88,15 +87,15 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
           <h2 className="slots-title">SAVED GAMES</h2>
         </div>
 
-        {/* ── Slot list ───────────────────────────────────────────── */}
+        {/* Slot list */}
         <div className="slots-scroll">
           {slots.length === 0 && (
             <p className="slots-empty-hint">No saves yet — start a New Slot below.</p>
           )}
 
           {slots.map(slot => {
-            const isEditing  = editingId === slot.id;
-            const isConfirm  = confirmDeleteId === slot.id;
+            const isEditing = editingId === slot.id;
+            const isConfirm = confirmDeleteId === slot.id;
 
             return (
               <div
@@ -104,7 +103,6 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
                 className="slot-card"
                 onClick={e => e.stopPropagation()}
               >
-                {/* Left: info */}
                 <div className="slot-card-info">
                   <div className="slot-name-row">
                     {isEditing ? (
@@ -114,10 +112,10 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
                         autoFocus
                         maxLength={40}
                         onChange={e => setEditName(e.target.value)}
-                        onBlur={() => commitEdit(slot.id)}
+                        onBlur={() => void commitEdit(slot.id)}
                         onKeyDown={e => {
-                          if (e.key === 'Enter')  { commitEdit(slot.id); }
-                          if (e.key === 'Escape') { setEditingId(null); }
+                          if (e.key === 'Enter')  void commitEdit(slot.id);
+                          if (e.key === 'Escape') setEditingId(null);
                           e.stopPropagation();
                         }}
                         onClick={e => e.stopPropagation()}
@@ -128,7 +126,7 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
                     {!isEditing && (
                       <button
                         className="slot-edit-btn"
-                        title="Rename save"
+                        title="Rename"
                         onClick={e => { e.stopPropagation(); startEdit(slot.id, slot.name); }}
                       >
                         ✎
@@ -142,20 +140,19 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
                   </div>
                 </div>
 
-                {/* Right: actions */}
                 <div className="slot-card-actions" onClick={e => e.stopPropagation()}>
                   <button
                     className="slot-btn slot-btn-export"
                     title="Export as .ersav file"
                     onMouseEnter={() => audio.playSfx('hover')}
-                    onClick={() => { audio.playSfx('click'); exportErsav(slot); }}
+                    onClick={() => { audio.playSfx('click'); void exportErsav(slot); }}
                   >
                     EXPORT
                   </button>
                   <button
                     className={`slot-btn slot-btn-delete${isConfirm ? ' slot-btn-delete--confirm' : ''}`}
                     onMouseEnter={() => audio.playSfx('hover')}
-                    onClick={() => handleDelete(slot.id)}
+                    onClick={() => void handleDelete(slot.id)}
                   >
                     {isConfirm ? 'CONFIRM?' : 'DELETE'}
                   </button>
@@ -171,7 +168,7 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
             );
           })}
 
-          {/* ── New Slot button (always visible at bottom of list) ── */}
+          {/* Always-visible New Slot button */}
           <button
             className="slots-new-btn"
             onMouseEnter={() => audio.playSfx('hover')}
@@ -181,12 +178,12 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
           </button>
         </div>
 
-        {/* ── Load from file ──────────────────────────────────────── */}
+        {/* Import from file */}
         <div className="slots-import-section" onClick={e => e.stopPropagation()}>
           <button
             className="slots-import-btn"
             onMouseEnter={() => audio.playSfx('hover')}
-            onClick={handleImport}
+            onClick={() => void handleImport()}
           >
             LOAD FROM FILE&nbsp;&nbsp;<span className="slots-import-ext">.ersav</span>
           </button>

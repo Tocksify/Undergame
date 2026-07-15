@@ -1,0 +1,36 @@
+{
+  "appId": "com.echorealm.game",
+  "productName": "Echo Realm",
+  "copyright": "Echo Realm — A Memory Keeper's Tale",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/public/**/*",
+    "electron/**/*",
+    "!dist/public/**/*.map"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "dist/public/MainMenu.mp3"
+  ],
+  "win": {
+    "target": [
+      { "target": "nsis", "arch": ["x64"] },
+      { "target": "portable", "arch": ["x64"] }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "shortcutName": "Echo Realm",
+    "installerHeaderIcon": "",
+    "deleteAppDataOnUninstall": false
+  },
+  "portable": {
+    "artifactName": "EchoRealm-portable.exe"
+  },
+  "extraResources": [],
+  "publish": null
+}

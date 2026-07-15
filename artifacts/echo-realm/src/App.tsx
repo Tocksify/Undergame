@@ -25,10 +25,7 @@ function App() {
 
   // ── Menu music (MP3) ─────────────────────────────────────────────
   useEffect(() => {
-    if (screen === 'game') {
-      menuAudioRef.current?.pause();
-      return;
-    }
+    if (screen === 'game') { menuAudioRef.current?.pause(); return; }
     if (!menuAudioRef.current) {
       const el = new Audio('/MainMenu.mp3');
       el.loop = true; el.volume = 0.55;
@@ -37,25 +34,25 @@ function App() {
     menuAudioRef.current.play().catch(() => {});
   }, [screen]);
 
-  // ── Load an existing slot ────────────────────────────────────────
+  // ── Load existing slot ───────────────────────────────────────────
   const handleLoadSlot = useCallback((slot: LocalSlot) => {
     setActiveSlotId(slot.id);
     setInitialState(buildInitialState(slot.state, false));
     setScreen('game');
   }, []);
 
-  // ── Start a new game (opens customization first) ─────────────────
+  // ── New game (go to customization first) ─────────────────────────
   const handleNewSlot = useCallback(() => {
-    setActiveSlotId(null); // slot created after customization
+    setActiveSlotId(null);
     setScreen('customization');
   }, []);
 
-  // ── Import .ersav → creates a new named slot automatically ───────
-  const handleLoadFromFile = useCallback((file: ErsavFile) => {
+  // ── Import .ersav → create a named slot, then play ───────────────
+  const handleLoadFromFile = useCallback(async (file: ErsavFile) => {
     const date = new Date().toLocaleDateString('en-US', {
       month: '2-digit', day: '2-digit', year: 'numeric',
     });
-    const id = createSlot({
+    const id = await createSlot({
       ...file,
       name: `Loaded File ${date}`,
       savedAt: new Date().toISOString(),
@@ -66,19 +63,17 @@ function App() {
   }, []);
 
   // ── Customization done → create slot with initial state ──────────
-  const confirmCustomization = useCallback((appearance: SpriteAppearance) => {
-    const state = buildInitialState(null, false);
+  const confirmCustomization = useCallback(async (appearance: SpriteAppearance) => {
+    const state      = buildInitialState(null, false);
     state.player.appearance = appearance;
-
     const serialized = serializeGameState(state);
-    const id = createSlot({
+    const id         = await createSlot({
       version: 1,
       name: 'New Save',
       summary: summarizeSavedState(serialized),
       savedAt: new Date().toISOString(),
       state: serialized,
     });
-
     setActiveSlotId(id);
     setInitialState(state);
     setScreen('game');
@@ -87,29 +82,24 @@ function App() {
   // ── Autosave ─────────────────────────────────────────────────────
   const onSave = useCallback(async (state: GameStateData) => {
     if (!activeSlotId) return;
-    const saved   = serializeGameState(state);
-    const existing = getSlotById(activeSlotId);
-    updateSlot(activeSlotId, {
+    const saved    = serializeGameState(state);
+    const existing = await getSlotById(activeSlotId);
+    await updateSlot(activeSlotId, {
       version: 1,
-      name: existing?.name ?? 'Save',
+      name:    existing?.name ?? 'Save',
       summary: summarizeSavedState(saved),
       savedAt: new Date().toISOString(),
-      state: saved,
+      state:   saved,
     });
   }, [activeSlotId]);
 
-  // ── Exit game → back to save slots ───────────────────────────────
+  // ── Exit game ────────────────────────────────────────────────────
   const onExit = useCallback(() => {
-    setInitialState(null);
-    setActiveSlotId(null);
-    setScreen('slots');
+    setInitialState(null); setActiveSlotId(null); setScreen('slots');
   }, []);
 
-  // ── End-of-legacy → wipe slot, return to menu ────────────────────
   const onEndLegacy = useCallback(() => {
-    setInitialState(null);
-    setActiveSlotId(null);
-    setScreen('menu');
+    setInitialState(null); setActiveSlotId(null); setScreen('menu');
   }, []);
 
   // ── Screens ──────────────────────────────────────────────────────
@@ -130,7 +120,7 @@ function App() {
         onBack={() => setScreen('menu')}
         onLoadSlot={handleLoadSlot}
         onNewSlot={handleNewSlot}
-        onLoadFromFile={handleLoadFromFile}
+        onLoadFromFile={file => { void handleLoadFromFile(file); }}
       />
     );
   }
@@ -138,7 +128,7 @@ function App() {
   if (screen === 'customization') {
     return (
       <CharacterCustomization
-        onConfirm={confirmCustomization}
+        onConfirm={appearance => { void confirmCustomization(appearance); }}
         onBack={() => setScreen('slots')}
       />
     );
@@ -159,7 +149,6 @@ function App() {
 
   if (screen === 'options') return <Options onBack={() => setScreen('menu')} />;
   if (screen === 'extras') return <Extras  onBack={() => setScreen('menu')} />;
-
   return null;
 }
 
