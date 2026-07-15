@@ -6,17 +6,20 @@
 // isn't available.
 import { GameMode } from './types';
 
-type SfxKind = 'hover' | 'click' | 'key';
+export type SfxKind = 'hover' | 'click' | 'key' | 'confirm' | 'cancel' | 'levelup';
 
 interface TrackDef {
   bpm: number;
-  chord: number[];           // sustained pad frequencies (Hz)
+  chord: number[];           // sustained pad frequencies (Hz), phase A
+  chordAlt?: number[];       // pad frequencies for phase B — smoothly re-tuned to, for variety
   chordWave: OscillatorType;
   filterFreq: number;
   volume: number;            // 0-1, overall loudness of this track
-  bass?: (number | null)[];  // one entry per step; null = rest
+  bass?: (number | null)[];  // one entry per step; null = rest. Phase A pattern.
+  bassAlt?: (number | null)[]; // phase B pattern (falls back to `bass` if omitted)
   bassWave?: OscillatorType;
   lead?: (number | null)[];
+  leadAlt?: (number | null)[];
   leadWave?: OscillatorType;
   stepsPerBeat?: number;     // default 2 (eighth notes)
 }
@@ -33,96 +36,116 @@ function f(note: string): number {
   return 440 * Math.pow(2, semi / 12);
 }
 
-// ── track catalog ─────────────────────────────────────────────────
+// Each track plays a 16-step phase-A pattern, then — if an Alt pattern/chord is
+// given — smoothly modulates into phase B for 16 steps before returning to A,
+// so loops don't feel like the same 2 bars looping forever.
 const TRACKS: Record<string, TrackDef> = {
   title: {
     bpm: 70, chordWave: 'sine', filterFreq: 1400, volume: 0.5,
     chord: [f('A3'), f('C4'), f('E4')],
-    bass: [f('A2'), null, null, null, f('E3'), null, null, null],
+    chordAlt: [f('F3'), f('A3'), f('C4')],
+    bass: [f('A2'), null, null, null, f('E3'), null, null, null, f('A2'), null, null, null, f('C3'), null, null, null],
+    bassAlt: [f('F2'), null, null, null, f('C3'), null, null, null, f('F2'), null, null, null, f('A2'), null, null, null],
     bassWave: 'triangle',
   },
   town_vh: {
     bpm: 96, chordWave: 'sawtooth', filterFreq: 900, volume: 0.4,
     chord: [f('C4'), f('E4'), f('G4')],
-    bass: [f('C3'), null, f('G3'), null, f('F3'), null, f('G3'), null],
+    chordAlt: [f('A3'), f('C4'), f('E4')],
+    bass: [f('C3'), null, f('G3'), null, f('F3'), null, f('G3'), null, f('C3'), null, f('E3'), null, f('G3'), null, f('F3'), null],
+    bassAlt: [f('A2'), null, f('E3'), null, f('F3'), null, f('E3'), null, f('A2'), null, f('C3'), null, f('D3'), null, f('E3'), null],
     bassWave: 'triangle',
-    lead: [null, f('E5'), null, null, null, f('G5'), null, null],
+    lead: [null, f('E5'), null, null, null, f('G5'), null, null, null, f('C5'), null, null, null, f('G5'), null, null],
+    leadAlt: [null, f('C5'), null, null, null, f('E5'), null, null, null, f('A4'), null, null, null, f('E5'), null, null],
     leadWave: 'sine',
   },
   town_ct: {
     bpm: 88, chordWave: 'sawtooth', filterFreq: 750, volume: 0.4,
     chord: [f('D4'), f('F4'), f('A4')],
-    bass: [f('D3'), null, null, f('A3'), null, null, f('F3'), null],
+    chordAlt: [f('G3'), f('A3'), f('D4')],
+    bass: [f('D3'), null, null, f('A3'), null, null, f('F3'), null, f('D3'), null, null, f('C4'), null, null, f('A3'), null],
+    bassAlt: [f('G2'), null, null, f('D3'), null, null, f('A2'), null, f('G2'), null, null, f('D3'), null, null, f('F3'), null],
     bassWave: 'triangle',
-    lead: [null, null, null, null, f('D5'), null, null, null],
+    lead: [null, null, null, null, f('D5'), null, null, null, null, null, null, null, f('A4'), null, null, null],
     leadWave: 'triangle',
   },
   town_ar: {
     bpm: 80, chordWave: 'sawtooth', filterFreq: 500, volume: 0.42,
     chord: [f('C4'), f('F#4'), f('A4')],
-    bass: [f('C3'), null, null, null, f('F#2'), null, null, null],
+    chordAlt: [f('A#3'), f('E4'), f('G4')],
+    bass: [f('C3'), null, null, null, f('F#2'), null, null, null, f('C3'), null, null, null, f('A#2'), null, null, null],
     bassWave: 'sawtooth',
   },
   town_co: {
     bpm: 72, chordWave: 'sine', filterFreq: 1600, volume: 0.42,
     chord: [f('F4'), f('A4'), f('C5')],
-    bass: [f('F3'), null, null, null, null, null, f('C4'), null],
+    chordAlt: [f('D4'), f('F4'), f('A4')],
+    bass: [f('F3'), null, null, null, null, null, f('C4'), null, f('D3'), null, null, null, null, null, f('A3'), null],
     bassWave: 'sine',
-    lead: [null, null, f('A5'), null, null, null, f('C6'), null],
+    lead: [null, null, f('A5'), null, null, null, f('C6'), null, null, null, f('F5'), null, null, null, f('A5'), null],
     leadWave: 'sine',
   },
   overworld: {
     bpm: 100, chordWave: 'sawtooth', filterFreq: 650, volume: 0.36,
     chord: [f('G3'), f('D4')],
-    bass: [f('G2'), null, null, f('D3'), null, null, f('G2'), null],
+    chordAlt: [f('E3'), f('B3')],
+    bass: [f('G2'), null, null, f('D3'), null, null, f('G2'), null, f('C3'), null, null, f('D3'), null, null, f('G2'), null],
+    bassAlt: [f('E2'), null, null, f('B2'), null, null, f('E2'), null, f('A2'), null, null, f('B2'), null, null, f('E2'), null],
     bassWave: 'triangle',
   },
   south_road: {
     bpm: 84, chordWave: 'sine', filterFreq: 1100, volume: 0.4,
     chord: [f('E4'), f('G4'), f('B4')],
-    bass: [f('E3'), null, null, null, f('B2'), null, null, null],
+    chordAlt: [f('C4'), f('E4'), f('G4')],
+    bass: [f('E3'), null, null, null, f('B2'), null, null, null, f('C3'), null, null, null, f('G2'), null, null, null],
     bassWave: 'triangle',
-    lead: [null, null, null, f('B4'), null, null, null, f('G4')],
+    lead: [null, null, null, f('B4'), null, null, null, f('G4'), null, null, null, f('C5'), null, null, null, f('G4')],
     leadWave: 'sine',
   },
   dungeon: {
     bpm: 60, chordWave: 'sawtooth', filterFreq: 340, volume: 0.4,
     chord: [f('C3'), f('C#4')],
-    bass: [f('C2'), null, null, null, null, null, f('C2'), null],
+    chordAlt: [f('B2'), f('F3')],
+    bass: [f('C2'), null, null, null, null, null, f('C2'), null, f('B1'), null, null, null, null, null, f('B1'), null],
     bassWave: 'sawtooth',
   },
   dungeon_deep: {
     bpm: 50, chordWave: 'sawtooth', filterFreq: 260, volume: 0.46,
     chord: [f('C3'), f('F#3'), f('C4')],
-    bass: [f('C2'), null, null, null, null, null, null, null],
+    chordAlt: [f('A#2'), f('E3'), f('A#3')],
+    bass: [f('C2'), null, null, null, null, null, null, null, f('A#1'), null, null, null, null, null, null, null],
     bassWave: 'sawtooth',
-    lead: [null, null, null, null, f('F#4'), null, null, null],
+    lead: [null, null, null, null, f('F#4'), null, null, null, null, null, null, null, f('E4'), null, null, null],
     leadWave: 'sawtooth',
   },
   interior: {
     bpm: 90, chordWave: 'sine', filterFreq: 1200, volume: 0.24,
     chord: [f('A3'), f('E4')],
+    chordAlt: [f('F3'), f('C4')],
   },
   battle: {
     bpm: 140, chordWave: 'sawtooth', filterFreq: 900, volume: 0.4,
     chord: [f('A3'), f('C4'), f('E4')],
-    bass: [f('A2'), null, f('A2'), null, f('E2'), null, f('E2'), null],
+    chordAlt: [f('F3'), f('A3'), f('D4')],
+    bass: [f('A2'), null, f('A2'), null, f('E2'), null, f('E2'), null, f('A2'), null, f('A2'), null, f('D2'), null, f('E2'), null, null],
     bassWave: 'triangle',
-    lead: [f('A4'), f('C5'), f('E5'), f('C5'), f('A4'), f('C5'), f('E5'), f('C5')],
+    lead: [f('A4'), f('C5'), f('E5'), f('C5'), f('A4'), f('C5'), f('E5'), f('C5'), f('F4'), f('A4'), f('D5'), f('A4'), f('E4'), f('A4'), f('C5'), f('E4')],
     leadWave: 'square',
   },
   battle_boss: {
     bpm: 152, chordWave: 'sawtooth', filterFreq: 1100, volume: 0.46,
     chord: [f('A3'), f('D#4'), f('E4')],
-    bass: [f('A2'), f('A2'), null, f('A2'), f('D#2'), f('D#2'), null, f('D#2')],
+    chordAlt: [f('F3'), f('A3'), f('D#4')],
+    bass: [f('A2'), f('A2'), null, f('A2'), f('D#2'), f('D#2'), null, f('D#2'), f('F2'), f('F2'), null, f('F2'), f('A2'), f('A2'), null, f('D#2')],
     bassWave: 'sawtooth',
-    lead: [f('E5'), f('A4'), f('D#5'), f('A4'), f('E5'), f('A4'), f('D#5'), f('E5')],
+    lead: [f('E5'), f('A4'), f('D#5'), f('A4'), f('E5'), f('A4'), f('D#5'), f('E5'), f('F5'), f('A4'), f('C5'), f('A4'), f('F5'), f('A4'), f('C5'), f('F5')],
     leadWave: 'square',
   },
   true_ending: {
     bpm: 66, chordWave: 'sine', filterFreq: 1800, volume: 0.44,
     chord: [f('C4'), f('E4'), f('G4'), f('C5')],
-    lead: [null, null, null, f('G5'), null, null, null, f('E5')],
+    chordAlt: [f('F3'), f('A3'), f('C4'), f('F4')],
+    lead: [null, null, null, f('G5'), null, null, null, f('E5'), null, null, null, f('C5'), null, null, null, f('E5')],
     leadWave: 'sine',
   },
 };
@@ -143,6 +166,14 @@ function trackForMap(mapId: string): string {
   return 'overworld';
 }
 
+// Modes that show a full-screen/overlay UI. Music is ducked (muffled + quieted)
+// while any of these are active, so UI sound effects actually cut through.
+export const MODAL_MODES = new Set<GameMode>([
+  GameMode.INVENTORY, GameMode.MENU, GameMode.QUEST_LOG, GameMode.SHOP,
+  GameMode.BOOK_READ, GameMode.ENCHANT_SELECT, GameMode.TOME_CRAFT,
+  GameMode.TELEPORT, GameMode.STAT_ALLOCATION, GameMode.DIALOGUE,
+]);
+
 interface SyncState {
   mode: GameMode;
   mapId: string;
@@ -154,12 +185,18 @@ class AudioEngine {
   private masterGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
+  private duckFilter: BiquadFilterNode | null = null;
+  private duckGain: GainNode | null = null;
+  private duckActive = false;
 
   private currentKey: string | null = null;
   private currentNodes: OscillatorNode[] = [];
+  private chordOscillators: OscillatorNode[] = [];
   private trackGain: GainNode | null = null;
   private filter: BiquadFilterNode | null = null;
   private activeDef: TrackDef | null = null;
+  private patternLen = 16;
+  private lastPhase = 0;
   private schedulerTimer: number | null = null;
   private stepIndex = 0;
   private nextStepTime = 0;
@@ -174,11 +211,23 @@ class AudioEngine {
       this.masterGain = ctx.createGain();
       this.masterGain.gain.value = 0.55;
       this.masterGain.connect(ctx.destination);
+
+      // Music routes through a duck filter+gain so we can "blur" it (muffle +
+      // quiet it) whenever a modal UI is open, without touching SFX.
+      this.duckFilter = ctx.createBiquadFilter();
+      this.duckFilter.type = 'lowpass';
+      this.duckFilter.frequency.value = 19000;
+      this.duckGain = ctx.createGain();
+      this.duckGain.gain.value = 1;
+      this.duckFilter.connect(this.duckGain);
+      this.duckGain.connect(this.masterGain);
+
       this.musicGain = ctx.createGain();
       this.musicGain.gain.value = 1;
-      this.musicGain.connect(this.masterGain);
+      this.musicGain.connect(this.duckFilter);
+
       this.sfxGain = ctx.createGain();
-      this.sfxGain.gain.value = 0.9;
+      this.sfxGain.gain.value = 0.95;
       this.sfxGain.connect(this.masterGain);
     }
     return this.ctx;
@@ -190,15 +239,40 @@ class AudioEngine {
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
   }
 
+  /** Muffle + quiet the music (e.g. inventory/menu/shop/dialogue open) so UI SFX stay audible. */
+  setDucked(active: boolean) {
+    const ctx = this.ensureCtx();
+    if (!ctx || !this.duckFilter || !this.duckGain) return;
+    if (this.duckActive === active) return;
+    this.duckActive = active;
+    const now = ctx.currentTime;
+    const freq = active ? 420 : 19000;
+    const gain = active ? 0.32 : 1;
+    for (const [param, target] of [[this.duckFilter.frequency, freq], [this.duckGain.gain, gain]] as const) {
+      param.cancelScheduledValues(now);
+      param.setValueAtTime(param.value, now);
+      param.linearRampToValueAtTime(target, now + 0.28);
+    }
+  }
+
   // ── SFX ──
   playSfx(kind: SfxKind) {
     const ctx = this.ensureCtx();
     if (!ctx || !this.sfxGain) return;
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const now = ctx.currentTime;
-    if (kind === 'hover') this.blip(now, 720, 900, 'sine', 0.05, 0.1);
-    else if (kind === 'click') this.blip(now, 520, 300, 'square', 0.09, 0.2);
-    else this.blip(now, 640, 660, 'triangle', 0.035, 0.13);
+    if (kind === 'hover') this.blip(now, 720, 900, 'sine', 0.05, 0.14);
+    else if (kind === 'click') this.blip(now, 520, 300, 'square', 0.09, 0.24);
+    else if (kind === 'confirm') this.blip(now, 560, 840, 'triangle', 0.09, 0.3);
+    else if (kind === 'cancel') this.blip(now, 480, 240, 'square', 0.1, 0.26);
+    else if (kind === 'levelup') this.levelUpFanfare(now);
+    else this.blip(now, 640, 660, 'triangle', 0.035, 0.18);
+  }
+
+  private levelUpFanfare(startTime: number) {
+    const ctx = this.ctx!;
+    const notes = [f('C5'), f('E5'), f('G5'), f('C6')];
+    notes.forEach((freq, i) => this.pluck(freq, startTime + i * 0.09, 'square', 0.22, this.sfxGain!, 0.28));
   }
 
   private blip(time: number, f0: number, f1: number, wave: OscillatorType, dur: number, vol: number) {
@@ -252,6 +326,7 @@ class AudioEngine {
       window.setTimeout(() => { for (const osc of nodes) { try { osc.stop(); } catch { /* already stopped */ } } }, fadeSec * 1000 + 60);
     }
     this.currentNodes = [];
+    this.chordOscillators = [];
     this.trackGain = null;
     this.filter = null;
     this.activeDef = null;
@@ -270,6 +345,7 @@ class AudioEngine {
     filter.connect(trackGain);
 
     const nodes: OscillatorNode[] = [];
+    const chordOscillators: OscillatorNode[] = [];
     for (const freq of def.chord) {
       const osc = ctx.createOscillator();
       osc.type = def.chordWave;
@@ -287,11 +363,15 @@ class AudioEngine {
       lfo.start(now);
       osc.start(now);
       nodes.push(osc, lfo);
+      chordOscillators.push(osc);
     }
     this.trackGain = trackGain;
     this.filter = filter;
     this.currentNodes = nodes;
+    this.chordOscillators = chordOscillators;
     this.activeDef = def;
+    this.patternLen = Math.max(def.bass?.length ?? 0, def.lead?.length ?? 0, 16);
+    this.lastPhase = 0;
 
     const stepDur = 60 / def.bpm / (def.stepsPerBeat ?? 2);
     this.stepIndex = 0;
@@ -306,17 +386,37 @@ class AudioEngine {
     if (!ctx || !def || !filter) return;
     while (this.nextStepTime < ctx.currentTime + 0.15) {
       const i = this.stepIndex;
-      if (def.bass && def.bass.length) {
-        const note = def.bass[i % def.bass.length];
+      const phase = Math.floor(i / this.patternLen) % 2;
+      if (phase !== this.lastPhase) {
+        this.lastPhase = phase;
+        this.retuneChord(phase === 1 && def.chordAlt ? def.chordAlt : def.chord, this.nextStepTime);
+      }
+      const bassPattern = (phase === 1 && def.bassAlt) ? def.bassAlt : def.bass;
+      const leadPattern = (phase === 1 && def.leadAlt) ? def.leadAlt : def.lead;
+      if (bassPattern && bassPattern.length) {
+        const note = bassPattern[i % bassPattern.length];
         if (note) this.pluck(note, this.nextStepTime, def.bassWave || 'triangle', stepDur * 0.9, filter, 0.5);
       }
-      if (def.lead && def.lead.length) {
-        const note = def.lead[i % def.lead.length];
+      if (leadPattern && leadPattern.length) {
+        const note = leadPattern[i % leadPattern.length];
         if (note) this.pluck(note, this.nextStepTime, def.leadWave || 'square', stepDur * 0.4, filter, 0.22);
       }
       this.stepIndex++;
       this.nextStepTime += stepDur;
     }
+  }
+
+  private retuneChord(targetFreqs: number[], time: number) {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    this.chordOscillators.forEach((osc, i) => {
+      const target = targetFreqs[i % targetFreqs.length];
+      try {
+        osc.frequency.cancelScheduledValues(time);
+        osc.frequency.setValueAtTime(osc.frequency.value, time);
+        osc.frequency.linearRampToValueAtTime(target, time + 1.8);
+      } catch { /* ignore */ }
+    });
   }
 
   private pluck(freq: number, time: number, wave: OscillatorType, dur: number, dest: AudioNode, vol: number) {

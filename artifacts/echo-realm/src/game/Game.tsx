@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GameStateData } from './types';
+import { GameStateData, GameMode } from './types';
 import { updateGame } from './engine';
 import { renderGame } from './renderer';
 import TouchControls from './TouchControls';
-import { audio } from './audio';
+import { audio, MODAL_MODES } from './audio';
+
+const CONFIRM_KEYS = [' ', 'z', 'Enter'];
+const CANCEL_KEYS = ['Escape', 'x', 'q'];
 
 interface GameProps {
   initialState: GameStateData;
@@ -41,6 +44,7 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
     window.addEventListener('keyup', onKeyUp);
 
     let animationFrameId: number;
+    let lastLevel = stateRef.current.player.level;
 
     const loop = () => {
       const state = stateRef.current;
@@ -50,10 +54,32 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
       // (playTrack() no-ops internally if the desired track hasn't changed).
       audio.syncMusic(state);
 
+      // Muffle + quiet the music while any modal UI (inventory, menu, shop,
+      // dialogue, etc.) is open, so UI sound effects actually cut through.
+      audio.setDucked(MODAL_MODES.has(state.mode));
+
+      // Level-up fanfare — this is a state transition, not a keypress, so it
+      // needs its own detection rather than riding on the key-sfx logic below.
+      if (state.player.level > lastLevel) audio.playSfx('levelup');
+      lastLevel = state.player.level;
+
       // Discrete "key pressed" UI sound — fires once per rising edge, not per
       // held-key repeat, using the same keys/prevKeys pair engine.ts relies on.
-      for (const k in state.keys) {
-        if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('key'); break; }
+      // Confirm (space/z/enter) and cancel (escape/x/q) get their own distinct
+      // tones so equip/use/read and closing a menu are clearly audible.
+      let firedSfx = false;
+      for (const k of CONFIRM_KEYS) {
+        if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('confirm'); firedSfx = true; break; }
+      }
+      if (!firedSfx) {
+        for (const k of CANCEL_KEYS) {
+          if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('cancel'); firedSfx = true; break; }
+        }
+      }
+      if (!firedSfx) {
+        for (const k in state.keys) {
+          if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('key'); break; }
+        }
       }
 
       if (state.saveRequested && !savingRef.current) {
