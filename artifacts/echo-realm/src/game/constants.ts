@@ -1012,27 +1012,72 @@ function buildArenaBoss(): string[][] {
   return L;
 }
 
-// ── SOUTH ROAD (16 × 10) — a dirt road leading south from Verdant Hollow (placeholder)
+// ── SOUTH ROAD (18 × 34) — the endgame road: forest, then dirt road, then a clearing
+// that opens into Color. Only reachable once the main story is 100% complete
+// (see VH's '<' exit, gated on quest_main reqState 7).
 function buildSR(): string[][] {
-  const W = 16, H = 10;
+  const W = 18, H = 34;
   const L = buildMap(W, H, 'T');
-  // Dirt path through the forest
-  rect(L, 4, 0, 11, H - 1, 'P');
-  // Wider cleared area in the middle
-  rect(L, 3, 2, 12, H - 3, 'G');
-  rect(L, 4, 0, 11, H - 1, 'P');
-  // Tree border
-  vline(L, 0, 0, H - 1, 'T'); vline(L, 1, 0, H - 1, 'T'); vline(L, 2, 0, H - 1, 'T');
-  vline(L, W - 1, 0, H - 1, 'T'); vline(L, W - 2, 0, H - 1, 'T'); vline(L, W - 3, 0, H - 1, 'T');
-  // Scatter trees inside for atmosphere
-  for (const [tx, ty] of [[3, 1], [3, 8], [12, 0], [12, 9], [2, 4], [13, 5]]) poke(L, tx, ty, 'T');
-  // North exit — back to Verdant Hollow
-  poke(L, 7, 0, '>');
+
+  // The path runs the full length of the road, from the Verdant Hollow gate
+  // in the north down to the clearing that opens into Color in the south.
+  rect(L, 7, 0, 10, H - 1, 'P');
+
+  // ── Zone 1: FOREST (rows 0-9) — dense trees pressing in on a narrow dirt path ──
+  rect(L, 4, 0, 6, 9, 'G');  rect(L, 11, 0, 13, 9, 'G');
+  rect(L, 7, 0, 10, 9, 'P');
+  for (const [tx, ty] of [[5, 1], [12, 1], [4, 4], [13, 4], [5, 7], [12, 7], [6, 3], [11, 6]]) poke(L, tx, ty, 'T');
+
+  // ── Zone 2: DIRT ROAD (rows 10-20) — the forest thins; trees and grass line the road ──
+  rect(L, 3, 10, 14, 20, 'G');
+  rect(L, 7, 10, 10, 20, 'P');
+  for (const [tx, ty] of [[3, 11], [14, 11], [4, 14], [13, 14], [3, 17], [14, 17], [5, 19], [12, 19], [4, 20], [13, 20]]) poke(L, tx, ty, 'T');
+
+  // ── Zone 3: CLEARING (rows 21-33) — the forest opens; the road widens toward Color ──
+  rect(L, 2, 21, 15, H - 1, 'G');
+  rect(L, 7, 21, 10, H - 1, 'P');
+  // A few last trees at the clearing's edge, then nothing but open ground.
+  for (const [tx, ty] of [[2, 22], [15, 22], [2, 26], [15, 26]]) poke(L, tx, ty, 'T');
+
+  // North exit — back to Verdant Hollow (sealed until the Void is defeated)
+  poke(L, 8, 0, '<');
+  // South exit — the clearing opens into Color
+  poke(L, 8, H - 1, '>');
+  return L;
+}
+
+// ── COLOR (22 × 18) — a peaceful village at the end of the South Road. Unusually
+// vibrant green grass ('CG') everywhere — the only place in the Realm where color
+// still lives. No quests here; just people who are, finally, at rest. ──
+function buildCO(): string[][] {
+  const W = 22, H = 18;
+  const L = buildMap(W, H, 'CG');
+  // Soft tree border — the village is sheltered, not walled
+  rect(L, 0, 0, W - 1, 0, 'T'); rect(L, 0, H - 1, W - 1, H - 1, 'T');
+  vline(L, 0, 0, H - 1, 'T'); vline(L, W - 1, 0, H - 1, 'T');
+
+  // A quiet path leading in from the north road, widening into the village square
+  vline(L, 11, 1, 6, 'P');
+  rect(L, 8, 7, 13, 10, 'P');
+
+  // A few small, warm cottages around the square (decorative — this is a place
+  // to rest, not another dungeon to clear)
+  rect(L, 3, 3, 6, 5, 'H');
+  rect(L, 15, 3, 18, 5, 'H');
+  rect(L, 3, 12, 6, 14, 'H');
+  rect(L, 15, 12, 18, 14, 'H');
+
+  // Scattered trees for atmosphere, never blocking the paths
+  for (const [tx, ty] of [[2, 8], [19, 8], [10, 15], [12, 2]]) poke(L, tx, ty, 'T');
+
+  // North exit — back up the South Road
+  poke(L, 11, 0, '<');
   return L;
 }
 
 const vhLayout = buildVH();
 const srLayout = buildSR();
+const coLayout = buildCO();
 const wwLayout = buildWW();
 const msLayout = buildMS();
 const saLayout = buildSA();
@@ -1169,13 +1214,14 @@ export const MAPS: Record<string, any> = {
     exits: {
       '>': { mapId: 'WW', x: 11, y: 13 },
       '!': { mapId: 'CT', x: 1, y: 50 },
-      '<': { mapId: 'SR', x: 7, y: 8, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." }
+      '<': { mapId: 'SR', x: 8, y: 1, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." }
     }
   },
 
-  // ── SOUTH ROAD (16 × 10) — placeholder stub; endgame content TBD ──
+  // ── SOUTH ROAD (18 × 34) — the endgame road: forest, dirt road, then a clearing
+  // opening into Color. Only unlocked at 100% main story completion. ──
   'SR': {
-    id: 'SR', name: 'South Road', width: 16, height: 10,
+    id: 'SR', name: 'South Road', width: 18, height: 34,
     layout: srLayout,
     npcs: [],
     chests: [],
@@ -1183,7 +1229,28 @@ export const MAPS: Record<string, any> = {
     books: [],
     encounterPool: [],
     exits: {
-      '>': { mapId: 'VH', x: 12, y: 14 }
+      '<': { mapId: 'VH', x: 12, y: 14 },
+      '>': { mapId: 'CO', x: 11, y: 1 },
+    }
+  },
+
+  // ── COLOR (22 × 18) — the peaceful village at the end of the South Road ──
+  'CO': {
+    id: 'CO', name: 'Color', width: 22, height: 18,
+    layout: coLayout,
+    npcs: [
+      { id: 'morthus',    x: 11, y: 11, color: '#7fd68a', name: 'Morthus',    type: 'TALK' },
+      { id: 'co_child',   x: 5,  y: 8,  color: '#bde8c2', name: 'A Child',    type: 'TALK' },
+      { id: 'co_gardener',x: 17, y: 8,  color: '#a6d9ac', name: 'A Gardener', type: 'TALK' },
+      { id: 'co_elder',   x: 8,  y: 13, color: '#cfeed3', name: 'An Elder',   type: 'TALK' },
+      { id: 'co_weaver',  x: 13, y: 13, color: '#9fd6a6', name: 'A Weaver',   type: 'TALK' },
+    ],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: {
+      '<': { mapId: 'SR', x: 8, y: 32 },
     }
   },
 
@@ -1587,6 +1654,7 @@ export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: numb
   { id: 'VN', name: 'Void Nexus',       mapId: 'VN', x: 9,  y: 14 },
   { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
   { id: 'AR', name: 'Ashfall Ring',     mapId: 'AR', x: 1,  y: 20 },
+  { id: 'CO', name: 'Color',            mapId: 'CO', x: 10, y: 9  },
 ];
 
 export const INITIAL_STATE: GameStateData = {

@@ -378,6 +378,32 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
+  // ── COLOR — ambient villagers (no quests; this village exists to be at peace) ──
+  if (npcId === 'co_child') {
+    return { text: "We play in the grass all day. It's green here — not gray, like the stories say the rest of the world is. Have you seen a hollow? I haven't. I don't think they're real.", speaker: 'A Child', color: '#bde8c2' };
+  }
+  if (npcId === 'co_gardener') {
+    return { text: "Everything grows here. I don't remember planting half of it. I don't remember much of anything before Color, if I'm honest — and I've stopped minding.", speaker: 'A Gardener', color: '#a6d9ac' };
+  }
+  if (npcId === 'co_elder') {
+    return { text: "No one ages here, not really. No one's in a hurry to leave, either. Some places you find. Others find you, when you're finally ready to stop looking.", speaker: 'An Elder', color: '#cfeed3' };
+  }
+  if (npcId === 'co_weaver') {
+    return { text: "I weave the green into cloth, just to hold a piece of it. Silly, maybe. But after so much gray, who could blame me?", speaker: 'A Weaver', color: '#9fd6a6' };
+  }
+
+  // ── MORTHUS (Color) — speaking with him triggers the true ending cutscene ──
+  if (npcId === 'morthus') {
+    if (state.player.flags['morthus_ending_seen']) {
+      return { text: "...", speaker: 'Morthus', color: '#7fd68a' };
+    }
+    return {
+      text: "You made it, Keeper. Rest your feet — you won't need them to run from anything, not here. Everyone in Color is safe. The hollows, the Void reaching for us... all of that was only ever a dream.",
+      speaker: 'Morthus', color: '#7fd68a',
+      nextId: 'co_cutscene_1',
+    };
+  }
+
   // ── A SURVIVOR (Crestfall City) ────────────────────────────────────
   if (npcId === 'city_survivor') {
     return {
@@ -454,6 +480,36 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
     return {
       text: "I'm... fine. I found a letter in that house over there, from a child to her father. I read it three times. I don't know why I kept reading it. I think I needed to remember that people like that existed.",
       speaker: 'A Survivor', color: '#cccccc'
+    };
+  }
+
+  // ── THE TRUE ENDING — triggered after speaking with Morthus in Color ──
+  if (nextId === 'co_cutscene_1') {
+    return {
+      text: "The village goes quiet. Even the wind seems to hold still. The green grass hums warm beneath your feet — warmer than any memory you can name.",
+      speaker: '', nextId: 'co_cutscene_2',
+    };
+  }
+  if (nextId === 'co_cutscene_2') {
+    return {
+      text: "Two figures wait at the edge of the clearing, where the path fades into the grass. You know their shapes before you can see their faces.",
+      speaker: '', nextId: 'co_cutscene_3',
+    };
+  }
+  if (nextId === 'co_cutscene_3') {
+    return {
+      text: "Mother. Father. You have not seen them since long before the Void took the color out of the world — and yet here they are, exactly as you remember them.",
+      speaker: '', nextId: 'co_cutscene_4',
+    };
+  }
+  if (nextId === 'co_cutscene_4') {
+    return {
+      text: "\"You did it,\" they say. \"The Void is gone. You brought everyone home. You can rest now.\" And for the first time in longer than you can remember, Keeper, you finally do.",
+      speaker: '',
+      action: (s) => {
+        s.player.flags['morthus_ending_seen'] = true;
+        s.mode = GameMode.TRUE_ENDING;
+      },
     };
   }
   return { text: '...', speaker: 'System' };

@@ -42,6 +42,7 @@ function drawTile(ctx: CanvasRenderingContext2D, tx: number, ty: number, tile: s
 
   if (tile === 'P')      { base = '#2e2e2e'; detail = '#222222'; }
   else if (tile === 'G') { base = '#1e1e1e'; detail = '#161616'; }
+  else if (tile === 'CG') { base = '#2f8f3f'; detail = '#256e32'; } // Color's vibrant green grass — the only true color in the Realm
   else if (tile === 'T') { base = '#141414'; detail = '#0e0e0e'; }
   else if (tile === 'W') { base = '#303030'; detail = '#242424'; }
   else if (tile === 'H') { base = '#2a2a2a'; detail = '#1e1e1e'; }
@@ -234,6 +235,24 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     ctx.fillText('Every memory was worth saving.', W / 2, 320);
     ctx.fillStyle = C.gray; ctx.font = '13px monospace';
     ctx.fillText('Thank you for playing Echo Realm.', W / 2, 370);
+    drawScanlines(ctx); return;
+  }
+
+  // ── TRUE ENDING — the peaceful death, reached only through Morthus in Color ──
+  if (state.mode === GameMode.TRUE_ENDING) {
+    // A single warm, living green — the one splash of color permitted in the whole ending.
+    const grad = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, 420);
+    grad.addColorStop(0, '#1d4d27'); grad.addColorStop(1, '#050505');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    pixelBox(ctx, 90, 150, W - 180, 260, '#0a1a0d', '#7fd68a', 3);
+    ctx.fillStyle = '#cdeed2'; ctx.font = 'bold 30px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('THE KEEPER RESTS', W / 2, 226);
+    ctx.fillStyle = '#a9d9b0'; ctx.font = '16px monospace';
+    ctx.fillText('The Void is banished. The Realm is whole.', W / 2, 274);
+    ctx.fillText('Mother. Father. It has been so long.', W / 2, 300);
+    ctx.fillText('You can finally close your eyes.', W / 2, 326);
+    ctx.fillStyle = '#7fa984'; ctx.font = '13px monospace';
+    ctx.fillText('Echo Realm — Thank you for remembering.', W / 2, 376);
     drawScanlines(ctx); return;
   }
 
@@ -476,6 +495,7 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
       const tile = map.layout[ty]?.[tx];
       let color: string | null = null;
       if      (tile === 'G') color = '#1e1e1e';
+      else if (tile === 'CG') color = '#2f8f3f';
       else if (tile === 'P') color = '#2e2e2e';
       else if (tile === 'H') color = '#404040';
       else if (tile === 'W') color = '#505050';

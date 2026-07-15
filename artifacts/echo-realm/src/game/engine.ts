@@ -49,6 +49,7 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.VICTORY) return;
+  if (state.mode === GameMode.TRUE_ENDING) return;
 
   if (state.mode === GameMode.BATTLE) {
     handleBattleInput(state);
@@ -360,7 +361,9 @@ export function updateGame(state: GameStateData) {
           if (opt.nextId) {
             state.dialogue.currentNode = getDialogueNode(state, opt.nextId);
             state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;
-          } else {
+          } else if (state.mode === GameMode.DIALOGUE) {
+            // Only fall back to OVERWORLD if the action didn't already move
+            // the game to a different mode (e.g. the true ending cutscene).
             state.mode = GameMode.OVERWORLD;
             if (state.pendingEncounter) { startBattle(state, state.pendingEncounter); state.pendingEncounter = null; }
           }
@@ -371,7 +374,7 @@ export function updateGame(state: GameStateData) {
           if (node.nextId) {
             state.dialogue.currentNode = getDialogueNode(state, node.nextId);
             state.dialogue.charIndex = 0;
-          } else {
+          } else if (state.mode === GameMode.DIALOGUE) {
             state.mode = GameMode.OVERWORLD;
             if (state.pendingEncounter) { startBattle(state, state.pendingEncounter); state.pendingEncounter = null; }
           }

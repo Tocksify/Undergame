@@ -13,10 +13,11 @@ export enum GameMode {
   ENCHANT_SELECT, // 11 - picking an item to enchant
   TOME_CRAFT,   // 12 - Tomes Blessing: choosing an enchantment to create from an empty book
   TELEPORT,     // 13 - N key: memory transit map selection
-  STAT_ALLOCATION // 14 - M key: spend earned stat points into STR/VIT/DEF
+  STAT_ALLOCATION, // 14 - M key: spend earned stat points into STR/VIT/DEF
+  TRUE_ENDING   // 15 - the peaceful death ending, reached via Morthus's cutscene in Color
 }
 
-export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
+export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
 
 export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key' | 'book' | 'enchanted_book' | 'relic';
