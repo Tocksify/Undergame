@@ -936,6 +936,7 @@ function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet' | 'm
     // A back room hides the entrance to the dungeon below.
     rect(L, 1, 2, 3, 5, 'W');
     poke(L, 2, 4, 'P');
+    poke(L, 2, 5, 'P'); // corridor tile connecting the back room to the passage — without this the exit tile is sealed on all four sides
   }
   poke(L, Math.floor(W / 2), H - 1, '<');
   return L;
