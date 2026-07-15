@@ -490,7 +490,8 @@ export function updateGame(state: GameStateData) {
       }
     } else if (intFound.type === 'DOOR') {
       const door = intFound.door;
-      if (door.locked) {
+      const missingItem = door.reqItem && !state.player.inventory.includes(door.reqItem);
+      if (door.locked || missingItem) {
         state.uiMessage = door.lockMsg ?? "The door is locked."; state.uiMessageTimer = 120;
       } else {
         state.mapId = door.targetMapId;

@@ -143,7 +143,7 @@ export const BOOKS: Record<string, BookData> = {
     title: 'A Mysterious Note',
     type: 'note',
     pages: [
-      "Folded inside the empty book, a single sheet in careful handwriting:\n\n'You found this, which means you got past him. Good. That means you're ready to hear the rest.\n\nEast of Crestfall, past the gate nobody uses anymore, there is a second city built entirely of ash and rings of stone. The people there called it Ashfall Ring. At its heart is something that guards a Blessing — the only thing that can fill an empty book.\n\nIt will not be easy. It was never meant to be.'",
+      "Folded inside the empty book, a single sheet in careful handwriting:\n\n'You found this, which means you got past him. Good. That means you're ready to hear the rest.\n\nEast of Crestfall there is a second city built entirely of ash and rings of stone. The people there called it Ashfall Ring. At its heart, inside the largest house left standing, is something that guards a Blessing — the only thing that can fill an empty book.\n\nBut the road there isn't through the streets. Somewhere in this city is a house that doesn't answer when you knock — the door opens anyway. Whatever stairs you find inside, take them down. At the bottom, the way east opens on its own.\n\nIt will not be easy. It was never meant to be.'",
     ],
   },
 };
@@ -817,8 +817,6 @@ function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPl
 
   // west gate -> Verdant Hollow
   poke(L, 0, cy, '<'); poke(L, 1, cy, 'P');
-  // secret eastern gate -> Ashfall Ring (requires the Mysterious Note)
-  poke(L, W - 1, 20, '@'); poke(L, W - 2, 20, 'P');
 
   // Named/quest roles are spread evenly across every block in the city
   // (instead of filling the grid row-by-row) so quest-givers, notable
@@ -827,10 +825,10 @@ function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPl
   const specialRoles: string[] = [
     'scholar', 'abandoned', 'study', 'wardenoffice', 'shelter',
     ...Array.from({ length: 10 }, (_, i) => `sq${i + 1}`),
-    'secret',
+    'secret', 'ashdoor',
     ...Array.from({ length: 5 }, (_, i) => `note${i + 1}`),
   ];
-  const miscRoles: string[] = Array.from({ length: 75 }, (_, i) => `misc${i + 1}`);
+  const miscRoles: string[] = Array.from({ length: 74 }, (_, i) => `misc${i + 1}`);
 
   const positions: { bx: number; by: number }[] = [];
   for (let by = 0; by < BLOCKS; by++) {
@@ -866,7 +864,7 @@ function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPl
   return { layout: L, placements };
 }
 
-// ── ASHFALL RING (50 × 50) — the second city, reached through the secret gate ──
+// ── ASHFALL RING (50 × 50) — the second city, reached through the stairs beneath Crestfall ──
 function buildARFull(): { layout: string[][]; placements: Record<string, BlockPlacement> } {
   const W = 50, H = 50;
   const SPACING = 10;
@@ -880,25 +878,26 @@ function buildARFull(): { layout: string[][]; placements: Record<string, BlockPl
     vline(L, i * SPACING, 1, H - 2, 'P');
   }
 
-  // west gate back to Crestfall City
+  // the return portal down to the stairs beneath Crestfall
   poke(L, 0, 20, '<'); poke(L, 1, 20, 'P');
 
-  const roleQueue: string[] = [
-    'arena',
-    ...Array.from({ length: 10 }, (_, i) => `misc${i + 1}`),
-  ];
+  // The central mansion sits directly north of the ash plaza — the heart of Ashfall.
+  const { ox: manOx, oy: manOy, doorX: manDoorX, doorY: manDoorY } = placeBuilding(L, 2, 1, SPACING, 8, 8);
+  const placements: Record<string, BlockPlacement> = {
+    arena: { role: 'arena', ox: manOx, oy: manOy, w: 8, h: 8, doorX: manDoorX, doorY: manDoorY, bx: 2, by: 1 },
+  };
 
-  const placements: Record<string, BlockPlacement> = {};
+  const roleQueue: string[] = Array.from({ length: 10 }, (_, i) => `misc${i + 1}`);
+
   let qi = 0;
   for (let by = 0; by < BLOCKS && qi < roleQueue.length; by++) {
     for (let bx = 0; bx < BLOCKS && qi < roleQueue.length; bx++) {
-      if (bx === 0 && by === 2) continue; // keep the gate lane clear
+      if (bx === 0 && by === 2) continue; // keep the portal lane clear
       if (bx === 2 && by === 2) continue; // center block reserved as ash plaza
+      if (bx === 2 && by === 1) continue; // reserved for the central mansion
       const role = roleQueue[qi++];
-      const big = role === 'arena';
-      const size = big ? 8 : 5;
-      const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, size, size);
-      placements[role] = { role, ox, oy, w: size, h: size, doorX, doorY, bx, by };
+      const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, 5, 5);
+      placements[role] = { role, ox, oy, w: 5, h: 5, doorX, doorY, bx, by };
     }
   }
 
@@ -980,6 +979,19 @@ function buildSecretDungeon(): string[][] {
   return L;
 }
 
+// ── STAIRWAY INTO ASH (16 × 12) — the dark passage beneath the House Marked in Ash ──
+function buildAshfallStairs(): string[][] {
+  const W = 16, H = 12;
+  const L = buildMap(W, H, 'V');
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
+  rect(L, 4, 1, 11, H - 2, 'P');
+  poke(L, 5, 3, 'M'); poke(L, 10, 3, 'M'); poke(L, 5, 8, 'M'); poke(L, 10, 8, 'M');
+  poke(L, 8, 1, '@');      // a portal, waiting at the bottom of the stairs
+  poke(L, 8, H - 2, '<');  // stairs back up to the house above
+  return L;
+}
+
 // ── RING ARENA — ground floor (14×9) and boss floor (16×12) ──
 function buildArenaGround(): string[][] {
   const W = 14, H = 9;
@@ -1046,13 +1058,18 @@ const secretDungeonLayout = buildSecretDungeon();
 const arenaGroundLayout = buildArenaGround();
 const arenaBossLayout = buildArenaBoss();
 
+// A House Marked in Ash — an ordinary room hiding a dark staircase down.
+const ctAshdoorLayout = buildInterior('quiet');
+poke(ctAshdoorLayout, 2, 4, 'ST');
+const ashfallStairsLayout = buildAshfallStairs();
+
 // Generic side-quest interiors and note-holding interiors — reuse the misc variant.
 const sqInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 10; i++) sqInteriors[`sq${i}`] = buildInterior('misc');
 const noteInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 5; i++) noteInteriors[`note${i}`] = buildInterior('misc');
 const miscInteriors: Record<string, string[][]> = {};
-for (let i = 1; i <= 75; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
+for (let i = 1; i <= 74; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
 const arMiscInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 10; i++) arMiscInteriors[`misc${i}`] = buildInterior('misc');
 
@@ -1126,8 +1143,6 @@ export const CITY_SIDE_QUESTS: CitySideQuest[] = [
     afterText: 'The streets glow again, at least a little.', requiredKills: 2, enemyPool: ['hollow_guard', 'street_wraith'],
     rewardPool: [{ itemId: 'ench_relic_ashbound', chance: 0.45 }, { itemId: 'ench_codex_living_flame', chance: 0.45 }, { itemId: 'ench_grimoire_striking', chance: 0.1 }], echoes: 70 },
 ];
-
-const W_MINUS_2 = 98;
 
 // ── MAPS ───────────────────────────────────────────────────────────
 export const MAPS: Record<string, any> = {
@@ -1314,15 +1329,15 @@ export const MAPS: Record<string, any> = {
       { id: 'door_h4', x: ctP.wardenoffice.doorX, y: ctP.wardenoffice.doorY, targetMapId: 'CT_H4',     targetX: 7,  targetY: 6,  label: "Warden's Old Office" },
       { id: 'door_h5', x: ctP.shelter.doorX,      y: ctP.shelter.doorY,      targetMapId: 'CT_H5',     targetX: 7,  targetY: 6,  label: "Survivor's Shelter" },
       { id: 'door_secret', x: ctP.secret.doorX,   y: ctP.secret.doorY,       targetMapId: 'CT_SECRET', targetX: 7,  targetY: 6,  label: "A Quiet House" },
+      { id: 'door_ashdoor', x: ctP.ashdoor.doorX, y: ctP.ashdoor.doorY,      targetMapId: 'CT_ASHDOOR', targetX: 7, targetY: 6,  label: "A House Marked in Ash" },
       ...CITY_SIDE_QUESTS.map(sq => ({ id: `door_${sq.id}`, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY, targetMapId: `CT_${sq.id.toUpperCase()}`, targetX: 7, targetY: 6, label: sq.title })),
       ...Array.from({ length: 5 }, (_, i) => ({ id: `door_note${i + 1}`, x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY, targetMapId: `CT_NOTE${i + 1}`, targetX: 7, targetY: 6, label: 'An Old House' })),
-      ...Array.from({ length: 75 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
+      ...Array.from({ length: 74 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
     ],
     books: [],
     encounterPool: ['city_shade', 'street_wraith', 'hollow_guard'],
     exits: {
       '<': { mapId: 'VH', x: 22, y: 8 },
-      '@': { mapId: 'AR', x: 1, y: 20, reqItem: 'book_mysterious_note', lockMsg: "This old gate is rusted shut. Something more than strength must be needed to open it." },
     }
   },
 
@@ -1437,7 +1452,7 @@ export const MAPS: Record<string, any> = {
   // Poke a hidden passage tile into the back room of the secret house.
   ...(() => { poke(ctSecretLayout, 2, 4, '>'); return {}; })(),
 
-  // ── SECRET DUNGEON ──
+  // ── SECRET DUNGEON ── the first dungeon, found at the end of the note trail
   'SECRET_DUNGEON': {
     id: 'SECRET_DUNGEON', name: 'A Hollow Beneath the City', width: 16, height: 12,
     layout: secretDungeonLayout,
@@ -1453,24 +1468,57 @@ export const MAPS: Record<string, any> = {
     exits: { '<': { mapId: 'CT_SECRET', x: 2, y: 3 } }
   },
 
-  // ── ASHFALL RING (50 × 50) — second city, reached through the secret eastern gate ──
+  // ── A HOUSE MARKED IN ASH — the Mysterious Note leads here; a dark staircase hides in back ──
+  'CT_ASHDOOR': {
+    id: 'CT_ASHDOOR', name: 'A House Marked in Ash', width: 14, height: 9,
+    layout: ctAshdoorLayout,
+    npcs: [],
+    chests: [],
+    doors: [
+      {
+        id: 'stairs_ashdoor', x: 2, y: 4, targetMapId: 'ASHFALL_STAIRS', targetX: 8, targetY: 9,
+        label: 'A Dark Staircase', reqItem: 'book_mysterious_note',
+        lockMsg: "The stairs vanish into black. Something you're carrying feels heavier here — as if it's waiting for you to remember why you came.",
+      },
+    ],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'CT', x: ctP.ashdoor.doorX, y: ctP.ashdoor.doorY + 1 } }
+  },
+
+  // ── STAIRWAY INTO ASH — a dark passage beneath the city, ending in a portal ──
+  'ASHFALL_STAIRS': {
+    id: 'ASHFALL_STAIRS', name: 'A Stairway Into Ash', width: 16, height: 12,
+    layout: ashfallStairsLayout,
+    npcs: [],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: ['void_sentinel'],
+    exits: {
+      '<': { mapId: 'CT_ASHDOOR', x: 2, y: 5 },
+      '@': { mapId: 'AR', x: 1, y: 20 },
+    }
+  },
+
+  // ── ASHFALL RING (50 × 50) — second city, reached by the stairs beneath Crestfall ──
   'AR': {
     id: 'AR', name: 'Ashfall Ring', width: 50, height: 50,
     layout: arLayout,
     npcs: [],
     chests: [],
     doors: [
-      { id: 'door_arena', x: arP.arena.doorX, y: arP.arena.doorY, targetMapId: 'AR_ARENA', targetX: 7, targetY: 7, label: 'The Ring Arena' },
+      { id: 'door_arena', x: arP.arena.doorX, y: arP.arena.doorY, targetMapId: 'AR_ARENA', targetX: 7, targetY: 7, label: 'Ashfall Manor' },
       ...Array.from({ length: 10 }, (_, i) => ({ id: `door_ar_misc${i + 1}`, x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY, targetMapId: `AR_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'An Ashen House' })),
     ],
     books: [],
     encounterPool: ['void_sentinel', 'ash_hound', 'cinder_wraith'],
-    exits: { '<': { mapId: 'CT', x: W_MINUS_2, y: 20 } }
+    exits: { '<': { mapId: 'ASHFALL_STAIRS', x: 8, y: 2 } }
   },
 
-  // ── RING ARENA (2 floors, boss at the top) ──
+  // ── ASHFALL MANOR (2 floors, boss in the Great Hall) — the largest house in the city ──
   'AR_ARENA': {
-    id: 'AR_ARENA', name: 'The Ring Arena', width: 14, height: 9,
+    id: 'AR_ARENA', name: 'Ashfall Manor', width: 14, height: 9,
     layout: arenaGroundLayout,
     npcs: [],
     chests: [],
@@ -1480,7 +1528,7 @@ export const MAPS: Record<string, any> = {
     exits: { '<': { mapId: 'AR', x: arP.arena.doorX, y: arP.arena.doorY + 1 } }
   },
   'AR_ARENA_BOSS': {
-    id: 'AR_ARENA_BOSS', name: 'The Ring Arena — Inner Circle', width: 16, height: 12,
+    id: 'AR_ARENA_BOSS', name: 'Ashfall Manor — The Great Hall', width: 16, height: 12,
     layout: arenaBossLayout,
     npcs: [
       { id: 'ring_boss', x: 7, y: 5, color: '#0ea5e9', name: 'The Ringkeeper', type: 'BOSS', hideFlag: 'defeated_ring_boss' },
@@ -1510,7 +1558,7 @@ export const MAPS: Record<string, any> = {
       exits: { '<': { mapId: 'CT', x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY + 1 } }
     }
   ])),
-  ...Object.fromEntries(Array.from({ length: 75 }, (_, i) => [
+  ...Object.fromEntries(Array.from({ length: 74 }, (_, i) => [
     `CT_MISC${i + 1}`, {
       id: `CT_MISC${i + 1}`, name: 'A House', width: 14, height: 9,
       layout: miscInteriors[`misc${i + 1}`],

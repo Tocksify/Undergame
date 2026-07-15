@@ -110,8 +110,8 @@ export const QUESTS: QuestEntry[] = [
       if (s.player.flags['tomes_blessing_used']) return 'The Shadow Archive — an enchantment was forged from nothing. The trail ends here.';
       if (inv.includes('tomes_blessing')) return 'The Shadow Archive — you carry a Tomes Blessing. Use it with an Empty Book to craft an enchantment.';
       if (inv.includes('empty_book') && s.player.flags['ar_ring_boss_defeated']) return 'The Shadow Archive — the Ringkeeper has fallen. Something in the ash still glimmers.';
-      if (inv.includes('empty_book')) return 'The Shadow Archive — an unreadable book, and a note pointing east. Ashfall Ring awaits beyond the rusted gate.';
-      if (inv.includes('book_mysterious_note')) return 'The Shadow Archive — a mysterious note. The gate east of the city may finally open.';
+      if (inv.includes('empty_book')) return 'The Shadow Archive — an unreadable book, and a note pointing toward a house marked in ash. Ashfall Ring waits at the bottom of a dark staircase.';
+      if (inv.includes('book_mysterious_note')) return 'The Shadow Archive — a mysterious note. Somewhere in the city, a house hides a stairway down.';
       const trailCount = inv.filter((i) => i.startsWith('book_trail_note_')).length;
       return `The Shadow Archive — ${trailCount}/5 trail notes found. Something is hidden in Crestfall.`;
     },
