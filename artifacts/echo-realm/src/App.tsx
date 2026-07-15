@@ -15,9 +15,11 @@ import {
   type SaveSlot,
 } from '@workspace/api-client-react';
 import Game from './game/Game';
+import CharacterCustomization from './game/CharacterCustomization';
 import { GameStateData, GameMode } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState, SavedGameState } from './game/save';
 import { audio } from './game/audio';
+import { SpriteAppearance } from './game/npcAppearance';
 import './index.css';
 
 // Attaches hover + click sound effects to any clickable element without
@@ -44,7 +46,7 @@ function setToken(token: string | null) {
   } catch { /* storage unavailable */ }
 }
 
-type Screen = 'loading' | 'auth' | 'slots' | 'game';
+type Screen = 'loading' | 'auth' | 'slots' | 'customization' | 'game';
 
 function AppInner() {
   const [screen, setScreen] = useState<Screen>(currentToken ? 'loading' : 'auth');
@@ -96,8 +98,7 @@ function AppInner() {
     setIsGuest(true);
     setAccount(null);
     setActiveSlot(null);
-    setInitialState(buildInitialState(null, true));
-    setScreen('game');
+    setScreen('customization');
   }, []);
 
   const logout = useCallback(() => {
@@ -111,10 +112,22 @@ function AppInner() {
 
   const startSlot = useCallback((slot: number, saved: SaveSlot | undefined) => {
     setActiveSlot(slot);
-    const savedState = saved ? (saved.state as unknown as SavedGameState) : null;
+    if (!saved) {
+      // Brand-new save — let the player make their mark before their first spawn.
+      setScreen('customization');
+      return;
+    }
+    const savedState = saved.state as unknown as SavedGameState;
     setInitialState(buildInitialState(savedState, false));
     setScreen('game');
   }, []);
+
+  const confirmCustomization = useCallback((appearance: SpriteAppearance) => {
+    const state = buildInitialState(null, isGuest);
+    state.player.appearance = appearance;
+    setInitialState(state);
+    setScreen('game');
+  }, [isGuest]);
 
   const deleteSlot = useCallback((slot: number) => {
     deleteSlotMutation.mutate({ slot }, { onSuccess: () => slotsQuery.refetch() });
@@ -140,6 +153,12 @@ function AppInner() {
     if (isGuest) { setIsGuest(false); setScreen('auth'); }
     else { setScreen('slots'); slotsQuery.refetch(); }
   }, [isGuest, slotsQuery]);
+
+  const onEndLegacy = useCallback(() => {
+    const slot = activeSlot;
+    if (isGuest || !slot) { onExit(); return; }
+    deleteSlotMutation.mutate({ slot }, { onSettled: () => onExit() });
+  }, [isGuest, activeSlot, deleteSlotMutation, onExit]);
 
   const slotsByNumber = useMemo(() => {
     const map = new Map<number, SaveSlot>();
@@ -236,8 +255,19 @@ function AppInner() {
     );
   }
 
+  if (screen === 'customization') {
+    return (
+      <Centered>
+        <CharacterCustomization
+          onConfirm={confirmCustomization}
+          onBack={() => setScreen(isGuest ? 'auth' : 'slots')}
+        />
+      </Centered>
+    );
+  }
+
   if (screen === 'game' && initialState) {
-    return <Centered><Game initialState={initialState} onSave={onSave} onExit={onExit} /></Centered>;
+    return <Centered><Game initialState={initialState} onSave={onSave} onExit={onExit} onEndLegacy={onEndLegacy} /></Centered>;
   }
 
   return null;

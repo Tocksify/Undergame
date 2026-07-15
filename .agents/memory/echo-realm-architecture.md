@@ -42,5 +42,9 @@ description: Key patterns, decisions, and gotchas for the Echo Realm RPG codebas
 - Mythic-tier text renders as an animated moving dark-blue/black gradient (`drawTierText` in renderer.ts, keyed off `frameCount`) instead of a flat color — reuse `drawTierText` for any new mythic-tier UI text rather than re-implementing the gradient.
 - Mythic enchantments are craft-only (via a consumable "blessing" relic + catalyst item, never dropped by quests/chests) — keep that scarcity rule if adding more mythic items.
 
+## Collision / impassable tiles
+- Movement blocking is a single hardcoded list in engine.ts (`tile === 'W' || 'T' || 'H' || ...`), separate from the tile-color definitions in renderer.ts. Any new solid tile type (e.g. water, a building wall) must be added to *both* places — renderer.ts for how it looks and engine.ts's impassable check for it to actually block movement. Adding a colored tile without updating the engine list makes it walkable regardless of appearance.
+- Verify new hand-authored map layouts (buildXY() functions in constants.ts) for connectivity and NPC placement with a quick BFS flood-fill from the entry point over walkable tiles before trusting the ASCII sketch — it's easy to accidentally place an NPC on/inside a solid feature (e.g. in the middle of a pond) or fully enclose a decorative element, which the sketch alone won't catch.
+
 ## Multi-item notifications
 - The single `state.uiMessage`/`uiMessageTimer` field is for one-line toasts only. For multi-item drops (boss loot, quest turn-ins with several rewards), use the separate `state.messageStack` array + `pushMessages(state, texts, tier?)` helper (constants.ts) — renders as a stacked list in renderer.ts, independent of `uiMessage`. Don't overload `uiMessage` for multi-line content.

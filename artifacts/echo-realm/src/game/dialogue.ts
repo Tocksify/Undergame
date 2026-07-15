@@ -392,6 +392,38 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     return { text: "I weave the green into cloth, just to hold a piece of it. Silly, maybe. But after so much gray, who could blame me?", speaker: 'A Weaver', color: '#9fd6a6' };
   }
 
+  // ── VERDANT HOLLOW FAMILIAR FACES, now resting in Color ──
+  if (npcId === 'co_maren') {
+    return {
+      text: "I never thought I'd live to see it. Green — so much green. After all those gray days in the Hollow, this is what I was trying to protect the whole time. Take a moment, Keeper. You've more than earned it.",
+      speaker: 'Elder Maren', color: '#c8d8c8',
+    };
+  }
+  if (npcId === 'co_pip') {
+    return {
+      text: "I kept every one of those memory-grass stones in my pocket for luck. Guess I don't need luck anymore. Honestly I'm not sure what to do with myself — I'm happy. Took me a second to remember what that even felt like.",
+      speaker: 'Pip', color: '#c0ccc0',
+    };
+  }
+  if (npcId === 'co_zara') {
+    return {
+      text: "No inventory. No prices. No ledger to balance at the end of the day. I just... sit, mostly. Sometimes I braid grass into little figures and leave them on window ledges. Never had time for things like that, before.",
+      speaker: 'Zara', color: '#e0e8e0',
+    };
+  }
+  if (npcId === 'co_gregor') {
+    return {
+      text: "My hands don't shake here. First time in longer than I can remember. I might open a little practice, if anyone in a place like this ever needs patching up. I don't expect many takers, and that suits me just fine.",
+      speaker: 'Gregor', color: '#a0a8a0',
+    };
+  }
+  if (npcId === 'co_hollow') {
+    return {
+      text: "The fog is gone. I can hear my own voice now — not the echo of something that used to be me. I think I am me, again, whatever that means. It feels warm. I didn't know I'd missed warm.",
+      speaker: 'A Hollow', color: '#d8e8d8',
+    };
+  }
+
   // ── MORTHUS (Color) — speaking with him triggers the true ending cutscene ──
   if (npcId === 'morthus') {
     if (state.player.flags['morthus_ending_seen']) {

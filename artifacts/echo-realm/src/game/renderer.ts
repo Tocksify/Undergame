@@ -1,7 +1,7 @@
 import { GameStateData, GameMode } from './types';
 import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT } from './constants';
 import { QUESTS } from './quests';
-import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, HairStyle } from './npcAppearance';
+import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, drawHair, drawSprite } from './npcAppearance';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
 const C = {
@@ -34,83 +34,6 @@ function countQuestNotifications(state: GameStateData): number {
   return count;
 }
 
-function drawHair(ctx: CanvasRenderingContext2D, hxL: number, hyT: number, hs: number, color: string, style: HairStyle) {
-  ctx.fillStyle = color;
-  switch (style) {
-    case 'bald':
-      break;
-    case 'buzz':
-      ctx.fillRect(hxL, hyT - 1, hs, 3);
-      break;
-    case 'short':
-      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
-      ctx.fillRect(hxL - 1, hyT, 2, hs * 0.4);
-      ctx.fillRect(hxL + hs - 1, hyT, 2, hs * 0.4);
-      break;
-    case 'long':
-      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
-      ctx.fillRect(hxL - 2, hyT, 3, hs + 3);
-      ctx.fillRect(hxL + hs - 1, hyT, 3, hs + 3);
-      break;
-    case 'ponytail':
-      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
-      ctx.fillRect(hxL + hs, hyT + 1, 3, hs * 0.9);
-      break;
-    case 'spiky':
-      for (let i = 0; i < 3; i++) ctx.fillRect(hxL + i * (hs / 3), hyT - 4, hs / 3 - 1, 5);
-      break;
-    case 'mohawk':
-      ctx.fillRect(hxL + hs * 0.35, hyT - 5, hs * 0.3, 6);
-      break;
-  }
-}
-
-function drawSprite(ctx: CanvasRenderingContext2D, wx: number, wy: number, ap: SpriteAppearance, hat = false) {
-  const px = wx + 16; const py = wy + 8;
-  const cx = px + 8; // shared horizontal center for body/head, so size variation stays centered
-
-  // body — width/height vary slightly per NPC; bottom edge stays fixed
-  // so feet remain grounded regardless of the size jitter.
-  const bw = ap.bodyW; const bh = ap.bodyH;
-  const bodyBottom = py + 4 + 16;
-  const bx = cx - bw / 2; const by = bodyBottom - bh;
-  ctx.fillStyle = ap.cloth; ctx.fillRect(bx, by, bw, bh);
-  ctx.strokeStyle = C.darkest; ctx.lineWidth = 1; ctx.strokeRect(bx, by, bw, bh);
-
-  // head — bottom edge fixed at the "neck" line
-  const hs = ap.headSize;
-  const headBottom = py + 8;
-  const hxL = cx - hs / 2; const hyT = headBottom - hs;
-  ctx.fillStyle = ap.skin; ctx.fillRect(hxL, hyT, hs, hs);
-  ctx.strokeStyle = C.darkest; ctx.strokeRect(hxL, hyT, hs, hs);
-
-  // eyes
-  ctx.fillStyle = ap.eye;
-  ctx.fillRect(hxL + hs * 0.2, hyT + hs * 0.4, hs * 0.22, hs * 0.22);
-  ctx.fillRect(hxL + hs * 0.58, hyT + hs * 0.4, hs * 0.22, hs * 0.22);
-
-  // hair or hat (mutually exclusive)
-  if (hat) {
-    ctx.fillStyle = C.dim;
-    ctx.fillRect(px, py - 8, 16, 4); ctx.fillRect(px + 3, py - 12, 10, 4);
-  } else {
-    drawHair(ctx, hxL, hyT, hs, ap.hair, ap.hairStyle);
-  }
-
-  // facial accessory
-  if (ap.accessory === 'glasses') {
-    ctx.strokeStyle = C.darkest; ctx.lineWidth = 1;
-    ctx.strokeRect(hxL + hs * 0.14, hyT + hs * 0.36, hs * 0.32, hs * 0.28);
-    ctx.strokeRect(hxL + hs * 0.54, hyT + hs * 0.36, hs * 0.32, hs * 0.28);
-  } else if (ap.accessory === 'beard') {
-    ctx.fillStyle = ap.hair;
-    ctx.fillRect(hxL + hs * 0.15, hyT + hs * 0.7, hs * 0.7, hs * 0.3);
-  } else if (ap.accessory === 'earrings') {
-    ctx.fillStyle = '#e8d98a';
-    ctx.fillRect(hxL - 2, hyT + hs * 0.5, 2, 2); ctx.fillRect(hxL + hs, hyT + hs * 0.5, 2, 2);
-  }
-}
-
 function drawTile(ctx: CanvasRenderingContext2D, tx: number, ty: number, tile: string, frame: number) {
   const x = tx * TILE_SIZE; const y = ty * TILE_SIZE;
   let base = C.dark; let detail = C.darkest; let bright = false;
@@ -118,6 +41,10 @@ function drawTile(ctx: CanvasRenderingContext2D, tx: number, ty: number, tile: s
   if (tile === 'P')      { base = '#2e2e2e'; detail = '#222222'; }
   else if (tile === 'G') { base = '#1e1e1e'; detail = '#161616'; }
   else if (tile === 'CG') { base = '#2f8f3f'; detail = '#256e32'; } // Color's vibrant green grass — the only true color in the Realm
+  else if (tile === 'CP') { base = '#c99a5b'; detail = '#a97b3f'; } // Color's warm sandy path
+  else if (tile === 'CW') { base = '#3a8fc9'; detail = '#2a6f9f'; } // Color's pond water
+  else if (tile === 'CF') { base = '#3fa350'; detail = '#2f8f3f'; } // flower meadow (drawn with colorful dots below)
+  else if (tile === 'CH') { base = '#d9b06a'; detail = '#b5854a'; } // Color's warm terracotta cottages
   else if (tile === 'T') { base = '#141414'; detail = '#0e0e0e'; }
   else if (tile === 'W') { base = '#303030'; detail = '#242424'; }
   else if (tile === 'H') { base = '#2a2a2a'; detail = '#1e1e1e'; }
@@ -156,6 +83,20 @@ function drawTile(ctx: CanvasRenderingContext2D, tx: number, ty: number, tile: s
     ctx.fillStyle = '#2a2a44'; ctx.fillRect(x + 10, y + 10, 28, 34);
     ctx.fillStyle = '#111122'; ctx.fillRect(x + 14, y + 14, 20, 26);
     ctx.fillStyle = '#5555aa'; ctx.fillRect(x + 22, y + 28, 4, 12); // handle
+  } else if (tile === 'CW') {
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    for (let r = 0; r < 3; r++) ctx.fillRect(x + 4, y + r * 14 + 8, TILE_SIZE - 8, 2);
+  } else if (tile === 'CF') {
+    const dots = ['#e85d9c', '#f2c14e', '#e0e0f0', '#f28c28'];
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = dots[i % dots.length];
+      ctx.fillRect(x + 4 + (i * 7) % (TILE_SIZE - 8), y + 6 + (i * 11) % (TILE_SIZE - 8), 4, 4);
+    }
+  } else if (tile === 'CH') {
+    ctx.fillStyle = '#8a4a2e'; ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+    ctx.fillStyle = '#c9683f'; ctx.fillRect(x, y - 4, TILE_SIZE, 12); // roof overhang
+    ctx.fillStyle = '#ffe9a8';
+    ctx.fillRect(x + 14, y + 16, 8, 8); ctx.fillRect(x + 28, y + 16, 8, 8);
   }
 
   if (bright) {
@@ -326,8 +267,22 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     ctx.fillText('The Void is banished. The Realm is whole.', W / 2, 274);
     ctx.fillText('Mother. Father. It has been so long.', W / 2, 300);
     ctx.fillText('You can finally close your eyes.', W / 2, 326);
-    ctx.fillStyle = '#7fa984'; ctx.font = '13px monospace';
-    ctx.fillText('Echo Realm — Thank you for remembering.', W / 2, 376);
+
+    const options = ['Enter Sandbox Mode', 'End Legacy'];
+    const optDesc = ['Keep playing, at your own pace.', 'Delete this save and let it rest.'];
+    for (let i = 0; i < options.length; i++) {
+      const oy = 348 + i * 22;
+      const selected = state.trueEndingMenuIndex === i;
+      ctx.fillStyle = selected ? '#cdeed2' : '#5f8f68';
+      ctx.font = selected ? 'bold 15px monospace' : '15px monospace';
+      ctx.fillText(`${selected ? '> ' : '  '}${options[i]}`, W / 2, oy);
+    }
+    ctx.fillStyle = '#7fa984'; ctx.font = '11px monospace';
+    ctx.fillText(optDesc[state.trueEndingMenuIndex], W / 2, 348 + options.length * 22 + 6);
+    if (Math.floor(state.frameCount / 25) % 2 === 0) {
+      ctx.fillStyle = '#a9d9b0'; ctx.font = '11px monospace';
+      ctx.fillText('↑↓ choose   [ SPACE ] confirm', W / 2, 403);
+    }
     drawScanlines(ctx); return;
   }
 
@@ -424,7 +379,7 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
 
   // player
   if (state.player.invincibility <= 0 || Math.floor(state.frameCount / 4) % 2 === 0) {
-    drawSprite(ctx, state.player.x, state.player.y, PLAYER_APPEARANCE);
+    drawSprite(ctx, state.player.x, state.player.y, state.player.appearance ?? PLAYER_APPEARANCE);
   }
 
   // interaction prompt
@@ -608,6 +563,10 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
       let color: string | null = null;
       if      (tile === 'G') color = '#1e1e1e';
       else if (tile === 'CG') color = '#2f8f3f';
+      else if (tile === 'CP') color = '#c99a5b';
+      else if (tile === 'CW') color = '#3a8fc9';
+      else if (tile === 'CF') color = '#3fa350';
+      else if (tile === 'CH') color = '#d9b06a';
       else if (tile === 'P') color = '#2e2e2e';
       else if (tile === 'H') color = '#404040';
       else if (tile === 'W') color = '#505050';

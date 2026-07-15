@@ -1182,32 +1182,74 @@ function buildSR(): string[][] {
   return L;
 }
 
-// ── COLOR (22 × 18) — a peaceful village at the end of the South Road. Unusually
-// vibrant green grass ('CG') everywhere — the only place in the Realm where color
-// still lives. No quests here; just people who are, finally, at rest. ──
+// ── COLOR (44 × 36) — a sprawling, peaceful village at the end of the South Road.
+// Unusually vibrant color everywhere — green grass ('CG'), warm sandy paths ('CP'),
+// blue ponds ('CW'), flower meadows ('CF'), and terracotta cottages ('CH') — the
+// only place in the Realm where color still lives. No quests here; just people
+// who are, finally, at rest. The path winds south through everyone else before
+// it ever reaches Morthus, tucked away in a quiet grove at the very end. ──
 function buildCO(): string[][] {
-  const W = 22, H = 18;
+  const W = 44, H = 36;
   const L = buildMap(W, H, 'CG');
   // Soft tree border — the village is sheltered, not walled
   rect(L, 0, 0, W - 1, 0, 'T'); rect(L, 0, H - 1, W - 1, H - 1, 'T');
   vline(L, 0, 0, H - 1, 'T'); vline(L, W - 1, 0, H - 1, 'T');
 
-  // A quiet path leading in from the north road, widening into the village square
-  vline(L, 11, 1, 6, 'P');
-  rect(L, 8, 7, 13, 10, 'P');
+  // ── Main spine: entry path winds all the way south to Morthus's grove ──
+  vline(L, 22, 0, 8, 'CP');    // entry, north road down into the first plaza
+  vline(L, 22, 8, 15, 'CP');  // plaza down to the mid plaza
+  vline(L, 22, 20, 24, 'CP'); // mid plaza down to the southern gathering
+  vline(L, 22, 28, 31, 'CP'); // southern gathering down into the grove
 
-  // A few small, warm cottages around the square (decorative — this is a place
-  // to rest, not another dungeon to clear)
-  rect(L, 3, 3, 6, 5, 'H');
-  rect(L, 15, 3, 18, 5, 'H');
-  rect(L, 3, 12, 6, 14, 'H');
-  rect(L, 15, 12, 18, 14, 'H');
+  // ── First plaza (just past the entry) ──
+  rect(L, 16, 4, 28, 9, 'CP');
+  // West branch — out to the western cottages and pond
+  hline(L, 7, 6, 16, 'CP');
+  vline(L, 8, 7, 13, 'CP');
+  // East branch — out to the eastern cottages and pond
+  hline(L, 7, 28, 38, 'CP');
+  vline(L, 36, 7, 13, 'CP');
 
-  // Scattered trees for atmosphere, never blocking the paths
-  for (const [tx, ty] of [[2, 8], [19, 8], [10, 15], [12, 2]]) poke(L, tx, ty, 'T');
+  // ── Mid plaza ──
+  rect(L, 15, 15, 29, 20, 'CP');
+
+  // ── Southern gathering area ──
+  rect(L, 13, 24, 31, 28, 'CP');
+
+  // ── Ponds, glinting blue in a realm that has forgotten color ──
+  rect(L, 5, 9, 10, 13, 'CW');
+  rect(L, 34, 9, 39, 13, 'CW');
+
+  // ── Cottages — small, warm homes, never blocking a path ──
+  rect(L, 4, 2, 6, 4, 'CH');   rect(L, 4, 15, 6, 17, 'CH');
+  rect(L, 38, 2, 40, 4, 'CH'); rect(L, 38, 15, 40, 17, 'CH');
+  rect(L, 9, 21, 11, 23, 'CH'); rect(L, 33, 21, 35, 23, 'CH');
+  rect(L, 9, 30, 11, 32, 'CH'); rect(L, 33, 30, 35, 32, 'CH');
+
+  // ── Flower meadows scattered for color, never on a path or an NPC tile ──
+  for (const [x1, y1, x2, y2] of [
+    [12, 3, 14, 5], [30, 3, 32, 5], [12, 10, 14, 12], [30, 10, 32, 12],
+    [7, 17, 9, 19], [35, 17, 37, 19], [17, 21, 19, 23], [25, 21, 27, 23],
+    [12, 30, 14, 32], [30, 30, 32, 32],
+  ]) rect(L, x1, y1, x2, y2, 'CF');
+
+  // ── Scattered decorative trees for atmosphere, never on a path ──
+  for (const [tx, ty] of [
+    [3, 6], [3, 20], [40, 6], [40, 20], [8, 4], [36, 4], [8, 18], [36, 18],
+    [14, 14], [30, 14], [17, 12], [27, 12], [14, 22], [30, 22], [22, 20],
+    [10, 26], [34, 26], [6, 30], [38, 30], [16, 30], [28, 30],
+  ]) poke(L, tx, ty, 'T');
+
+  // ── Morthus's grove — secluded, tree-ringed, the deepest point in the village ──
+  rect(L, 18, 31, 26, 35, 'CP');
+  for (const [tx, ty] of [
+    [17, 30], [18, 30], [19, 30], [25, 30], [26, 30], [27, 30],
+    [17, 31], [27, 31], [17, 32], [27, 32], [17, 33], [27, 33],
+    [17, 34], [27, 34], [17, 35], [18, 35], [19, 35], [25, 35], [26, 35], [27, 35],
+  ]) poke(L, tx, ty, 'T');
 
   // North exit — back up the South Road
-  poke(L, 11, 0, '<');
+  poke(L, 22, 0, '<');
   return L;
 }
 
@@ -1468,20 +1510,27 @@ export const MAPS: Record<string, any> = {
     encounterPool: [],
     exits: {
       '<': { mapId: 'VH', x: 12, y: 14 },
-      '>': { mapId: 'CO', x: 11, y: 1 },
+      '>': { mapId: 'CO', x: 22, y: 1 },
     }
   },
 
-  // ── COLOR (22 × 18) — the peaceful village at the end of the South Road ──
+  // ── COLOR (44 × 36) — the sprawling, peaceful village at the end of the South
+  // Road. Everyone the player meets along the way is finally at rest; Morthus
+  // waits alone in a quiet grove at the very end, deepest point in the map. ──
   'CO': {
-    id: 'CO', name: 'Color', width: 22, height: 18,
+    id: 'CO', name: 'Color', width: 44, height: 36,
     layout: coLayout,
     npcs: [
-      { id: 'morthus',    x: 11, y: 11, color: '#7fd68a', name: 'Morthus',    type: 'TALK' },
-      { id: 'co_child',   x: 5,  y: 8,  color: '#bde8c2', name: 'A Child',    type: 'TALK' },
-      { id: 'co_gardener',x: 17, y: 8,  color: '#a6d9ac', name: 'A Gardener', type: 'TALK' },
-      { id: 'co_elder',   x: 8,  y: 13, color: '#cfeed3', name: 'An Elder',   type: 'TALK' },
-      { id: 'co_weaver',  x: 13, y: 13, color: '#9fd6a6', name: 'A Weaver',   type: 'TALK' },
+      { id: 'co_maren',    x: 15, y: 6,  color: '#e8d9a0', name: 'Elder Maren', type: 'TALK' },
+      { id: 'co_pip',      x: 29, y: 6,  color: '#bde8c2', name: 'Pip',         type: 'TALK' },
+      { id: 'co_gardener', x: 18, y: 9,  color: '#a6d9ac', name: 'A Gardener',  type: 'TALK' },
+      { id: 'co_child',    x: 9,  y: 5,  color: '#bde8c2', name: 'A Child',     type: 'TALK' },
+      { id: 'co_zara',     x: 8,  y: 15, color: '#9fd6c9', name: 'Zara',        type: 'TALK' },
+      { id: 'co_gregor',   x: 37, y: 4,  color: '#cfa87f', name: 'Gregor',      type: 'TALK' },
+      { id: 'co_elder',    x: 18, y: 18, color: '#cfeed3', name: 'An Elder',    type: 'TALK' },
+      { id: 'co_weaver',   x: 27, y: 18, color: '#9fd6a6', name: 'A Weaver',    type: 'TALK' },
+      { id: 'co_hollow',   x: 22, y: 26, color: '#c9c9e8', name: 'A Hollow',    type: 'TALK' },
+      { id: 'morthus',     x: 22, y: 34, color: '#7fd68a', name: 'Morthus',     type: 'TALK' },
     ],
     chests: [],
     doors: [],
@@ -1895,7 +1944,7 @@ export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: numb
   { id: 'VN', name: 'Void Nexus',       mapId: 'VN', x: 9,  y: 14 },
   { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
   { id: 'AR', name: 'Ashfall Ring',     mapId: 'AR', x: 1,  y: 20 },
-  { id: 'CO', name: 'Color',            mapId: 'CO', x: 10, y: 9  },
+  { id: 'CO', name: 'Color',            mapId: 'CO', x: 22, y: 5  },
 ];
 
 export const INITIAL_STATE: GameStateData = {
@@ -1950,4 +1999,6 @@ export const INITIAL_STATE: GameStateData = {
   questLogScroll: 0,
   statAllocIndex: 0,
   notifications: { itemsBaseline: 0, questsBaseline: {} },
+  trueEndingMenuIndex: 0,
+  endLegacyRequested: false,
 };

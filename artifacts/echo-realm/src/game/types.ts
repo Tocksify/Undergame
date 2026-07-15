@@ -19,6 +19,8 @@ export enum GameMode {
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
 
+import type { SpriteAppearance } from './npcAppearance';
+
 export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key' | 'book' | 'enchanted_book' | 'relic';
 export type ItemSubcategory = 'medical' | 'def' | 'utility';
@@ -131,6 +133,7 @@ export interface GameStateData {
     xpToNext: number;
     statPoints: number; // unspent points, earned on level-up (+ a 10-point starting grant)
     baseStats: { str: number; vit: number; def: number }; // player-assigned, on top of equipment/enchants
+    appearance?: SpriteAppearance; // set via the character-customization screen on a fresh save
   };
   camera: { x: number; y: number };
   adjacentInteractable: any;
@@ -177,6 +180,11 @@ export interface GameStateData {
   teleportIndex: number; // selected row in the TELEPORT menu
   questLogScroll: number; // top index of the visible window in the QUEST_LOG list
   statAllocIndex: number; // selected stat row (STR/VIT/DEF) in the STAT_ALLOCATION menu
+  // TRUE_ENDING screen: 0 = "Enter Sandbox Mode", 1 = "End Legacy"
+  trueEndingMenuIndex: number;
+  // Set by engine.ts when the player chooses "End Legacy" on the true-ending screen.
+  // Game.tsx watches this and calls onEndLegacy (which deletes the save slot and exits).
+  endLegacyRequested: boolean;
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player

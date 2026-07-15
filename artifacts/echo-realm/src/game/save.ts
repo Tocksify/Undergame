@@ -1,5 +1,6 @@
 import { EnemyData, GameStateData } from './types';
 import { INITIAL_STATE, MAPS, recomputeMaxHp, xpForLevel, STARTING_STAT_POINTS } from './constants';
+import type { SpriteAppearance } from './npcAppearance';
 
 // The shape persisted to the save-slot JSON blob. Deliberately excludes
 // purely visual/transient fields (dialogue, camera, keys, projectiles,
@@ -29,6 +30,7 @@ export interface SavedGameState {
     xpToNext?: number;
     statPoints?: number;
     baseStats?: { str: number; vit: number; def: number };
+    appearance?: SpriteAppearance;
   };
   battle?: {
     enemy: EnemyData;
@@ -59,6 +61,7 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       xpToNext: state.player.xpToNext,
       statPoints: state.player.statPoints,
       baseStats: { ...state.player.baseStats },
+      appearance: state.player.appearance ? { ...state.player.appearance } : undefined,
     },
     battle: state.battle ? {
       enemy: JSON.parse(JSON.stringify(state.battle.enemy)),
@@ -103,6 +106,7 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.xpToNext = saved.player.xpToNext ?? xpForLevel(state.player.level);
     state.player.statPoints = saved.player.statPoints ?? STARTING_STAT_POINTS;
     state.player.baseStats = saved.player.baseStats ? { ...saved.player.baseStats } : { str: 0, vit: 0, def: 0 };
+    state.player.appearance = saved.player.appearance ? { ...saved.player.appearance } : undefined;
     recomputeMaxHp(state);
     // Baseline the notification badges to the loaded save so pre-existing
     // items/quest progress don't show up as "new" the moment the game loads.

@@ -16,9 +16,12 @@ interface GameProps {
   initialState: GameStateData;
   onSave: (state: GameStateData) => Promise<void> | void;
   onExit: () => void;
+  // Called when the player chooses "End Legacy" on the true-ending screen —
+  // App.tsx deletes the active save slot, then exits back to the slot list.
+  onEndLegacy: () => void;
 }
 
-export default function Game({ initialState, onSave, onExit }: GameProps) {
+export default function Game({ initialState, onSave, onExit, onEndLegacy }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameStateData>(initialState);
   const savingRef = useRef(false);
@@ -107,6 +110,11 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
         onExit();
         return; // parent will unmount this component
       }
+      if (state.endLegacyRequested) {
+        state.endLegacyRequested = false;
+        onEndLegacy();
+        return; // parent will unmount this component
+      }
 
       renderGame(ctx, state);
       state.prevKeys = { ...state.keys };
@@ -120,7 +128,7 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
       window.removeEventListener('keyup', onKeyUp);
       cancelAnimationFrame(animationFrameId);
     };
-  }, [onSave, onExit]);
+  }, [onSave, onExit, onEndLegacy]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-[768px]">

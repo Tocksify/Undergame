@@ -63,7 +63,27 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.VICTORY) return;
-  if (state.mode === GameMode.TRUE_ENDING) return;
+  if (state.mode === GameMode.TRUE_ENDING) {
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w') || justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
+      state.trueEndingMenuIndex = state.trueEndingMenuIndex === 0 ? 1 : 0;
+    }
+    if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
+      if (state.trueEndingMenuIndex === 0) {
+        // Enter Sandbox Mode — respawn near Morthus's grove and keep playing.
+        state.mode = GameMode.OVERWORLD;
+        state.mapId = 'CO';
+        state.player.hp = state.player.maxHp;
+        state.player.x = 22 * TILE_SIZE; state.player.y = 32 * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.player.flags['sandbox_mode'] = true;
+        state.uiMessage = "Sandbox Mode: your legacy endures. Fight on, at your own pace.";
+        state.uiMessageTimer = 240;
+      } else {
+        state.endLegacyRequested = true;
+      }
+    }
+    return;
+  }
 
   if (state.mode === GameMode.BATTLE) {
     handleBattleInput(state);
@@ -551,7 +571,7 @@ export function updateGame(state: GameStateData) {
       if (ntx >= 0 && ntx < map.width && nty >= 0 && nty < map.height) {
         const tile = map.layout[nty][ntx];
         const npcBlocking = visibleNpcs.find((n: any) => n.x === ntx && n.y === nty);
-        const impassable = tile === 'W' || tile === 'T' || tile === 'H' || npcBlocking;
+        const impassable = tile === 'W' || tile === 'T' || tile === 'H' || tile === 'CW' || tile === 'CH' || npcBlocking;
         if (!impassable) {
           state.player.targetX = ntx * TILE_SIZE;
           state.player.targetY = nty * TILE_SIZE;
