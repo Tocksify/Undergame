@@ -153,33 +153,44 @@ export const ITEMS: Record<string, Item> = {
   // ── MEDICAL CONSUMABLES ──
   'tonic':           { name: 'Hollow Tonic',      desc: 'Restore 5 HP',                          price: 0,   tier: 'common',    category: 'consumable', subcategory: 'medical' },
   'crystal':         { name: 'Memory Crystal',    desc: 'Restore 10 HP',                         price: 50,  tier: 'common',    category: 'consumable', subcategory: 'medical' },
+  'elixir':          { name: 'Keeper\'s Elixir',  desc: 'Restore 18 HP. Tastes like forgotten summers.', price: 90, tier: 'uncommon', category: 'consumable', subcategory: 'medical' },
   'greater_crystal': { name: 'Greater Crystal',   desc: 'Restore 25 HP',                         price: 120, tier: 'uncommon',  category: 'consumable', subcategory: 'medical' },
+  'memory_salve':    { name: 'Memory Salve',      desc: 'Restore 30 HP and clear confusion',     price: 200, tier: 'rare',      category: 'consumable', subcategory: 'medical' },
   'phoenix_ash':     { name: 'Phoenix Ash',       desc: 'Fully restore HP and clear confusion',   price: 250, tier: 'epic',      category: 'consumable', subcategory: 'medical' },
 
   // ── DEF CONSUMABLES ──
   'ward':            { name: 'Void Ward',         desc: 'Reduce next attack by 50%',             price: 80,  tier: 'uncommon',  category: 'consumable', subcategory: 'def' },
+  'iron_ward':       { name: 'Iron Ward',         desc: 'Reduce next attack by 75%',             price: 160, tier: 'rare',      category: 'consumable', subcategory: 'def' },
 
   // ── UTILITY CONSUMABLES ──
   'spark':           { name: 'Thought Spark',     desc: '2x power next turn',                    price: 60,  tier: 'uncommon',  category: 'consumable', subcategory: 'utility' },
   'dust':            { name: 'Dream Dust',        desc: 'Skip enemy attack this turn',            price: 110, tier: 'rare',      category: 'consumable', subcategory: 'utility' },
+  'blink_shard':     { name: 'Blink Shard',       desc: 'Skip enemy attack AND deal 2× next turn', price: 220, tier: 'epic',    category: 'consumable', subcategory: 'utility' },
 
   // ── KEY / QUEST ITEMS ──
   'stone':  { name: 'Naming Stone',  desc: 'A strange stone. Needed for naming.',  price: 30, tier: 'common',    category: 'key' },
   'echo':   { name: 'Ancient Echo',  desc: 'A memory from the beginning.',         price: 0,  tier: 'legendary', category: 'key' },
 
   // ── WEAPONS ──
-  'rusty_shard':      { name: 'Rusty Shard',       desc: 'A chipped blade. +1 ATK',                price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
-  'bone_edge':        { name: 'Bone Edge',          desc: 'Carved from something forgotten. +3 ATK', price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
-  'frost_fang':       { name: 'Frost Fang',         desc: 'Never melts. +5 ATK',                    price: 0,   tier: 'rare',      category: 'weapon', atk: 5 },
-  'cinder_blade':     { name: 'Cinder Blade',       desc: 'Forged in the last true fire. +8 ATK',   price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
-  'voidglass_dagger': { name: 'Voidglass Dagger',   desc: 'Cut from the Nexus itself. +12 ATK',     price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
+  'rusty_shard':      { name: 'Rusty Shard',         desc: 'A chipped blade. +1 ATK',                  price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
+  'iron_fragment':    { name: 'Iron Fragment',        desc: 'Scavenged iron, sharpened. +2 ATK',         price: 80,  tier: 'common',    category: 'weapon', atk: 2 },
+  'bone_edge':        { name: 'Bone Edge',            desc: 'Carved from something forgotten. +3 ATK',   price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
+  'etched_spike':     { name: 'Etched Spike',         desc: 'Ward-etched iron, crude but effective. +4 ATK', price: 200, tier: 'uncommon', category: 'weapon', atk: 4 },
+  'frost_fang':       { name: 'Frost Fang',           desc: 'Never melts. +5 ATK',                      price: 0,   tier: 'rare',      category: 'weapon', atk: 5 },
+  'memory_edge':      { name: 'Memory Edge',          desc: 'A blade of solidified recollection. +7 ATK', price: 0,  tier: 'rare',      category: 'weapon', atk: 7 },
+  'cinder_blade':     { name: 'Cinder Blade',         desc: 'Forged in the last true fire. +8 ATK',     price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
+  'voidtouched_blade':{ name: 'Voidtouched Blade',    desc: 'It cuts through forgetting itself. +10 ATK', price: 0, tier: 'epic',      category: 'weapon', atk: 10 },
+  'voidglass_dagger': { name: 'Voidglass Dagger',     desc: 'Cut from the Nexus itself. +12 ATK',       price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
 
   // ── ARMOR ──
-  'cloth_wrap':     { name: 'Cloth Wrap',         desc: 'Simple protection. +5 Max HP',           price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
-  'traveler_cloak': { name: "Traveler's Cloak",   desc: '+10 Max HP, +1 DEF',                     price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
-  'archivist_ward': { name: "Archivist's Ward",   desc: '+15 Max HP, +2 DEF',                     price: 0,   tier: 'rare',      category: 'armor', maxHp: 15, def: 2 },
-  'ember_plate':    { name: 'Ember Plate',        desc: '+20 Max HP, +3 DEF',                     price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
-  'voidsteel_mail': { name: 'Voidsteel Mail',     desc: '+30 Max HP, +5 DEF',                     price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
+  'cloth_wrap':       { name: 'Cloth Wrap',           desc: 'Simple protection. +5 Max HP',             price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
+  'hide_wrap':        { name: 'Hide Wrap',             desc: 'Toughened hide stitched together. +8 Max HP', price: 100, tier: 'common',  category: 'armor', maxHp: 8 },
+  'traveler_cloak':   { name: "Traveler's Cloak",     desc: '+10 Max HP, +1 DEF',                       price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
+  'runed_cloak':      { name: 'Runed Cloak',           desc: 'Thin cloth warded with old runes. +12 Max HP, +1 DEF', price: 220, tier: 'uncommon', category: 'armor', maxHp: 12, def: 1 },
+  'archivist_ward':   { name: "Archivist's Ward",     desc: '+15 Max HP, +2 DEF',                       price: 0,   tier: 'rare',      category: 'armor', maxHp: 15, def: 2 },
+  'ember_plate':      { name: 'Ember Plate',           desc: '+20 Max HP, +3 DEF',                      price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
+  'shadow_carapace':  { name: 'Shadow Carapace',       desc: 'Born of void-touched chitin. +25 Max HP, +4 DEF', price: 0, tier: 'epic', category: 'armor', maxHp: 25, def: 4 },
+  'voidsteel_mail':   { name: 'Voidsteel Mail',        desc: '+30 Max HP, +5 DEF',                      price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
 
   // ── READABLE BOOKS ──
   'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
@@ -216,6 +227,30 @@ export const ITEMS: Record<string, Item> = {
   },
 
   // ── ENCHANTED BOOKS (now earned only through side quests, or crafted via Tomes Blessing) ──
+  'ench_memory_mark': {
+    name: 'Memory Mark',
+    desc: 'Enchants a weapon. Grants +1 ATK. Common, but a start.',
+    price: 0, tier: 'common', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 1 },
+  },
+  'ench_stone_ward': {
+    name: 'Stone Ward',
+    desc: 'Enchants armor. Grants +1 DEF. A small but real bulwark.',
+    price: 0, tier: 'common', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 1 },
+  },
+  'ench_hollow_edge': {
+    name: 'Hollow Edge',
+    desc: 'Enchants a weapon. Grants +2 ATK. Hums faintly.',
+    price: 0, tier: 'uncommon', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2 },
+  },
+  'ench_woven_ward': {
+    name: 'Woven Ward',
+    desc: 'Enchants armor. Grants +5 Max HP. Threaded with old protections.',
+    price: 0, tier: 'uncommon', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], maxHp: 5 },
+  },
   'ench_shard_frostbite': {
     name: 'Shard of Frostbite',
     desc: 'Enchants a weapon. Grants +2 ATK. Incompatible with armor.',
@@ -269,10 +304,12 @@ export const ITEMS: Record<string, Item> = {
 
 // Enchantments craftable from scratch via the Tomes Blessing — spans every tier.
 export const CRAFTABLE_ENCHANTS: string[] = [
-  'ench_shard_frostbite', 'ench_veil_dust',
-  'ench_grimoire_striking', 'ench_tome_iron_veil',
-  'ench_relic_ashbound', 'ench_codex_living_flame',
-  'ench_grimoire_mortus', 'ench_veil_mortus',
+  'ench_memory_mark', 'ench_stone_ward',           // common
+  'ench_hollow_edge', 'ench_woven_ward',            // uncommon
+  'ench_shard_frostbite', 'ench_veil_dust',         // rare
+  'ench_grimoire_striking', 'ench_tome_iron_veil',  // epic
+  'ench_relic_ashbound', 'ench_codex_living_flame', // legendary
+  'ench_grimoire_mortus', 'ench_veil_mortus',       // mythic (Mortus)
 ];
 
 export const TIER_COLOR: Record<string, string> = {
@@ -359,12 +396,12 @@ export function pushMessages(state: GameStateData, texts: string[], tier?: ItemT
 
 // ── SHOPS ──────────────────────────────────────────────────────────
 export const SHOPS: Record<string, { title: string; items: string[] }> = {
-  'zara':         { title: "Zara's Memory Emporium",    items: ['crystal', 'ward', 'spark', 'stone', 'dust', 'rusty_shard', 'cloth_wrap'] },
-  'old_thom':     { title: "Old Thom's Sunken Wares",   items: ['greater_crystal', 'ward', 'dust', 'bone_edge', 'traveler_cloak'] },
-  'peddler_oren': { title: "Oren's Frostbound Pack",    items: ['greater_crystal', 'phoenix_ash', 'spark', 'bone_edge', 'traveler_cloak'] },
-  'ashen_trader': { title: 'The Ashen Trader',          items: ['greater_crystal', 'phoenix_ash', 'ward', 'spark', 'traveler_cloak'] },
+  'zara':         { title: "Zara's Memory Emporium",    items: ['crystal', 'elixir', 'ward', 'spark', 'stone', 'dust', 'rusty_shard', 'iron_fragment', 'cloth_wrap', 'hide_wrap'] },
+  'old_thom':     { title: "Old Thom's Sunken Wares",   items: ['elixir', 'greater_crystal', 'ward', 'dust', 'bone_edge', 'etched_spike', 'traveler_cloak', 'runed_cloak'] },
+  'peddler_oren': { title: "Oren's Frostbound Pack",    items: ['greater_crystal', 'memory_salve', 'phoenix_ash', 'spark', 'blink_shard', 'etched_spike', 'runed_cloak'] },
+  'ashen_trader': { title: 'The Ashen Trader',          items: ['greater_crystal', 'memory_salve', 'phoenix_ash', 'iron_ward', 'spark', 'blink_shard', 'traveler_cloak'] },
   // Enchanted tomes are no longer for sale — they're earned through side quests now.
-  'relic_broker': { title: "Crestfall Relic Broker",    items: ['crystal', 'greater_crystal', 'ward', 'spark', 'dust'] },
+  'relic_broker': { title: "Crestfall Relic Broker",    items: ['crystal', 'elixir', 'greater_crystal', 'ward', 'iron_ward', 'spark', 'dust'] },
 };
 
 // ── ENEMIES ────────────────────────────────────────────────────────

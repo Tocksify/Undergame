@@ -19,6 +19,7 @@ export interface SavedGameState {
     maxHp: number;
     echoes: number;
     inventory: string[];
+    enchantedSlots: (string | null)[];
     equipment: { weapon: string | null; armor: string | null };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
@@ -43,6 +44,7 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       maxHp: state.player.maxHp,
       echoes: state.player.echoes,
       inventory: [...state.player.inventory],
+      enchantedSlots: [...state.player.enchantedSlots],
       equipment: { ...state.player.equipment },
       quests: { ...state.player.quests },
       questProgress: { ...state.player.questProgress },
@@ -74,6 +76,12 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.maxHp = saved.player.maxHp;
     state.player.echoes = saved.player.echoes;
     state.player.inventory = [...saved.player.inventory];
+    // Restore enchanted slots; guard against old saves that lack this field
+    if (saved.player.enchantedSlots) {
+      state.player.enchantedSlots = [...saved.player.enchantedSlots];
+    } else {
+      state.player.enchantedSlots = saved.player.inventory.map(() => null);
+    }
     state.player.equipment = { ...saved.player.equipment };
     state.player.quests = { ...state.player.quests, ...saved.player.quests };
     state.player.questProgress = { ...state.player.questProgress, ...saved.player.questProgress };

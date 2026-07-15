@@ -285,14 +285,17 @@ export function updateGame(state: GameStateData) {
       } else if (id === 'crystal')         { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); consumed = true; }
         else if (id === 'tonic')           { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5);  consumed = true; }
         else if (id === 'greater_crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 25); consumed = true; }
+        else if (id === 'elixir')          { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 18); consumed = true; }
+        else if (id === 'memory_salve')    { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 30); if (state.battle) state.battle.flags.confused = false; consumed = true; }
         else if (id === 'phoenix_ash') {
           state.player.hp = state.player.maxHp;
           if (state.battle) state.battle.flags.confused = false;
           consumed = true;
         } else if (state.battle) {
-          if (id === 'ward')  { state.battle.voidWard = true; consumed = true; }
+          if (id === 'ward' || id === 'iron_ward') { state.battle.voidWard = true; consumed = true; }
           if (id === 'spark') { state.battle.flags.spark = true; consumed = true; }
           if (id === 'dust')  { state.battle.flags.confused = true; consumed = true; }
+          if (id === 'blink_shard') { state.battle.flags.spark = true; state.battle.flags.confused = true; consumed = true; }
         }
 
       if (consumed) {
