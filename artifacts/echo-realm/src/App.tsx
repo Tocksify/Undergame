@@ -1,292 +1,145 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  setAuthTokenGetter,
-  useRegisterAccount,
-  useLoginAccount,
-  useLogoutAccount,
-  useGetCurrentAccount,
-  getGetCurrentAccountQueryKey,
-  useListSaveSlots,
-  getListSaveSlotsQueryKey,
-  usePutSaveSlot,
-  useDeleteSaveSlot,
-  type Account,
-  type SaveSlot,
-} from '@workspace/api-client-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Game from './game/Game';
 import CharacterCustomization from './game/CharacterCustomization';
-import { GameStateData, GameMode } from './game/types';
-import { buildInitialState, serializeGameState, summarizeSavedState, SavedGameState } from './game/save';
+import { GameStateData } from './game/types';
+import { buildInitialState, serializeGameState, summarizeSavedState } from './game/save';
 import { audio } from './game/audio';
 import { SpriteAppearance } from './game/npcAppearance';
+import { ErsavFile, loadSlot, saveSlot, exportErsav } from './ersav';
+import MainMenu from './MainMenu';
+import SaveSlots from './SaveSlots';
+import Options from './Options';
+import Extras from './Extras';
 import './index.css';
 
-// Attaches hover + click sound effects to any clickable element without
-// changing its existing handlers — spread this onto a <button>.
-function sfxProps(onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void) {
-  return {
-    onMouseEnter: () => audio.playSfx('hover'),
-    onClick: (e: React.MouseEvent<HTMLButtonElement>) => { audio.playSfx('click'); onClick?.(e); },
-  };
-}
+type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras';
 
-const TOKEN_KEY = 'echo-realm-token';
-const queryClient = new QueryClient();
-
-let currentToken: string | null = null;
-try { currentToken = localStorage.getItem(TOKEN_KEY); } catch { /* storage unavailable */ }
-setAuthTokenGetter(() => currentToken);
-
-function setToken(token: string | null) {
-  currentToken = token;
-  try {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
-  } catch { /* storage unavailable */ }
-}
-
-type Screen = 'loading' | 'auth' | 'slots' | 'customization' | 'game';
-
-function AppInner() {
-  const [screen, setScreen] = useState<Screen>(currentToken ? 'loading' : 'auth');
-  const [account, setAccount] = useState<Account | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+function App() {
+  const [screen, setScreen] = useState<Screen>('menu');
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [initialState, setInitialState] = useState<GameStateData | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const menuAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const meQuery = useGetCurrentAccount({ query: { queryKey: getGetCurrentAccountQueryKey(), enabled: screen === 'loading', retry: false } });
-  const registerMutation = useRegisterAccount();
-  const loginMutation = useLoginAccount();
-  const logoutMutation = useLogoutAccount();
-  const slotsQuery = useListSaveSlots({ query: { queryKey: getListSaveSlotsQueryKey(), enabled: screen === 'slots' && !isGuest } });
-  const putSlotMutation = usePutSaveSlot();
-  const deleteSlotMutation = useDeleteSaveSlot();
-
+  // ── Menu music (MP3) ───────────────────────────────────────────────
+  // Play whenever we're not in-game; pause the moment the game starts.
   useEffect(() => {
-    if (screen !== 'loading') return;
-    if (meQuery.data) {
-      setAccount(meQuery.data);
-      setIsGuest(false);
-      setScreen('slots');
-    } else if (meQuery.isError) {
-      setToken(null);
-      setScreen('auth');
+    if (screen === 'game') {
+      menuAudioRef.current?.pause();
+      return;
     }
-  }, [screen, meQuery.data, meQuery.isError]);
+    if (!menuAudioRef.current) {
+      const el = new Audio('/MainMenu.mp3');
+      el.loop = true;
+      el.volume = 0.55;
+      menuAudioRef.current = el;
+    }
+    menuAudioRef.current.play().catch(() => { /* autoplay blocked — user will hear on first click */ });
+  }, [screen]);
 
-  const submitAuth = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError(null);
-    const mutation = authMode === 'login' ? loginMutation : registerMutation;
-    mutation.mutate({ data: { username, password } }, {
-      onSuccess: (session) => {
-        setToken(session.token);
-        setAccount(session.account);
-        setIsGuest(false);
-        setScreen('slots');
-      },
-      onError: (err: any) => setAuthError(err?.message || 'Something went wrong.'),
-    });
-  }, [authMode, username, password, loginMutation, registerMutation]);
-
-  const playAsGuest = useCallback(() => {
-    setIsGuest(true);
-    setAccount(null);
-    setActiveSlot(null);
-    setScreen('customization');
-  }, []);
-
-  const logout = useCallback(() => {
-    logoutMutation.mutate(undefined, { onSettled: () => {
-      setToken(null);
-      setAccount(null);
-      setUsername(''); setPassword('');
-      setScreen('auth');
-    } });
-  }, [logoutMutation]);
-
-  const startSlot = useCallback((slot: number, saved: SaveSlot | undefined) => {
+  // ── Slot selection ────────────────────────────────────────────────
+  const startSlot = useCallback((slot: number, existing: ErsavFile | null) => {
     setActiveSlot(slot);
-    if (!saved) {
-      // Brand-new save — let the player make their mark before their first spawn.
+    if (!existing) {
       setScreen('customization');
       return;
     }
-    const savedState = saved.state as unknown as SavedGameState;
-    setInitialState(buildInitialState(savedState, false));
+    setInitialState(buildInitialState(existing.state, false));
     setScreen('game');
   }, []);
 
+  // ── Load from .ersav file (no slot — soft-fail on autosave) ───────
+  const startFromFile = useCallback((save: ErsavFile) => {
+    setActiveSlot(null);
+    setInitialState(buildInitialState(save.state, false));
+    setScreen('game');
+  }, []);
+
+  // ── Character customization confirms into a new game ──────────────
   const confirmCustomization = useCallback((appearance: SpriteAppearance) => {
-    const state = buildInitialState(null, isGuest);
+    const state = buildInitialState(null, false);
     state.player.appearance = appearance;
     setInitialState(state);
     setScreen('game');
-  }, [isGuest]);
+  }, []);
 
-  const deleteSlot = useCallback((slot: number) => {
-    deleteSlotMutation.mutate({ slot }, { onSuccess: () => slotsQuery.refetch() });
-  }, [deleteSlotMutation, slotsQuery]);
-
+  // ── In-game save (writes to the active localStorage slot) ─────────
   const onSave = useCallback(async (state: GameStateData) => {
-    if (isGuest || !activeSlot) return;
+    if (!activeSlot) return; // loaded from file — soft fail, skip autosave
     const saved = serializeGameState(state);
-    await putSlotMutation.mutateAsync({
-      slot: activeSlot,
-      data: { name: `Slot ${activeSlot}`, summary: summarizeSavedState(saved), state: saved as unknown as Record<string, unknown> },
+    const existing = loadSlot(activeSlot);
+    saveSlot(activeSlot, {
+      version: 1,
+      name: existing?.name ?? `Save ${activeSlot}`,
+      summary: summarizeSavedState(saved),
+      savedAt: new Date().toISOString(),
+      state: saved,
     });
-  }, [isGuest, activeSlot, putSlotMutation]);
+  }, [activeSlot]);
 
+  // ── Exit game (back to saves screen) ─────────────────────────────
   const onExit = useCallback(() => {
     setInitialState(null);
     setActiveSlot(null);
-    // Game.tsx's render loop (and its audio.syncMusic calls) stops as soon as
-    // this component unmounts, so whatever track was playing in-game would
-    // otherwise keep looping forever over the title/slots screen. Force the
-    // engine back to the title track explicitly.
-    audio.syncMusic({ mode: GameMode.TITLE, mapId: '', battle: null });
-    if (isGuest) { setIsGuest(false); setScreen('auth'); }
-    else { setScreen('slots'); slotsQuery.refetch(); }
-  }, [isGuest, slotsQuery]);
+    setScreen('slots');
+  }, []);
 
+  // ── End-of-legacy (story complete — wipe slot and return) ─────────
   const onEndLegacy = useCallback(() => {
-    const slot = activeSlot;
-    if (isGuest || !slot) { onExit(); return; }
-    deleteSlotMutation.mutate({ slot }, { onSettled: () => onExit() });
-  }, [isGuest, activeSlot, deleteSlotMutation, onExit]);
+    setInitialState(null);
+    setActiveSlot(null);
+    setScreen('menu');
+  }, []);
 
-  const slotsByNumber = useMemo(() => {
-    const map = new Map<number, SaveSlot>();
-    (slotsQuery.data || []).forEach(s => map.set(s.slot, s));
-    return map;
-  }, [slotsQuery.data]);
-
-  if (screen === 'loading') {
-    return <Centered><p className="text-purple-300 font-mono">Loading...</p></Centered>;
-  }
-
-  if (screen === 'auth') {
+  // ── Screens ───────────────────────────────────────────────────────
+  if (screen === 'menu') {
     return (
-      <Centered>
-        <div className="w-full max-w-sm bg-[#180a28] border-2 border-[#3a205e] rounded-lg p-8 font-mono text-purple-100">
-          <h1 className="text-2xl mb-1 text-center tracking-widest text-purple-200">ECHO REALM</h1>
-          <p className="text-center text-xs text-purple-400 mb-6">Sign in to save your progress across devices</p>
-          <form onSubmit={submitAuth} className="space-y-3">
-            <input
-              value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" required minLength={3} maxLength={32}
-              className="w-full bg-[#0f0518] border border-[#3a205e] rounded px-3 py-2 text-sm outline-none focus:border-purple-400"
-            />
-            <input
-              value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" required minLength={6} maxLength={128}
-              className="w-full bg-[#0f0518] border border-[#3a205e] rounded px-3 py-2 text-sm outline-none focus:border-purple-400"
-            />
-            {authError && <p className="text-red-400 text-xs">{authError}</p>}
-            <button
-              type="submit" disabled={loginMutation.isPending || registerMutation.isPending}
-              className="w-full bg-purple-700 hover:bg-purple-600 rounded py-2 text-sm font-bold tracking-wide disabled:opacity-50"
-              onMouseEnter={() => audio.playSfx('hover')}
-              onClick={() => audio.playSfx('click')}
-            >
-              {authMode === 'login' ? 'Log In' : 'Create Account'}
-            </button>
-          </form>
-          <button
-            className="w-full mt-3 text-xs text-purple-400 hover:text-purple-200 underline"
-            {...sfxProps(() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(null); })}
-          >
-            {authMode === 'login' ? "Need an account? Register" : 'Have an account? Log in'}
-          </button>
-          <div className="border-t border-[#3a205e] my-4" />
-          <button
-            className="w-full text-xs text-purple-500 hover:text-purple-300"
-            {...sfxProps(playAsGuest)}
-          >
-            Play as Guest (progress won't be saved)
-          </button>
-        </div>
-      </Centered>
+      <MainMenu
+        onPlay={() => setScreen('slots')}
+        onOptions={() => setScreen('options')}
+        onExtras={() => setScreen('extras')}
+        onQuit={() => { audio.playSfx('cancel'); window.location.reload(); }}
+      />
     );
   }
 
   if (screen === 'slots') {
     return (
-      <Centered>
-        <div className="w-full max-w-md bg-[#180a28] border-2 border-[#3a205e] rounded-lg p-8 font-mono text-purple-100">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-lg tracking-widest text-purple-200">SELECT SAVE SLOT</h1>
-            <button className="text-xs text-purple-500 hover:text-purple-300" {...sfxProps(logout)}>Log out ({account?.username})</button>
-          </div>
-          <div className="space-y-3">
-            {[1, 2, 3].map(slot => {
-              const saved = slotsByNumber.get(slot);
-              return (
-                <div key={slot} className="border border-[#3a205e] rounded p-3 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm text-purple-200">Slot {slot}</div>
-                    <div className="text-xs text-purple-500">{saved ? saved.summary : 'Empty'}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="bg-purple-700 hover:bg-purple-600 rounded px-3 py-1 text-xs font-bold"
-                      {...sfxProps(() => startSlot(slot, saved))}
-                    >
-                      {saved ? 'Continue' : 'New Game'}
-                    </button>
-                    {saved && (
-                      <button
-                        className="border border-red-800 text-red-400 hover:bg-red-950 rounded px-2 py-1 text-xs"
-                        {...sfxProps(() => deleteSlot(slot))}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Centered>
+      <SaveSlots
+        onBack={() => setScreen('menu')}
+        onStartSlot={startSlot}
+        onStartFromFile={startFromFile}
+      />
     );
   }
 
   if (screen === 'customization') {
     return (
-      <Centered>
+      <div className="fullscreen-black">
         <CharacterCustomization
           onConfirm={confirmCustomization}
-          onBack={() => setScreen(isGuest ? 'auth' : 'slots')}
+          onBack={() => setScreen('slots')}
         />
-      </Centered>
+      </div>
     );
   }
 
   if (screen === 'game' && initialState) {
-    return <Centered><Game initialState={initialState} onSave={onSave} onExit={onExit} onEndLegacy={onEndLegacy} /></Centered>;
+    return (
+      <div className="fullscreen-black">
+        <Game
+          initialState={initialState}
+          onSave={onSave}
+          onExit={onExit}
+          onEndLegacy={onEndLegacy}
+        />
+      </div>
+    );
   }
 
+  if (screen === 'options') return <Options onBack={() => setScreen('menu')} />;
+  if (screen === 'extras') return <Extras onBack={() => setScreen('menu')} />;
+
   return null;
-}
-
-function Centered({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0f0518] px-2 py-4">
-      {children}
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppInner />
-    </QueryClientProvider>
-  );
 }
 
 export default App;

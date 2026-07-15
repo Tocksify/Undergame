@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 
+/* ── Base ──────────────────────────────────────────────────────────── */
 :root {
-  --background: #0d0618;
+  --background: #000;
   --foreground: #f0eeff;
 }
 
@@ -14,7 +15,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: monospace, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   overflow: hidden;
   width: 100vw;
   height: 100vh;
@@ -34,4 +35,433 @@ body {
 canvas {
   display: block;
   image-rendering: pixelated;
+}
+
+/* ── Fullscreen wrapper for in-game screens ───────────────────────── */
+.fullscreen-black {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f0518;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  CRT EFFECTS                                                        */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+/* Scrolling TV bars — wide light/dark bands drifting down */
+@keyframes tvScroll {
+  from { background-position: 0 0; }
+  to   { background-position: 0 200px; }
+}
+
+.crt-bars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0)    0px,
+    rgba(255, 255, 255, 0)    55px,
+    rgba(255, 255, 255, 0.018) 65px,
+    rgba(255, 255, 255, 0.038) 90px,
+    rgba(255, 255, 255, 0.018) 115px,
+    rgba(255, 255, 255, 0)    130px,
+    rgba(255, 255, 255, 0)    200px
+  );
+  background-size: 100% 200px;
+  animation: tvScroll 9s linear infinite;
+}
+
+/* Fine horizontal scanlines — the classic CRT look */
+.crt-scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 11;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent          0px,
+    transparent          2px,
+    rgba(0, 0, 0, 0.22)  2px,
+    rgba(0, 0, 0, 0.22)  3px
+  );
+}
+
+/* Vignette — darkens the screen edges for the old-TV feel */
+.crt-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 12;
+  background: radial-gradient(
+    ellipse 90% 80% at 50% 50%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  MENU ROOT                                                          */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+.menu-root {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+/* ── Main menu layout ─────────────────────────────────────────────── */
+.menu-layout {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  padding-left: clamp(2rem, 10vw, 10rem);
+}
+
+.menu-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+/* Title */
+.menu-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.menu-title {
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  line-height: 1.05;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 60px rgba(255, 255, 255, 0.18),
+    0 0 120px rgba(255, 255, 255, 0.08);
+}
+
+.menu-title-line {
+  width: 100%;
+  max-width: 20rem;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.45) 0%, transparent 100%);
+  margin: 0.1rem 0;
+}
+
+.menu-subtitle {
+  font-size: 0.68rem;
+  letter-spacing: 0.35em;
+  color: #555;
+  text-transform: uppercase;
+}
+
+/* Nav items */
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: none;
+  border: none;
+  padding: 0.55rem 0;
+  font-family: inherit;
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  letter-spacing: 0.18em;
+  color: #505050;
+  cursor: pointer;
+  text-align: left;
+  width: fit-content;
+  transition: color 0.1s ease;
+  user-select: none;
+}
+
+.menu-btn:hover,
+.menu-btn--active {
+  color: #fff;
+}
+
+.menu-btn-arrow {
+  display: inline-block;
+  width: 1.1em;
+  font-size: 0.8em;
+  color: #fff;
+  text-align: center;
+  /* prevent layout shift when arrow appears */
+}
+
+.menu-coming-soon {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: #2a2a2a;
+}
+
+/* Version tag */
+.menu-version {
+  position: fixed;
+  bottom: 1.4rem;
+  right: 2rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  color: #252525;
+  z-index: 30;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+/*  SAVE SLOTS SCREEN                                                  */
+/* ═══════════════════════════════════════════════════════════════════ */
+
+.slots-layout {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1.75rem;
+}
+
+/* Header row */
+.slots-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  width: 100%;
+  max-width: 660px;
+}
+
+.slots-back-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  color: #444;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.1s;
+  white-space: nowrap;
+}
+.slots-back-btn:hover { color: #fff; }
+
+.slots-title {
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  color: #ccc;
+  font-weight: normal;
+}
+
+/* Slot list */
+.slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 660px;
+}
+
+/* Individual slot card */
+.slot-card {
+  border: 1px solid #1c1c1c;
+  background: #060606;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color 0.15s;
+  cursor: default;
+}
+.slot-card:hover { border-color: #333; }
+
+.slot-card-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Name row */
+.slot-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.slot-name {
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: #bbb;
+}
+
+.slot-name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #555;
+  font-family: inherit;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: #fff;
+  outline: none;
+  padding: 0 0 2px;
+  min-width: 8rem;
+  max-width: 18rem;
+  width: 100%;
+}
+
+.slot-edit-btn {
+  background: none;
+  border: none;
+  color: #333;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.1s;
+  flex-shrink: 0;
+}
+.slot-edit-btn:hover { color: #aaa; }
+
+/* Meta line */
+.slot-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.slot-summary {
+  font-size: 0.67rem;
+  color: #484848;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 28rem;
+}
+
+.slot-date {
+  font-size: 0.6rem;
+  color: #2e2e2e;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.slot-empty {
+  font-size: 0.7rem;
+  color: #282828;
+  letter-spacing: 0.18em;
+}
+
+/* Action buttons */
+.slot-card-actions {
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.slot-btn {
+  background: none;
+  border: 1px solid #252525;
+  font-family: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  color: #555;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+  white-space: nowrap;
+}
+
+.slot-btn-primary {
+  border-color: #444;
+  color: #999;
+}
+.slot-btn-primary:hover {
+  border-color: #fff;
+  color: #fff;
+  background: rgba(255,255,255,0.04);
+}
+
+.slot-btn-export:hover {
+  border-color: #666;
+  color: #aaa;
+}
+
+.slot-btn-delete {
+  border-color: #1e1010;
+  color: #3a1818;
+}
+.slot-btn-delete:hover {
+  border-color: #773333;
+  color: #cc5555;
+  background: rgba(200, 0, 0, 0.05);
+}
+.slot-btn-delete--confirm {
+  border-color: #883333 !important;
+  color: #ff7777 !important;
+  background: rgba(200, 0, 0, 0.08) !important;
+}
+
+/* Import section */
+.slots-import-section {
+  width: 100%;
+  max-width: 660px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #111;
+}
+
+.slots-import-btn {
+  background: none;
+  border: 1px solid #2a2a2a;
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.13em;
+  color: #555;
+  cursor: pointer;
+  padding: 0.55rem 1.2rem;
+  transition: border-color 0.1s, color 0.1s;
+}
+.slots-import-btn:hover {
+  border-color: #888;
+  color: #ccc;
+}
+
+.slots-import-ext {
+  color: #666;
+  font-size: 0.65em;
+}
+
+.slots-import-error {
+  font-size: 0.68rem;
+  color: #cc5555;
+  letter-spacing: 0.05em;
+}
+
+.slots-import-hint {
+  font-size: 0.62rem;
+  color: #2a2a2a;
+  letter-spacing: 0.06em;
 }
