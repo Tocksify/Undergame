@@ -41,7 +41,7 @@ function f(note: string): number {
 // so loops don't feel like the same 2 bars looping forever.
 const TRACKS: Record<string, TrackDef> = {
   title: {
-    bpm: 70, chordWave: 'sine', filterFreq: 1400, volume: 0.15,
+    bpm: 70, chordWave: 'sine', filterFreq: 1400, volume: 0.05,
     chord: [f('A3'), f('C4'), f('E4')],
     chordAlt: [f('F3'), f('A3'), f('C4')],
     bass: [f('A2'), null, null, null, f('E3'), null, null, null, f('A2'), null, null, null, f('C3'), null, null, null],
@@ -349,6 +349,21 @@ class AudioEngine {
     this.currentKey = null; // next syncMusic call will restart cleanly
   }
 
+  /** Fully tear down the AudioContext — used by HMR so stale oscillators don't outlive the module. */
+  dispose() {
+    this.stopCurrentTrack(0);
+    this.currentKey = null;
+    if (this.ctx) {
+      this.ctx.close().catch(() => {});
+      this.ctx = null;
+      this.masterGain = null;
+      this.musicGain = null;
+      this.sfxGain = null;
+      this.duckFilter = null;
+      this.duckGain = null;
+    }
+  }
+
   private startTrack(def: TrackDef) {
     const ctx = this.ctx!;
     const now = ctx.currentTime;
@@ -465,4 +480,12 @@ if (typeof window !== 'undefined') {
   };
   window.addEventListener('pointerdown', unlockOnce, { once: true });
   window.addEventListener('keydown', unlockOnce, { once: true });
+}
+
+// HMR: when this module is hot-replaced, tear down the old AudioContext so
+// its oscillators don't keep playing at the old volume in the background.
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    audio.dispose();
+  });
 }
