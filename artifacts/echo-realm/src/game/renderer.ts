@@ -514,14 +514,11 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
   };
   const qMain = state.player.quests['quest_main'] || 0;
 
-  for (const npc of (map.npcs || [])) {
-    if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
-    const nx = Math.floor(offX + npc.x * scale);
-    const ny = Math.floor(offY + npc.y * scale);
-
+  // Shared so a quest-giver hidden inside a building can still surface a
+  // marker on the door that leads to them (see below).
+  function markerFor(npc: any): { dotColor: string; markerColor: string | null } {
     let dotColor = '#666666';
     let markerColor: string | null = null;
-
     if (npc.type === 'BOSS') {
       dotColor = '#ff3333';
       // bosses that haven't been defeated still show a red dot, no ?
@@ -538,12 +535,12 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
         markerColor = '#ff8800'; // orange ? for unfinished side quests
       }
     }
+    return { dotColor, markerColor };
+  }
 
-    // Dot
+  function drawMarker(nx: number, ny: number, dotColor: string, markerColor: string | null) {
     ctx.fillStyle = dotColor;
     ctx.fillRect(nx - 1, ny - 1, 3, 3);
-
-    // Colored ? above the dot
     if (markerColor) {
       ctx.save();
       ctx.font = 'bold 7px monospace';
@@ -551,6 +548,36 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
       ctx.fillStyle = markerColor;
       ctx.fillText('?', nx + 1, ny - 2);
       ctx.restore();
+    }
+  }
+
+  for (const npc of (map.npcs || [])) {
+    if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
+    const nx = Math.floor(offX + npc.x * scale);
+    const ny = Math.floor(offY + npc.y * scale);
+    const { dotColor, markerColor } = markerFor(npc);
+    drawMarker(nx, ny, dotColor, markerColor);
+  }
+
+  // Quest givers hidden inside buildings don't have their own tile on this
+  // map, so surface their "?" on the door that leads to them — otherwise
+  // there's no way to tell which building holds a quest from outside.
+  for (const door of (map.doors || [])) {
+    const inner = MAPS[door.targetMapId];
+    if (!inner) continue;
+    for (const npc of (inner.npcs || [])) {
+      if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
+      const { markerColor } = markerFor(npc);
+      if (!markerColor) continue;
+      const dx = Math.floor(offX + door.x * scale);
+      const dy = Math.floor(offY + door.y * scale);
+      ctx.save();
+      ctx.font = 'bold 7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = markerColor;
+      ctx.fillText('?', dx + 1, dy - 2);
+      ctx.restore();
+      break; // one marker per door is enough
     }
   }
 

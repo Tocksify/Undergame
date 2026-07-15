@@ -1200,8 +1200,8 @@ export const MAPS: Record<string, any> = {
     books: [],
     encounterPool: ['wisp', 'crawler', 'specter'],
     exits: {
-      '>': { mapId: 'MS', x: 9, y: 1, reqQuest: 'quest_main', reqState: 2, lockMsg: "The Sanctum is sealed. Restore the village first." },
-      '<': { mapId: 'VH', x: 12, y: 14 }
+      '>': { mapId: 'MS', x: 9, y: 12, reqQuest: 'quest_main', reqState: 2, lockMsg: "The Sanctum is sealed. Restore the village first." },
+      '<': { mapId: 'VH', x: 12, y: 1 }
     }
   },
 
@@ -1220,7 +1220,7 @@ export const MAPS: Record<string, any> = {
     encounterPool: [],
     exits: {
       '<': { mapId: 'WW', x: 11, y: 1 },
-      '>': { mapId: 'SA', x: 9, y: 1, reqQuest: 'quest_main', reqState: 3, lockMsg: "Something ancient still guards this passage." }
+      '>': { mapId: 'SA', x: 9, y: 12, reqQuest: 'quest_main', reqState: 3, lockMsg: "Something ancient still guards this passage." }
     }
   },
 
@@ -1241,7 +1241,7 @@ export const MAPS: Record<string, any> = {
     encounterPool: ['archive_wisp', 'ink_wraith'],
     exits: {
       '<': { mapId: 'MS', x: 9, y: 1 },
-      '>': { mapId: 'FR', x: 9, y: 1, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
+      '>': { mapId: 'FR', x: 10, y: 13, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
     }
   },
 
@@ -1263,7 +1263,7 @@ export const MAPS: Record<string, any> = {
     encounterPool: ['frost_walker', 'rime_hound'],
     exits: {
       '<': { mapId: 'SA', x: 9,  y: 1 },
-      '>': { mapId: 'AD', x: 10, y: 1, reqQuest: 'quest_main', reqState: 5, lockMsg: "Warden Kess hasn't opened this road yet." }
+      '>': { mapId: 'AD', x: 10, y: 13, reqQuest: 'quest_main', reqState: 5, lockMsg: "Warden Kess hasn't opened this road yet." }
     }
   },
 
@@ -1303,7 +1303,7 @@ export const MAPS: Record<string, any> = {
     books: [],
     encounterPool: ['void_sentinel'],
     exits: {
-      '<': { mapId: 'AD', x: 10, y: 13 }
+      '<': { mapId: 'AD', x: 10, y: 1 }
     }
   },
 
