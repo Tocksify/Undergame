@@ -177,4 +177,12 @@ export interface GameStateData {
   teleportIndex: number; // selected row in the TELEPORT menu
   questLogScroll: number; // top index of the visible window in the QUEST_LOG list
   statAllocIndex: number; // selected stat row (STR/VIT/DEF) in the STAT_ALLOCATION menu
+  // Header notification badges (Quest/Stats/Inventory). Transient UI state —
+  // not persisted in save slots. itemsBaseline/questsBaseline are the
+  // inventory length / quest-stage snapshot as of the last time the player
+  // opened that screen; the badge count is however much has changed since.
+  notifications: {
+    itemsBaseline: number;
+    questsBaseline: Record<string, number>;
+  };
 }

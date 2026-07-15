@@ -23,6 +23,17 @@ const C = {
 
 const W = 768; const H = 576;
 
+// Number of quests whose stage has changed since the player last opened the
+// Quest Log (accepted, progressed, or completed) — drives the header badge.
+function countQuestNotifications(state: GameStateData): number {
+  const current = state.player.quests;
+  const baseline = state.notifications.questsBaseline;
+  const ids = new Set([...Object.keys(current), ...Object.keys(baseline)]);
+  let count = 0;
+  ids.forEach(id => { if ((current[id] || 0) !== (baseline[id] || 0)) count++; });
+  return count;
+}
+
 function drawHair(ctx: CanvasRenderingContext2D, hxL: number, hyT: number, hs: number, color: string, style: HairStyle) {
   ctx.fillStyle = color;
   switch (style) {
@@ -456,9 +467,10 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.restore();
 
   // ── HUD ────────────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(8,8,8,0.88)'; ctx.fillRect(0, 0, W, 38);
+  const HUD_H = 60;
+  ctx.fillStyle = 'rgba(8,8,8,0.88)'; ctx.fillRect(0, 0, W, HUD_H);
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, 38); ctx.lineTo(W, 38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, HUD_H); ctx.lineTo(W, HUD_H); ctx.stroke();
 
   ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
   ctx.fillStyle = C.white;  ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, 14, 25);
@@ -475,14 +487,43 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.fillStyle = hpPct > 0.5 ? C.silver : hpPct > 0.25 ? C.gray : '#666666';
   ctx.fillRect(14, 28, Math.floor(80 * hpPct), 6);
 
-  // Pulsing badge — draws the eye to unspent stat points so players discover [M].
-  if (state.player.statPoints > 0) {
-    const pulse = 0.7 + 0.3 * Math.sin(state.frameCount * 0.12);
-    ctx.save();
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = '#ffcc44'; ctx.textAlign = 'left'; ctx.font = 'bold 12px monospace';
-    ctx.fillText(`+${state.player.statPoints} STAT PTS [M]`, 285, 25);
-    ctx.restore();
+  // ── Quest / Stats / Inventory sections, each with a notification badge
+  // showing how many pending updates (quest changes, stat points, new items)
+  // the player hasn't looked at yet.
+  const questBadge = countQuestNotifications(state);
+  const statBadge = state.player.statPoints;
+  const itemBadge = Math.max(0, state.player.inventory.length - state.notifications.itemsBaseline);
+  const sections: { label: string; key: string; badge: number }[] = [
+    { label: 'QUESTS', key: 'Q', badge: questBadge },
+    { label: 'STATS', key: 'M', badge: statBadge },
+    { label: 'ITEMS', key: 'I', badge: itemBadge },
+  ];
+  let sx = 14;
+  const sy = 40;
+  ctx.textAlign = 'left';
+  for (const sec of sections) {
+    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = sec.badge > 0 ? '#ffcc44' : C.silver;
+    const secText = `[${sec.key}] ${sec.label}`;
+    ctx.fillText(secText, sx, sy);
+    const tw = ctx.measureText(secText).width;
+    if (sec.badge > 0) {
+      const bx = sx + tw + 10;
+      const by = sy - 8;
+      const pulse = 0.75 + 0.25 * Math.sin(state.frameCount * 0.12);
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#cc3333';
+      ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = C.white; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = C.white; ctx.textAlign = 'center'; ctx.font = 'bold 10px monospace';
+      ctx.fillText(String(Math.min(sec.badge, 99)), bx, by + 3);
+      ctx.restore();
+      ctx.textAlign = 'left';
+      sx = bx + 18;
+    } else {
+      sx += tw + 22;
+    }
   }
 
   ctx.textAlign = 'center'; ctx.font = '11px monospace'; ctx.fillStyle = C.dim;

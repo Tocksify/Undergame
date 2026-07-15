@@ -23,6 +23,20 @@ export function addInventoryItem(state: GameStateData, itemId: string) {
   state.player.enchantedSlots.push(null);
 }
 
+// Clear the header's inventory notification badge — call whenever the player
+// opens the Inventory screen, so the badge only counts items obtained since
+// the last time they actually looked.
+export function markInventorySeen(state: GameStateData) {
+  state.notifications.itemsBaseline = state.player.inventory.length;
+}
+
+// Clear the header's quest notification badge — call whenever the player
+// opens the Quest Log, so the badge only counts quests accepted/progressed/
+// completed since the last time they actually looked.
+export function markQuestsSeen(state: GameStateData) {
+  state.notifications.questsBaseline = { ...state.player.quests };
+}
+
 export function updateGame(state: GameStateData) {
   state.frameCount++;
   if (state.player.invincibility > 0) state.player.invincibility--;
@@ -191,8 +205,8 @@ export function updateGame(state: GameStateData) {
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
-      if (state.menuIndex === 1) { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; }
-      if (state.menuIndex === 2) state.mode = GameMode.QUEST_LOG;
+      if (state.menuIndex === 1) { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); }
+      if (state.menuIndex === 2) { state.mode = GameMode.QUEST_LOG; markQuestsSeen(state); }
       if (state.menuIndex === 3) {
         if (state.meta.isGuest) { state.uiMessage = "Log in from the title screen to save your progress."; state.uiMessageTimer = 150; }
         else { state.saveRequested = true; }
@@ -323,7 +337,7 @@ export function updateGame(state: GameStateData) {
     const maxScroll = Math.max(0, activeCount - maxVisible);
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.questLogScroll = Math.max(0, state.questLogScroll - 1);
     if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.questLogScroll = Math.min(maxScroll, state.questLogScroll + 1);
-    if (justPressed(state, 'Escape') || justPressed(state, 'q') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; state.questLogScroll = 0; }
+    if (justPressed(state, 'Escape') || justPressed(state, 'q') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; state.questLogScroll = 0; markQuestsSeen(state); }
     return;
   }
 
@@ -420,8 +434,8 @@ export function updateGame(state: GameStateData) {
 
   // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
-  if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; return; }
-  if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; return; }
+  if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); return; }
+  if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; markQuestsSeen(state); return; }
   if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
 

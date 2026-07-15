@@ -762,24 +762,48 @@ function buildSA(): string[][] {
 }
 
 // ── FROSTBOUND REACH (22 × 15) — frozen fields looping around a lake
+// Frostbound Reach's original 22×15 frozen-lake room, offset into the middle
+// of a larger map (see buildFR below) and surrounded by a perimeter of 'V'
+// danger tiles — without a 'V' tile the encounter-roll in engine.ts never
+// fires, which is why quest_frost (kill Frost Walkers) had nothing to fight.
+const FR_OX = 4, FR_OY = 4;
+
 function buildFR(): string[][] {
-  const W = 22, H = 15;
-  const L = buildMap(W, H, 'T');
-  rect(L, 1, 1, W - 2, H - 2, 'P');
-  rect(L, 8, 5, 13, 9, 'W');
-  hline(L, 3, 1, W - 2, 'P');
-  hline(L, 11, 1, W - 2, 'P');
-  vline(L, 1, 1, H - 2, 'P');
-  vline(L, W - 2, 1, H - 2, 'P');
-  rect(L, 2, 1, 5, 2, 'P'); rect(L, W - 6, 1, W - 3, 2, 'P');
-  rect(L, 2, H - 3, 5, H - 2, 'P'); rect(L, W - 6, H - 3, W - 3, H - 2, 'P');
-  rect(L, 3, 6, 6, 8, 'W');
-  poke(L, 4, 7, 'P'); poke(L, 5, 7, 'P'); poke(L, 4, 6, 'P');
-  rect(L, W - 7, 6, W - 4, 8, 'W');
-  poke(L, W - 6, 7, 'P'); poke(L, W - 5, 7, 'P'); poke(L, W - 6, 6, 'P');
-  poke(L, 10, 4, 'M'); poke(L, 11, 4, 'M');
-  poke(L, 10, 10, 'M'); poke(L, 11, 10, 'M');
-  poke(L, 10, 0, '>'); poke(L, 10, H - 1, '<');
+  const IW = 22, IH = 15;
+  const PAD = 4;
+  const W = IW + PAD * 2, H = IH + PAD * 2;
+
+  // The whole canvas starts as 'V' — walkable danger tiles that roll a chance
+  // of a Frost Walker / Rime Hound encounter every step (see engine.ts).
+  const L = buildMap(W, H, 'V');
+  // A solid tree line contains the player at the map's true outer edge.
+  rect(L, 0, 0, W - 1, 0, 'T'); rect(L, 0, H - 1, W - 1, H - 1, 'T');
+  vline(L, 0, 0, H - 1, 'T'); vline(L, W - 1, 0, H - 1, 'T');
+
+  // The original room, unchanged, stamped into the middle of the canvas.
+  const inner = buildMap(IW, IH, 'T');
+  rect(inner, 1, 1, IW - 2, IH - 2, 'P');
+  rect(inner, 8, 5, 13, 9, 'W');
+  hline(inner, 3, 1, IW - 2, 'P');
+  hline(inner, 11, 1, IW - 2, 'P');
+  vline(inner, 1, 1, IH - 2, 'P');
+  vline(inner, IW - 2, 1, IH - 2, 'P');
+  rect(inner, 2, 1, 5, 2, 'P'); rect(inner, IW - 6, 1, IW - 3, 2, 'P');
+  rect(inner, 2, IH - 3, 5, IH - 2, 'P'); rect(inner, IW - 6, IH - 3, IW - 3, IH - 2, 'P');
+  rect(inner, 3, 6, 6, 8, 'W');
+  poke(inner, 4, 7, 'P'); poke(inner, 5, 7, 'P'); poke(inner, 4, 6, 'P');
+  rect(inner, IW - 7, 6, IW - 4, 8, 'W');
+  poke(inner, IW - 6, 7, 'P'); poke(inner, IW - 5, 7, 'P'); poke(inner, IW - 6, 6, 'P');
+  poke(inner, 10, 4, 'M'); poke(inner, 11, 4, 'M');
+  poke(inner, 10, 10, 'M'); poke(inner, 11, 10, 'M');
+  poke(inner, 10, 0, '>'); poke(inner, 10, IH - 1, '<');
+  for (let y = 0; y < IH; y++) for (let x = 0; x < IW; x++) L[y + FR_OY][x + FR_OX] = inner[y][x];
+
+  // Breach the room's east/west walls so the player can step out into the
+  // surrounding tundra perimeter to actually find Frost Walkers, and back in.
+  poke(L, FR_OX, FR_OY + 7, 'P');
+  poke(L, FR_OX + IW - 1, FR_OY + 7, 'P');
+
   return L;
 }
 
@@ -1499,22 +1523,22 @@ export const MAPS: Record<string, any> = {
     encounterPool: ['archive_wisp', 'ink_wraith'],
     exits: {
       '<': { mapId: 'MS', x: 9, y: 1 },
-      '>': { mapId: 'FR', x: 10, y: 13, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
+      '>': { mapId: 'FR', x: 10 + FR_OX, y: 13 + FR_OY, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
     }
   },
 
   // ── FROSTBOUND REACH (22 × 15) — paths looping a frozen lake, two ruins ──
   'FR': {
-    id: 'FR', name: 'Frostbound Reach', width: 22, height: 15,
+    id: 'FR', name: 'Frostbound Reach', width: 22 + 4 * 2, height: 15 + 4 * 2,
     layout: frLayout,
     npcs: [
-      { id: 'warden_kess',        x: 10, y: 3, color: '#cfe8ff', name: 'Warden Kess',         type: 'TALK' },
-      { id: 'peddler_oren',       x: 4,  y: 7, color: '#e8f4ff', name: 'Peddler Oren',        type: 'SHOP' },
-      { id: 'shivering_villager', x: 16, y: 7, color: '#bcd8ea', name: 'A Shivering Villager', type: 'TALK' },
+      { id: 'warden_kess',        x: 10 + FR_OX, y: 3 + FR_OY,  color: '#cfe8ff', name: 'Warden Kess',         type: 'TALK' },
+      { id: 'peddler_oren',       x: 4  + FR_OX, y: 7 + FR_OY,  color: '#e8f4ff', name: 'Peddler Oren',        type: 'SHOP' },
+      { id: 'shivering_villager', x: 16 + FR_OX, y: 7 + FR_OY,  color: '#bcd8ea', name: 'A Shivering Villager', type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_fr1', flag: 'ch_fr1', x: 4,  y: 12, item: 'traveler_cloak' },
-      { id: 'ch_fr2', flag: 'ch_fr2', x: 16, y: 12, item: 'book_fr_frostnote' },
+      { id: 'ch_fr1', flag: 'ch_fr1', x: 4  + FR_OX, y: 12 + FR_OY, item: 'traveler_cloak' },
+      { id: 'ch_fr2', flag: 'ch_fr2', x: 16 + FR_OX, y: 12 + FR_OY, item: 'book_fr_frostnote' },
     ],
     doors: [],
     books: [],
@@ -1541,7 +1565,7 @@ export const MAPS: Record<string, any> = {
     books: [],
     encounterPool: ['ash_hound', 'cinder_wraith'],
     exits: {
-      '<': { mapId: 'FR', x: 10, y: 1 },
+      '<': { mapId: 'FR', x: 10 + FR_OX, y: 1 + FR_OY },
       '>': { mapId: 'VN', x: 9,  y: 14, reqQuest: 'quest_main', reqState: 6, lockMsg: "The Ember Sentinel hasn't opened the Nexus road yet." }
     }
   },
@@ -1843,7 +1867,7 @@ export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: numb
   { id: 'WW', name: 'Whispering Woods', mapId: 'WW', x: 11, y: 1  },
   { id: 'MS', name: 'Memory Sanctum',   mapId: 'MS', x: 9,  y: 1  },
   { id: 'SA', name: 'Sunken Archive',   mapId: 'SA', x: 9,  y: 1  },
-  { id: 'FR', name: 'Frostbound Reach', mapId: 'FR', x: 9,  y: 1  },
+  { id: 'FR', name: 'Frostbound Reach', mapId: 'FR', x: 9 + FR_OX,  y: 1 + FR_OY  },
   { id: 'AD', name: 'Ashen Descent',    mapId: 'AD', x: 10, y: 1  },
   { id: 'VN', name: 'Void Nexus',       mapId: 'VN', x: 9,  y: 14 },
   { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
@@ -1902,4 +1926,5 @@ export const INITIAL_STATE: GameStateData = {
   teleportIndex: 0,
   questLogScroll: 0,
   statAllocIndex: 0,
+  notifications: { itemsBaseline: 0, questsBaseline: {} },
 };

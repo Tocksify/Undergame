@@ -104,6 +104,10 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.statPoints = saved.player.statPoints ?? STARTING_STAT_POINTS;
     state.player.baseStats = saved.player.baseStats ? { ...saved.player.baseStats } : { str: 0, vit: 0, def: 0 };
     recomputeMaxHp(state);
+    // Baseline the notification badges to the loaded save so pre-existing
+    // items/quest progress don't show up as "new" the moment the game loads.
+    state.notifications.itemsBaseline = state.player.inventory.length;
+    state.notifications.questsBaseline = { ...state.player.quests };
     // Title screen stays in GameMode.TITLE either way (see constants.ts) —
     // engine.ts reads state.battle to decide whether pressing Space/Enter
     // drops the player back into this battle instead of the overworld.
