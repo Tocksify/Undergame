@@ -48,8 +48,13 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
       if (state.saveRequested && !savingRef.current) {
         savingRef.current = true;
         state.saveRequested = false;
+        const quitAfter = state.quitAfterSave;
+        state.quitAfterSave = false;
         Promise.resolve(onSave(state))
-          .then(() => { state.uiMessage = "Progress saved."; state.uiMessageTimer = 120; })
+          .then(() => {
+            if (quitAfter) { onExit(); return; }
+            state.uiMessage = "Progress saved."; state.uiMessageTimer = 120;
+          })
           .catch(() => { state.uiMessage = "Save failed. Check your connection."; state.uiMessageTimer = 150; })
           .finally(() => { savingRef.current = false; });
       }

@@ -423,5 +423,6 @@ export const INITIAL_STATE: GameStateData = {
   pendingEncounter: null,
   saveRequested: false,
   exitRequested: false,
+  quitAfterSave: false,
   meta: { isGuest: true },
 };

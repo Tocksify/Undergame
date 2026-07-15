@@ -1,12 +1,17 @@
-import { GameStateData } from './types';
+import { EnemyData, GameStateData } from './types';
 import { INITIAL_STATE, MAPS } from './constants';
 
 // The shape persisted to the save-slot JSON blob. Deliberately excludes
-// transient fields (dialogue, battle, camera, keys, uiMessage, etc.) —
-// only what's needed to resume the game.
+// purely visual/transient fields (dialogue, camera, keys, projectiles,
+// minigame cursor, etc.) — only what's needed to resume the game. If the
+// player saved mid-battle, we keep just enough of the battle (the enemy's
+// current HP/state and resonance progress) to drop them back into the same
+// fight at the MENU phase rather than replaying an in-progress dodge or
+// minigame animation.
 export interface SavedGameState {
   version: 1;
   mapId: string;
+  mode: 'OVERWORLD' | 'BATTLE';
   player: {
     x: number;
     y: number;
@@ -19,12 +24,18 @@ export interface SavedGameState {
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
   };
+  battle?: {
+    enemy: EnemyData;
+    resonance: number;
+    flags: Record<string, boolean>;
+  };
 }
 
 export function serializeGameState(state: GameStateData): SavedGameState {
   return {
     version: 1,
     mapId: state.mapId,
+    mode: state.battle ? 'BATTLE' : 'OVERWORLD',
     player: {
       x: state.player.x,
       y: state.player.y,
@@ -37,13 +48,19 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       questProgress: { ...state.player.questProgress },
       flags: { ...state.player.flags },
     },
+    battle: state.battle ? {
+      enemy: JSON.parse(JSON.stringify(state.battle.enemy)),
+      resonance: state.battle.resonance,
+      flags: { ...state.battle.flags },
+    } : undefined,
   };
 }
 
 // Human-readable one-line blurb shown in the slot picker.
 export function summarizeSavedState(saved: SavedGameState): string {
   const mapName = MAPS[saved.mapId]?.name ?? saved.mapId;
-  return `${mapName} — ${saved.player.echoes} Echoes — HP ${saved.player.hp}/${saved.player.maxHp}`;
+  const battleNote = saved.mode === 'BATTLE' && saved.battle ? ` — mid-battle vs ${saved.battle.enemy.name}` : '';
+  return `${mapName} — ${saved.player.echoes} Echoes — HP ${saved.player.hp}/${saved.player.maxHp}${battleNote}`;
 }
 
 export function buildInitialState(saved: SavedGameState | null | undefined, isGuest: boolean): GameStateData {
@@ -61,6 +78,21 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.quests = { ...state.player.quests, ...saved.player.quests };
     state.player.questProgress = { ...state.player.questProgress, ...saved.player.questProgress };
     state.player.flags = { ...saved.player.flags };
+    // Title screen stays in GameMode.TITLE either way (see constants.ts) —
+    // engine.ts reads state.battle to decide whether pressing Space/Enter
+    // drops the player back into this battle instead of the overworld.
+    if (saved.mode === 'BATTLE' && saved.battle) {
+      state.battle = {
+        enemy: JSON.parse(JSON.stringify(saved.battle.enemy)),
+        phase: 'MENU', menuIndex: 0,
+        soulX: 384, soulY: 420,
+        projectiles: [], timer: 0,
+        resonance: saved.battle.resonance,
+        actionMsg: null, minigame: null,
+        voidWard: false,
+        flags: { ...saved.battle.flags },
+      };
+    }
   }
   return state;
 }

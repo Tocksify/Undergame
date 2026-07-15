@@ -30,8 +30,8 @@ function tryCompleteRemember(state: GameStateData): boolean {
 export function handleBattleInput(state: GameStateData) {
   const b = state.battle!;
   if (b.phase === 'MENU') {
-    if (justPressed(state, 'ArrowLeft')) b.menuIndex = Math.max(0, b.menuIndex - 1);
-    if (justPressed(state, 'ArrowRight')) b.menuIndex = Math.min(4, b.menuIndex + 1); // REMEMBER, FORGET, ACT, ITEMS, FLEE
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) b.menuIndex = Math.max(0, b.menuIndex - 1);
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) b.menuIndex = Math.min(4, b.menuIndex + 1); // REMEMBER, FORGET, ACT, ITEMS, FLEE
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (b.menuIndex === 0) {
         b.phase = 'MINIGAME'; b.minigame = { cursorX: 0, type: 'REMEMBER', mult: b.flags.spark ? 2 : 1 }; b.flags.spark = false;
@@ -46,8 +46,8 @@ export function handleBattleInput(state: GameStateData) {
       }
     }
   } else if (b.phase === 'ACT_MENU') {
-    if (justPressed(state, 'ArrowLeft')) b.menuIndex = Math.max(0, b.menuIndex - 1);
-    if (justPressed(state, 'ArrowRight')) b.menuIndex = Math.min(b.enemy.acts.length - 1, b.menuIndex + 1);
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) b.menuIndex = Math.max(0, b.menuIndex - 1);
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) b.menuIndex = Math.min(b.enemy.acts.length - 1, b.menuIndex + 1);
     if (justPressed(state, 'x') || justPressed(state, 'Escape')) { b.phase = 'MENU'; b.menuIndex = 2; }
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       handleAct(state, b.enemy.acts[b.menuIndex].id);

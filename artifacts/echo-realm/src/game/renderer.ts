@@ -567,12 +567,19 @@ function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(290, 174); ctx.lineTo(474, 174); ctx.stroke();
 
-  const opts = ['Resume', 'Inventory', 'Quest Log', state.meta.isGuest ? 'Save (login req.)' : 'Save Game', 'Exit to Title'];
+  const opts = [
+    'Resume',
+    'Inventory',
+    'Quest Log',
+    state.meta.isGuest ? 'Save (login req.)' : 'Save Game',
+    state.meta.isGuest ? 'Quit to Title' : 'Save & Quit',
+    'Exit to Title',
+  ];
   ctx.textAlign = 'left'; ctx.font = '14px monospace';
   opts.forEach((opt, i) => {
     const sel = state.menuIndex === i;
     ctx.fillStyle = sel ? C.white : C.dim;
-    ctx.fillText((sel ? '> ' : '  ') + opt, 300, 200 + i * 32);
+    ctx.fillText((sel ? '> ' : '  ') + opt, 300, 200 + i * 28);
   });
 }
 
@@ -627,13 +634,34 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillStyle = C.dim; ctx.textAlign = 'center';
     ctx.fillText('-- empty --', W / 2, 200);
   } else {
-    state.player.inventory.forEach((id, i) => {
+    // The list box only has room for a handful of rows — scroll a window
+    // around the selected item instead of letting rows run past the box
+    // and overlap the description text below it.
+    const rowH = 26;
+    const listTop = 154;
+    const maxVisible = 8;
+    const total = state.player.inventory.length;
+    const maxScroll = Math.max(0, total - maxVisible);
+    const scrollOffset = Math.min(maxScroll, Math.max(0, state.inventoryIndex - maxVisible + 1));
+    const visibleIds = state.player.inventory.slice(scrollOffset, scrollOffset + maxVisible);
+
+    visibleIds.forEach((id, vi) => {
+      const i = scrollOffset + vi;
       const sel = state.inventoryIndex === i;
       const equipped = state.player.equipment.weapon === id || state.player.equipment.armor === id;
       ctx.fillStyle = sel ? C.white : C.gray;
       ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
-      ctx.fillText((sel ? '> ' : '  ') + ITEMS[id].name + (equipped ? ' [E]' : ''), 188, 154 + i * 26);
+      ctx.fillText((sel ? '> ' : '  ') + ITEMS[id].name + (equipped ? ' [E]' : ''), 188, listTop + vi * rowH);
     });
+    if (scrollOffset > 0) {
+      ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+      ctx.fillText('▲', W / 2, listTop - 14);
+    }
+    if (scrollOffset + maxVisible < total) {
+      ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+      ctx.fillText('▼', W / 2, listTop + maxVisible * rowH + 4);
+    }
+    ctx.textAlign = 'left';
     const curId = state.player.inventory[state.inventoryIndex];
     const cur = ITEMS[curId];
     if (cur) {

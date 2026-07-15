@@ -26,7 +26,9 @@ export function updateGame(state: GameStateData) {
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
         state.mapId = 'VH';
       }
-      state.mode = GameMode.OVERWORLD;
+      // Loaded saves can resume mid-battle (see save.ts) — state.battle is
+      // only populated when the save was captured while fighting.
+      state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
     return;
   }
@@ -46,8 +48,8 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.MENU) {
-    if (justPressed(state, 'ArrowUp'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
-    if (justPressed(state, 'ArrowDown')) state.menuIndex = Math.min(4, state.menuIndex + 1);
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(5, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
@@ -57,14 +59,21 @@ export function updateGame(state: GameStateData) {
         if (state.meta.isGuest) { state.uiMessage = "Log in from the title screen to save your progress."; state.uiMessageTimer = 150; }
         else { state.saveRequested = true; }
       }
-      if (state.menuIndex === 4) state.exitRequested = true;
+      if (state.menuIndex === 4) {
+        // Save & Quit: guests have nothing to persist, so just exit; logged
+        // in players save first and the exit is deferred until the save
+        // finishes (see Game.tsx), so progress is never lost mid-write.
+        if (state.meta.isGuest) { state.exitRequested = true; }
+        else { state.saveRequested = true; state.quitAfterSave = true; }
+      }
+      if (state.menuIndex === 5) state.exitRequested = true;
     }
     return;
   }
 
   if (state.mode === GameMode.INVENTORY) {
-    if (justPressed(state, 'ArrowUp'))   state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
-    if (justPressed(state, 'ArrowDown')) state.inventoryIndex = Math.min(Math.max(0, state.player.inventory.length - 1), state.inventoryIndex + 1);
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.inventoryIndex = Math.min(Math.max(0, state.player.inventory.length - 1), state.inventoryIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'i')) {
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
@@ -115,8 +124,8 @@ export function updateGame(state: GameStateData) {
   if (state.mode === GameMode.SHOP) {
     const shop = SHOPS[state.shopNpcId || 'zara'] ?? SHOPS['zara'];
     const shopItems = shop.items;
-    if (justPressed(state, 'ArrowUp'))   state.shopIndex = Math.max(0, state.shopIndex - 1);
-    if (justPressed(state, 'ArrowDown')) state.shopIndex = Math.min(shopItems.length - 1, state.shopIndex + 1);
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.shopIndex = Math.max(0, state.shopIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.shopIndex = Math.min(shopItems.length - 1, state.shopIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const item = ITEMS[shopItems[state.shopIndex]];
@@ -138,8 +147,8 @@ export function updateGame(state: GameStateData) {
       if (justPressed(state, ' ') || justPressed(state, 'z')) state.dialogue.charIndex = node.text.length;
     } else {
       if (node.options && node.options.length > 0) {
-        if (justPressed(state, 'ArrowUp') && state.dialogue.selectedOption > 0) state.dialogue.selectedOption--;
-        if (justPressed(state, 'ArrowDown') && state.dialogue.selectedOption < node.options.length - 1) state.dialogue.selectedOption++;
+        if ((justPressed(state, 'ArrowUp') || justPressed(state, 'w')) && state.dialogue.selectedOption > 0) state.dialogue.selectedOption--;
+        if ((justPressed(state, 'ArrowDown') || justPressed(state, 's')) && state.dialogue.selectedOption < node.options.length - 1) state.dialogue.selectedOption++;
         if (justPressed(state, ' ') || justPressed(state, 'z')) {
           const opt = node.options[state.dialogue.selectedOption];
           if (opt.action) opt.action(state);

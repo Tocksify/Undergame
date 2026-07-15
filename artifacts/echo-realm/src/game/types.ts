@@ -125,5 +125,6 @@ export interface GameStateData {
   pendingEncounter: EnemyData | null;
   saveRequested: boolean;
   exitRequested: boolean;
+  quitAfterSave: boolean;
   meta: { isGuest: boolean };
 }
