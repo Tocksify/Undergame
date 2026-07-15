@@ -11,7 +11,8 @@ export enum GameMode {
   VICTORY,
   BOOK_READ,    // 10 - reading a collected book
   ENCHANT_SELECT, // 11 - picking an item to enchant
-  TOME_CRAFT    // 12 - Tomes Blessing: choosing an enchantment to create from an empty book
+  TOME_CRAFT,   // 12 - Tomes Blessing: choosing an enchantment to create from an empty book
+  TELEPORT      // 13 - N key: memory transit map selection
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
@@ -166,4 +167,5 @@ export interface GameStateData {
     cursorIndex: number;      // which craftable enchantment is highlighted
     chosenEnchantId: string | null; // enchant item id chosen, then routes into enchantSelect
   };
+  teleportIndex: number; // selected row in the TELEPORT menu
 }

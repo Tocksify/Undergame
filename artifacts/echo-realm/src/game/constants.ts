@@ -172,25 +172,25 @@ export const ITEMS: Record<string, Item> = {
   'echo':   { name: 'Ancient Echo',  desc: 'A memory from the beginning.',         price: 0,  tier: 'legendary', category: 'key' },
 
   // ── WEAPONS ──
-  'rusty_shard':      { name: 'Rusty Shard',         desc: 'A chipped blade. +1 ATK',                  price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
-  'iron_fragment':    { name: 'Iron Fragment',        desc: 'Scavenged iron, sharpened. +2 ATK',         price: 80,  tier: 'common',    category: 'weapon', atk: 2 },
-  'bone_edge':        { name: 'Bone Edge',            desc: 'Carved from something forgotten. +3 ATK',   price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
-  'etched_spike':     { name: 'Etched Spike',         desc: 'Ward-etched iron, crude but effective. +4 ATK', price: 200, tier: 'uncommon', category: 'weapon', atk: 4 },
-  'frost_fang':       { name: 'Frost Fang',           desc: 'Never melts. +5 ATK',                      price: 0,   tier: 'rare',      category: 'weapon', atk: 5 },
-  'memory_edge':      { name: 'Memory Edge',          desc: 'A blade of solidified recollection. +7 ATK', price: 0,  tier: 'rare',      category: 'weapon', atk: 7 },
-  'cinder_blade':     { name: 'Cinder Blade',         desc: 'Forged in the last true fire. +8 ATK',     price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
-  'voidtouched_blade':{ name: 'Voidtouched Blade',    desc: 'It cuts through forgetting itself. +10 ATK', price: 0, tier: 'epic',      category: 'weapon', atk: 10 },
-  'voidglass_dagger': { name: 'Voidglass Dagger',     desc: 'Cut from the Nexus itself. +12 ATK',       price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
+  'rusty_shard':      { name: 'Rusty Shard',         desc: 'A chipped blade with no memory of its owner. It is simply sharp.',     price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
+  'iron_fragment':    { name: 'Iron Fragment',        desc: 'Scavenged from collapsed walls. Still sharp enough to mean something.',  price: 80,  tier: 'common',    category: 'weapon', atk: 2 },
+  'bone_edge':        { name: 'Bone Edge',            desc: "The creature this came from didn't let go easily. Neither will you.",    price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
+  'etched_spike':     { name: 'Etched Spike',         desc: 'Warded iron that remembers violence. The wards only make it meaner.',   price: 200, tier: 'uncommon',  category: 'weapon', atk: 4 },
+  'frost_fang':       { name: 'Frost Fang',           desc: 'It has never been warm. Not once. It reaches out for heat wherever it goes.', price: 0, tier: 'rare', category: 'weapon', atk: 5 },
+  'memory_edge':      { name: 'Memory Edge',          desc: 'Forged from solidified recollection. It cuts through what was as easily as what is.', price: 0, tier: 'rare', category: 'weapon', atk: 7 },
+  'cinder_blade':     { name: 'Cinder Blade',         desc: 'Forged in the last true fire. The flames are still in there, waiting.',  price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
+  'voidtouched_blade':{ name: 'Voidtouched Blade',    desc: 'Reality flinches where this blade passes through it. So do most enemies.', price: 0, tier: 'epic',     category: 'weapon', atk: 10 },
+  'voidglass_dagger': { name: 'Voidglass Dagger',     desc: 'Cut from the Nexus itself. It remembers every wound it has ever made.',  price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
 
   // ── ARMOR ──
-  'cloth_wrap':       { name: 'Cloth Wrap',           desc: 'Simple protection. +5 Max HP',             price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
-  'hide_wrap':        { name: 'Hide Wrap',             desc: 'Toughened hide stitched together. +8 Max HP', price: 100, tier: 'common',  category: 'armor', maxHp: 8 },
-  'traveler_cloak':   { name: "Traveler's Cloak",     desc: '+10 Max HP, +1 DEF',                       price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
-  'runed_cloak':      { name: 'Runed Cloak',           desc: 'Thin cloth warded with old runes. +12 Max HP, +1 DEF', price: 220, tier: 'uncommon', category: 'armor', maxHp: 12, def: 1 },
-  'archivist_ward':   { name: "Archivist's Ward",     desc: '+15 Max HP, +2 DEF',                       price: 0,   tier: 'rare',      category: 'armor', maxHp: 15, def: 2 },
-  'ember_plate':      { name: 'Ember Plate',           desc: '+20 Max HP, +3 DEF',                      price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
-  'shadow_carapace':  { name: 'Shadow Carapace',       desc: 'Born of void-touched chitin. +25 Max HP, +4 DEF', price: 0, tier: 'epic', category: 'armor', maxHp: 25, def: 4 },
-  'voidsteel_mail':   { name: 'Voidsteel Mail',        desc: '+30 Max HP, +5 DEF',                      price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
+  'cloth_wrap':       { name: 'Cloth Wrap',           desc: 'It will not stop much. But it is better than hope alone.',               price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
+  'hide_wrap':        { name: 'Hide Wrap',             desc: 'Toughened by something that survived worse than this.',                  price: 100, tier: 'common',    category: 'armor', maxHp: 8 },
+  'traveler_cloak':   { name: "Traveler's Cloak",     desc: 'It has walked very far. The roads are in the threads.',                  price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
+  'runed_cloak':      { name: 'Runed Cloak',           desc: 'Old wards stitched into the hem by someone who did not want to be forgotten.', price: 220, tier: 'uncommon', category: 'armor', maxHp: 12, def: 1 },
+  'archivist_ward':   { name: "Archivist's Ward",     desc: 'Made by someone who needed to survive long enough to write one more page.', price: 0, tier: 'rare',    category: 'armor', maxHp: 15, def: 2 },
+  'ember_plate':      { name: 'Ember Plate',           desc: 'Still smells like smoke. Whatever wore it before walked out of fire.',   price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
+  'shadow_carapace':  { name: 'Shadow Carapace',       desc: 'Worn by something that stopped needing light to see its prey.',          price: 0,   tier: 'epic',      category: 'armor', maxHp: 25, def: 4 },
+  'voidsteel_mail':   { name: 'Voidsteel Mail',        desc: 'The armor of death himself. Heavy with the weight of endings.',          price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
 
   // ── READABLE BOOKS ──
   'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
@@ -793,7 +793,7 @@ function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPl
     ...Array.from({ length: 10 }, (_, i) => `sq${i + 1}`),
     'secret',
     ...Array.from({ length: 5 }, (_, i) => `note${i + 1}`),
-    ...Array.from({ length: 15 }, (_, i) => `misc${i + 1}`),
+    ...Array.from({ length: 75 }, (_, i) => `misc${i + 1}`),
   ];
 
   const placements: Record<string, BlockPlacement> = {};
@@ -979,7 +979,7 @@ for (let i = 1; i <= 10; i++) sqInteriors[`sq${i}`] = buildInterior('misc');
 const noteInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 5; i++) noteInteriors[`note${i}`] = buildInterior('misc');
 const miscInteriors: Record<string, string[][]> = {};
-for (let i = 1; i <= 15; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
+for (let i = 1; i <= 75; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
 const arMiscInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 10; i++) arMiscInteriors[`misc${i}`] = buildInterior('misc');
 
@@ -1233,7 +1233,7 @@ export const MAPS: Record<string, any> = {
       { id: 'door_secret', x: ctP.secret.doorX,   y: ctP.secret.doorY,       targetMapId: 'CT_SECRET', targetX: 7,  targetY: 6,  label: "A Quiet House" },
       ...CITY_SIDE_QUESTS.map(sq => ({ id: `door_${sq.id}`, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY, targetMapId: `CT_${sq.id.toUpperCase()}`, targetX: 7, targetY: 6, label: sq.title })),
       ...Array.from({ length: 5 }, (_, i) => ({ id: `door_note${i + 1}`, x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY, targetMapId: `CT_NOTE${i + 1}`, targetX: 7, targetY: 6, label: 'An Old House' })),
-      ...Array.from({ length: 15 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
+      ...Array.from({ length: 75 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
     ],
     books: [],
     encounterPool: ['city_shade', 'street_wraith', 'hollow_guard'],
@@ -1425,7 +1425,7 @@ export const MAPS: Record<string, any> = {
       exits: { '<': { mapId: 'CT', x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY + 1 } }
     }
   ])),
-  ...Object.fromEntries(Array.from({ length: 15 }, (_, i) => [
+  ...Object.fromEntries(Array.from({ length: 75 }, (_, i) => [
     `CT_MISC${i + 1}`, {
       id: `CT_MISC${i + 1}`, name: 'A House', width: 14, height: 9,
       layout: miscInteriors[`misc${i + 1}`],
@@ -1442,6 +1442,19 @@ export const MAPS: Record<string, any> = {
     }
   ])),
 };
+
+// ── TELEPORT POINTS — unlocked as the player discovers each region ──
+export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: number; y: number }[] = [
+  { id: 'VH', name: 'Verdant Hollow',   mapId: 'VH', x: 12, y: 8  },
+  { id: 'WW', name: 'Whispering Woods', mapId: 'WW', x: 11, y: 1  },
+  { id: 'MS', name: 'Memory Sanctum',   mapId: 'MS', x: 9,  y: 1  },
+  { id: 'SA', name: 'Sunken Archive',   mapId: 'SA', x: 9,  y: 1  },
+  { id: 'FR', name: 'Frostbound Reach', mapId: 'FR', x: 9,  y: 1  },
+  { id: 'AD', name: 'Ashen Descent',    mapId: 'AD', x: 10, y: 1  },
+  { id: 'VN', name: 'Void Nexus',       mapId: 'VN', x: 9,  y: 14 },
+  { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
+  { id: 'AR', name: 'Ashfall Ring',     mapId: 'AR', x: 1,  y: 20 },
+];
 
 export const INITIAL_STATE: GameStateData = {
   mode: GameMode.TITLE,
@@ -1466,7 +1479,7 @@ export const INITIAL_STATE: GameStateData = {
       'shards': 0, 'specters': 0, 'archive_kills': 0, 'frost_kills': 0, 'ash_kills': 0,
       'city_clears': 0,
     },
-    flags: {},
+    flags: { 'discovered_VH': true },
     invincibility: 0
   },
   camera: { x: 0, y: 0 },
@@ -1486,4 +1499,5 @@ export const INITIAL_STATE: GameStateData = {
   bookRead: { bookId: null, page: 0, fromInventoryIndex: 0 },
   enchantSelect: { enchantBookSlot: 0, cursorIndex: 0 },
   tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
+  teleportIndex: 0,
 };

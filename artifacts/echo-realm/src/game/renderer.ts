@@ -1,5 +1,5 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier } from './constants';
+import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS } from './constants';
 import { QUESTS } from './quests';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
@@ -254,6 +254,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   // ── TOME CRAFT ─────────────────────────────────────────────────────
   if (state.mode === GameMode.TOME_CRAFT) {
     renderTomeCraft(ctx, state); drawScanlines(ctx); return;
+  }
+
+  // ── MEMORY TRANSIT (teleport) ───────────────────────────────────────
+  if (state.mode === GameMode.TELEPORT) {
+    renderTeleport(ctx, state); drawScanlines(ctx); return;
   }
 
   // ── OVERWORLD ──────────────────────────────────────────────────────
@@ -942,7 +947,73 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
   }
 
   ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '11px monospace';
-  ctx.fillText(`${state.player.inventory.length} items`, W / 2, H - 84);
+  ctx.fillText(`${state.player.inventory.length} items  |  [N] memory transit`, W / 2, H - 84);
+
+  // ── Item hover stat panel (right side) ──────────────────────────────
+  const hoveredId = state.player.inventory[state.inventoryIndex];
+  const hoveredItem = ITEMS[hoveredId];
+  if (hoveredItem && state.player.inventory.length > 0) {
+    const px = W - 144, py = 76, pw = 136, ph = H - 152;
+    pixelBox(ctx, px, py, pw, ph, '#0a0a0a', TIER_COLOR[hoveredItem.tier] ?? C.dim, 2);
+
+    // Tier badge
+    ctx.font = 'bold 9px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = TIER_COLOR[hoveredItem.tier] ?? C.gray;
+    ctx.fillText((TIER_LABEL[hoveredItem.tier] ?? hoveredItem.tier).toUpperCase(), px + pw / 2, py + 16);
+
+    // Item name (wrapped at ~15 chars)
+    ctx.strokeStyle = TIER_COLOR[hoveredItem.tier] ?? C.dim; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 6, py + 22); ctx.lineTo(px + pw - 6, py + 22); ctx.stroke();
+    const nameWords = hoveredItem.name.split(' ');
+    let nameLine = ''; let nameY = py + 36;
+    ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left';
+    for (const w of nameWords) {
+      const test = nameLine ? nameLine + ' ' + w : w;
+      if (ctx.measureText(test).width > pw - 14 && nameLine) {
+        ctx.fillStyle = C.white; ctx.fillText(nameLine, px + 7, nameY); nameY += 14; nameLine = w;
+      } else { nameLine = test; }
+    }
+    if (nameLine) { ctx.fillStyle = C.white; ctx.fillText(nameLine, px + 7, nameY); nameY += 18; }
+
+    // Stats
+    const ench = state.player.enchantedSlots[state.inventoryIndex];
+    const enchItem = ench ? ITEMS[ench] : null;
+    const hasStats = hoveredItem.atk || hoveredItem.def || hoveredItem.maxHp;
+    if (hasStats) {
+      ctx.strokeStyle = '#222222'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px + 6, nameY - 4); ctx.lineTo(px + pw - 6, nameY - 4); ctx.stroke();
+      ctx.font = '11px monospace'; ctx.textAlign = 'left';
+      if (hoveredItem.atk)   { ctx.fillStyle = '#ff9977'; ctx.fillText(`ATK  +${hoveredItem.atk}`, px + 7, nameY + 10); nameY += 16; }
+      if (hoveredItem.def)   { ctx.fillStyle = '#77aaff'; ctx.fillText(`DEF  +${hoveredItem.def}`, px + 7, nameY + 10); nameY += 16; }
+      if (hoveredItem.maxHp) { ctx.fillStyle = '#77dd77'; ctx.fillText(`HP   +${hoveredItem.maxHp}`, px + 7, nameY + 10); nameY += 16; }
+      nameY += 6;
+    }
+    // Enchantment stats
+    if (enchItem?.enchantData) {
+      ctx.strokeStyle = '#331144'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px + 6, nameY - 2); ctx.lineTo(px + pw - 6, nameY - 2); ctx.stroke();
+      ctx.font = 'bold 9px monospace'; ctx.fillStyle = C.enchant; ctx.textAlign = 'center';
+      ctx.fillText('✦ ENCHANTED', px + pw / 2, nameY + 10); nameY += 16;
+      ctx.font = '11px monospace'; ctx.textAlign = 'left';
+      if (enchItem.enchantData.atk)   { ctx.fillStyle = '#dd99ff'; ctx.fillText(`ATK  +${enchItem.enchantData.atk}`, px + 7, nameY + 10); nameY += 16; }
+      if (enchItem.enchantData.def)   { ctx.fillStyle = '#dd99ff'; ctx.fillText(`DEF  +${enchItem.enchantData.def}`, px + 7, nameY + 10); nameY += 16; }
+      if (enchItem.enchantData.maxHp) { ctx.fillStyle = '#dd99ff'; ctx.fillText(`HP   +${enchItem.enchantData.maxHp}`, px + 7, nameY + 10); nameY += 16; }
+      nameY += 6;
+    }
+    // Description (wrapped)
+    ctx.strokeStyle = '#222222'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px + 6, nameY - 2); ctx.lineTo(px + pw - 6, nameY - 2); ctx.stroke();
+    ctx.font = '9px monospace'; ctx.fillStyle = C.silver; ctx.textAlign = 'left';
+    const descWords = hoveredItem.desc.split(' ');
+    let descLine = ''; let descY = nameY + 12;
+    for (const dw of descWords) {
+      const test = descLine ? descLine + ' ' + dw : dw;
+      if (ctx.measureText(test).width > pw - 10 && descLine) {
+        ctx.fillText(descLine, px + 7, descY); descY += 12; descLine = dw;
+      } else { descLine = test; }
+    }
+    if (descLine) ctx.fillText(descLine, px + 7, descY);
+  }
 }
 
 // ── QUESTS ─────────────────────────────────────────────────────────
@@ -990,6 +1061,43 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
 }
 
 // ── TOME CRAFT (Tomes Blessing) ───────────────────────────────────
+// ── MEMORY TRANSIT ─────────────────────────────────────────────────
+function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  const available = TELEPORT_POINTS.filter(p => state.player.flags['discovered_' + p.id]);
+  ctx.fillStyle = 'rgba(0,0,0,0.88)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 224, 100, 320, Math.max(240, 80 + available.length * 40 + 60), '#05050f', '#6666cc', 3);
+
+  ctx.fillStyle = '#9999ee'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('MEMORY TRANSIT', W / 2, 132);
+  ctx.fillStyle = '#555577'; ctx.font = '11px monospace';
+  ctx.fillText('Teleport to a known location', W / 2, 150);
+  ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(244, 160); ctx.lineTo(544, 160); ctx.stroke();
+
+  if (available.length === 0) {
+    ctx.fillStyle = '#555577'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('No locations discovered yet.', W / 2, 200);
+  } else {
+    ctx.textAlign = 'left';
+    available.forEach((pt, i) => {
+      const sel = state.teleportIndex === i;
+      const iy = 182 + i * 40;
+      if (sel) {
+        ctx.fillStyle = '#111133'; ctx.fillRect(240, iy - 20, 288, 34);
+        ctx.strokeStyle = '#6666cc'; ctx.lineWidth = 1; ctx.strokeRect(240, iy - 20, 288, 34);
+      }
+      ctx.font = sel ? 'bold 14px monospace' : '14px monospace';
+      ctx.fillStyle = sel ? '#ccccff' : '#888899';
+      ctx.fillText((sel ? '▶  ' : '   ') + pt.name, 252, iy);
+      ctx.font = '10px monospace'; ctx.fillStyle = sel ? '#5555aa' : '#333355';
+      ctx.fillText(pt.mapId, 252, iy + 13);
+    });
+  }
+
+  ctx.fillStyle = '#333355'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
+  ctx.fillText('[↑↓] select  |  [SPACE] travel  |  [X] cancel', W / 2, H - 110);
+}
+
 function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 120, 90, W - 240, H - 180, '#050510', C.enchant, 3);

@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS } from './constants';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 
@@ -375,10 +375,30 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── TELEPORT (N key) ───────────────────────────────────────────────
+  if (state.mode === GameMode.TELEPORT) {
+    const available = TELEPORT_POINTS.filter(p => state.player.flags['discovered_' + p.id]);
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'ArrowUp'))   { state.teleportIndex = Math.max(0, state.teleportIndex - 1); return; }
+    if (justPressed(state, 'ArrowDown')) { state.teleportIndex = Math.min(available.length - 1, state.teleportIndex + 1); return; }
+    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
+      const dest = available[state.teleportIndex];
+      if (dest) {
+        state.mapId = dest.mapId;
+        state.player.x = dest.x * TILE_SIZE; state.player.y = dest.y * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.mode = GameMode.OVERWORLD;
+      }
+      return;
+    }
+    return;
+  }
+
   // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; return; }
   if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; return; }
+  if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
 
   const map = MAPS[state.mapId];
 
@@ -442,6 +462,7 @@ export function updateGame(state: GameStateData) {
           state.mapId = exit.mapId;
           state.player.x = exit.x * TILE_SIZE; state.player.y = exit.y * TILE_SIZE;
           state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+          state.player.flags['discovered_' + exit.mapId] = true;
           state.adjacentInteractable = null;
         }
       }
@@ -453,6 +474,7 @@ export function updateGame(state: GameStateData) {
         state.mapId = door.targetMapId;
         state.player.x = door.targetX * TILE_SIZE; state.player.y = door.targetY * TILE_SIZE;
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.player.flags['discovered_' + door.targetMapId] = true;
         state.adjacentInteractable = null;
       }
     } else if (intFound.type === 'NPC') {
