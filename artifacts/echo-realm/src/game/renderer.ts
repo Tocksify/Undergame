@@ -551,10 +551,20 @@ function renderEnchantSelect(ctx: CanvasRenderingContext2D, state: GameStateData
     });
 
   ctx.textAlign = 'left';
-  compatible.forEach(({ id, i }, vi) => {
-    const sel = state.enchantSelect.cursorIndex === vi;
+  const rowH = 32;
+  const listTop = 248;
+  const listBottom = H - 150;
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, compatible.length - maxVisible);
+  const scrollOffset = Math.min(maxScroll, Math.max(0, state.enchantSelect.cursorIndex - maxVisible + 1));
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(140, listTop - 18, W - 280, listBottom - (listTop - 18)); ctx.clip();
+  compatible.slice(scrollOffset, scrollOffset + maxVisible).forEach(({ id, i }, vi) => {
+    const rowIdx = scrollOffset + vi;
+    const sel = state.enchantSelect.cursorIndex === rowIdx;
     const item = ITEMS[id];
-    const iy = 248 + vi * 32;
+    const iy = listTop + vi * rowH;
 
     if (sel) {
       ctx.fillStyle = '#1a1a33'; ctx.fillRect(154, iy - 18, W - 308, 28);
@@ -570,6 +580,16 @@ function renderEnchantSelect(ctx: CanvasRenderingContext2D, state: GameStateData
     const eqLabel = state.player.equipment.weapon === id || state.player.equipment.armor === id ? ' [EQ]' : '';
     ctx.fillText(item.desc + eqLabel, 166, iy + 13);
   });
+  ctx.restore();
+
+  if (scrollOffset > 0) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▲', W / 2, listTop - 8);
+  }
+  if (scrollOffset + maxVisible < compatible.length) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▼', W / 2, listBottom + 6);
+  }
 
   if (compatible.length === 0) {
     ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '13px monospace';
@@ -819,9 +839,20 @@ function renderShop(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   const shopItems = shop.items;
   ctx.textAlign = 'left';
-  shopItems.forEach((id, i) => {
+
+  const rowH = 58;
+  const listTop = 130;
+  const listBottom = H - 92; // leave room for the message + footer hint below
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, shopItems.length - maxVisible);
+  const scrollOffset = Math.min(maxScroll, Math.max(0, state.shopIndex - maxVisible + 1));
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(60, listTop - 30, W - 120, listBottom - (listTop - 30)); ctx.clip();
+  shopItems.slice(scrollOffset, scrollOffset + maxVisible).forEach((id, vi) => {
+    const i = scrollOffset + vi;
     const item = ITEMS[id]; const sel = state.shopIndex === i;
-    const iy = 130 + i * 58;
+    const iy = listTop + vi * rowH;
     if (sel) { ctx.fillStyle = '#111111'; ctx.fillRect(82, iy - 20, W - 164, 52); }
 
     // Category tag
@@ -836,6 +867,16 @@ function renderShop(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillText(`${item.price} Echoes`, 94, iy + 24);
     if (sel) { ctx.fillStyle = C.light; ctx.fillText(item.desc, 250, iy + 8); }
   });
+  ctx.restore();
+
+  if (scrollOffset > 0) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▲', W / 2, listTop - 16);
+  }
+  if (scrollOffset + maxVisible < shopItems.length) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▼', W / 2, listTop + maxVisible * rowH - 4);
+  }
 
   if (state.uiMessage) {
     ctx.fillStyle = C.white; ctx.font = '14px monospace'; ctx.textAlign = 'center';
@@ -1027,10 +1068,20 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.beginPath(); ctx.moveTo(120, 122); ctx.lineTo(W - 120, 122); ctx.stroke();
 
   ctx.textAlign = 'left'; ctx.font = '13px monospace';
-  let qy = 150;
+  const listTop = 150;
+  const rowH = 26;
+  const listBottom = H - 130;
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
 
   const active = QUESTS.filter(q => q.isActive(state));
-  for (const q of active) {
+  const maxScroll = Math.max(0, active.length - maxVisible);
+  const scrollOffset = Math.min(maxScroll, state.questLogScroll);
+  const visible = active.slice(scrollOffset, scrollOffset + maxVisible);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(100, listTop - 20, W - 200, listBottom - (listTop - 20)); ctx.clip();
+  let qy = listTop;
+  for (const q of visible) {
     const done = q.isDone(state);
     const label = q.label(state);
     const prefix = q.kind === 'ACT' ? '[Act] ' : q.kind === 'SACT' ? '[SACT] ' : '[SQ] ';
@@ -1048,7 +1099,17 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
     } else {
       drawTierText(ctx, label, 124 + prefixW, qy, tier, state.frameCount);
     }
-    qy += 26;
+    qy += rowH;
+  }
+  ctx.restore();
+
+  if (scrollOffset > 0) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▲', W / 2, listTop - 8);
+  }
+  if (scrollOffset + maxVisible < active.length) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▼', W / 2, listBottom + 4);
   }
 
   if (active.length === 0) {
@@ -1057,15 +1118,20 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
   }
 
   ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
-  ctx.fillText('[Q] or [X] to close', W / 2, H - 110);
+  ctx.fillText('[↑↓] scroll  |  [Q] or [X] to close', W / 2, H - 110);
 }
 
 // ── TOME CRAFT (Tomes Blessing) ───────────────────────────────────
 // ── MEMORY TRANSIT ─────────────────────────────────────────────────
 function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
   const available = TELEPORT_POINTS.filter(p => state.player.flags['discovered_' + p.id]);
+  const rowH = 40;
+  const listTop = 182;
+  const maxVisible = 7; // caps the box so it always fits on screen, even with every location discovered
+  const boxH = Math.min(H - 140, Math.max(240, 80 + Math.min(available.length, maxVisible) * rowH + 60));
+
   ctx.fillStyle = 'rgba(0,0,0,0.88)'; ctx.fillRect(0, 0, W, H);
-  pixelBox(ctx, 224, 100, 320, Math.max(240, 80 + available.length * 40 + 60), '#05050f', '#6666cc', 3);
+  pixelBox(ctx, 224, 100, 320, boxH, '#05050f', '#6666cc', 3);
 
   ctx.fillStyle = '#9999ee'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
   ctx.fillText('MEMORY TRANSIT', W / 2, 132);
@@ -1078,10 +1144,17 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillStyle = '#555577'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
     ctx.fillText('No locations discovered yet.', W / 2, 200);
   } else {
+    const maxScroll = Math.max(0, available.length - maxVisible);
+    const scrollOffset = Math.min(maxScroll, Math.max(0, state.teleportIndex - maxVisible + 1));
+    const visible = available.slice(scrollOffset, scrollOffset + maxVisible);
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(224, listTop - 26, 320, 100 + boxH - (listTop - 26) - 130); ctx.clip();
     ctx.textAlign = 'left';
-    available.forEach((pt, i) => {
+    visible.forEach((pt, vi) => {
+      const i = scrollOffset + vi;
       const sel = state.teleportIndex === i;
-      const iy = 182 + i * 40;
+      const iy = listTop + vi * rowH;
       if (sel) {
         ctx.fillStyle = '#111133'; ctx.fillRect(240, iy - 20, 288, 34);
         ctx.strokeStyle = '#6666cc'; ctx.lineWidth = 1; ctx.strokeRect(240, iy - 20, 288, 34);
@@ -1092,10 +1165,20 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
       ctx.font = '10px monospace'; ctx.fillStyle = sel ? '#5555aa' : '#333355';
       ctx.fillText(pt.mapId, 252, iy + 13);
     });
+    ctx.restore();
+
+    if (scrollOffset > 0) {
+      ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+      ctx.fillText('▲', W / 2, listTop - 14);
+    }
+    if (scrollOffset + maxVisible < available.length) {
+      ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+      ctx.fillText('▼', W / 2, listTop + maxVisible * rowH - 6);
+    }
   }
 
   ctx.fillStyle = '#333355'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
-  ctx.fillText('[↑↓] select  |  [SPACE] travel  |  [X] cancel', W / 2, H - 110);
+  ctx.fillText('[↑↓] select  |  [SPACE] travel  |  [X] cancel', W / 2, 100 + boxH - 20);
 }
 
 function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
@@ -1111,11 +1194,21 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.beginPath(); ctx.moveTo(150, 156); ctx.lineTo(W - 150, 156); ctx.stroke();
 
   ctx.textAlign = 'left';
-  CRAFTABLE_ENCHANTS.forEach((id, i) => {
+  const rowH = 34;
+  const listTop = 184;
+  const listBottom = H - 116;
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, CRAFTABLE_ENCHANTS.length - maxVisible);
+  const scrollOffset = Math.min(maxScroll, Math.max(0, state.tomeCraft.cursorIndex - maxVisible + 1));
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(120, listTop - 20, W - 240, listBottom - (listTop - 20)); ctx.clip();
+  CRAFTABLE_ENCHANTS.slice(scrollOffset, scrollOffset + maxVisible).forEach((id, vi) => {
+    const i = scrollOffset + vi;
     const sel = state.tomeCraft.cursorIndex === i;
     const item = ITEMS[id];
     if (!item) return;
-    const iy = 184 + i * 34;
+    const iy = listTop + vi * rowH;
 
     if (sel) {
       ctx.fillStyle = '#1a1a33'; ctx.fillRect(134, iy - 18, W - 268, 30);
@@ -1133,6 +1226,16 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.font = '11px monospace';
     ctx.fillText(item.desc, 146, iy + 13);
   });
+  ctx.restore();
+
+  if (scrollOffset > 0) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▲', W / 2, listTop - 10);
+  }
+  if (scrollOffset + maxVisible < CRAFTABLE_ENCHANTS.length) {
+    ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▼', W / 2, listBottom + 6);
+  }
 
   ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace';
   ctx.fillText('[UP/DOWN] select  |  [SPACE] forge & enchant  |  [X] cancel', W / 2, H - 96);

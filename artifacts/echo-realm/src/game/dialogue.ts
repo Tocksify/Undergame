@@ -404,7 +404,7 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
   }
   if (nextId === 'city_gate_how') {
     return {
-      text: "Head south from the village — there's a path through the old road. The city gate is open but the streets are dangerous. The Warden is holding up near the south entrance. She can guide you.",
+      text: "Head east from the village — the city gate is open but the streets are dangerous. The Warden is holding up near the gate entrance. She can guide you. Don't bother with the old south road — it's been sealed by the Void for as long as anyone can remember.",
       speaker: 'City Messenger', color: '#aaaaff',
       action: (s) => { s.uiMessage = "Crestfall City added to your known locations."; s.uiMessageTimer = 150; }
     };

@@ -788,26 +788,47 @@ function buildCTFull(): { layout: string[][]; placements: Record<string, BlockPl
   // secret eastern gate -> Ashfall Ring (requires the Mysterious Note)
   poke(L, W - 1, 20, '@'); poke(L, W - 2, 20, 'P');
 
-  const roleQueue: string[] = [
+  // Named/quest roles are spread evenly across every block in the city
+  // (instead of filling the grid row-by-row) so quest-givers, notable
+  // houses, and the secret entrance don't all cluster into the first
+  // couple of rows — they should feel scattered through the whole city.
+  const specialRoles: string[] = [
     'scholar', 'abandoned', 'study', 'wardenoffice', 'shelter',
     ...Array.from({ length: 10 }, (_, i) => `sq${i + 1}`),
     'secret',
     ...Array.from({ length: 5 }, (_, i) => `note${i + 1}`),
-    ...Array.from({ length: 75 }, (_, i) => `misc${i + 1}`),
   ];
+  const miscRoles: string[] = Array.from({ length: 75 }, (_, i) => `misc${i + 1}`);
 
-  const placements: Record<string, BlockPlacement> = {};
-  let qi = 0;
-  for (let by = 0; by < BLOCKS && qi < roleQueue.length; by++) {
-    for (let bx = 0; bx < BLOCKS && qi < roleQueue.length; bx++) {
+  const positions: { bx: number; by: number }[] = [];
+  for (let by = 0; by < BLOCKS; by++) {
+    for (let bx = 0; bx < BLOCKS; bx++) {
       // skip the plaza blocks
       if (bx >= 4 && bx <= 5 && by >= 4 && by <= 5) continue;
-      const role = roleQueue[qi++];
-      const big = role === 'scholar' || role === 'abandoned';
-      const size = big ? 7 : 5;
-      const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, size, size);
-      placements[role] = { role, ox, oy, w: size, h: size, doorX, doorY, bx, by };
+      positions.push({ bx, by });
     }
+  }
+
+  const placements: Record<string, BlockPlacement> = {};
+  const usedIdx = new Set<number>();
+
+  specialRoles.forEach((role, i) => {
+    const idx = Math.min(positions.length - 1, Math.floor((i * positions.length) / specialRoles.length));
+    usedIdx.add(idx);
+    const { bx, by } = positions[idx];
+    const big = role === 'scholar' || role === 'abandoned';
+    const size = big ? 7 : 5;
+    const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, size, size);
+    placements[role] = { role, ox, oy, w: size, h: size, doorX, doorY, bx, by };
+  });
+
+  let mi = 0;
+  for (let idx = 0; idx < positions.length && mi < miscRoles.length; idx++) {
+    if (usedIdx.has(idx)) continue;
+    const role = miscRoles[mi++];
+    const { bx, by } = positions[idx];
+    const { ox, oy, doorX, doorY } = placeBuilding(L, bx, by, SPACING, 5, 5);
+    placements[role] = { role, ox, oy, w: 5, h: 5, doorX, doorY, bx, by };
   }
 
   return { layout: L, placements };
@@ -1500,4 +1521,5 @@ export const INITIAL_STATE: GameStateData = {
   enchantSelect: { enchantBookSlot: 0, cursorIndex: 0 },
   tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
   teleportIndex: 0,
+  questLogScroll: 0,
 };

@@ -1,5 +1,6 @@
 import { GameStateData, GameMode, EnemyData } from './types';
 import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS } from './constants';
+import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 
@@ -316,7 +317,12 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.QUEST_LOG) {
-    if (justPressed(state, 'Escape') || justPressed(state, 'q') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
+    const activeCount = QUESTS.filter(q => q.isActive(state)).length;
+    const maxVisible = 11; // must match renderQuests' listTop/listBottom/rowH math in renderer.ts
+    const maxScroll = Math.max(0, activeCount - maxVisible);
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.questLogScroll = Math.max(0, state.questLogScroll - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.questLogScroll = Math.min(maxScroll, state.questLogScroll + 1);
+    if (justPressed(state, 'Escape') || justPressed(state, 'q') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; state.questLogScroll = 0; }
     return;
   }
 

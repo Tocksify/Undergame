@@ -168,4 +168,5 @@ export interface GameStateData {
     chosenEnchantId: string | null; // enchant item id chosen, then routes into enchantSelect
   };
   teleportIndex: number; // selected row in the TELEPORT menu
+  questLogScroll: number; // top index of the visible window in the QUEST_LOG list
 }
