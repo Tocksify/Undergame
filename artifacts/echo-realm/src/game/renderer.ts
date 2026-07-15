@@ -500,21 +500,57 @@ function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
     );
   }
 
-  // NPC dots — colour-coded by type, with quest indicator
+  // NPC quest markers — red ? for main-quest NPCs, orange ? for side-quest NPCs.
+  // Bosses and shops get a colored dot but no ?. Completed quests show no marker.
+  const MAIN_Q_NPCS = new Set([
+    'maren', 'vess', 'warden_kess', 'ember_sentinel', 'boss',
+    'archivist', 'echo_warden', 'ring_boss', 'city_gate_guard',
+  ]);
+  const SIDE_Q_ID_MAP: Record<string, string> = {
+    hollow: 'quest_hollow',
+    city_warden: 'quest_city',
+    shivering_villager: 'quest_frost',
+    burned_scholar: 'quest_ash',
+  };
+  const qMain = state.player.quests['quest_main'] || 0;
+
   for (const npc of (map.npcs || [])) {
     if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
     const nx = Math.floor(offX + npc.x * scale);
     const ny = Math.floor(offY + npc.y * scale);
-    // side-quest NPCs: id pattern npc_sqX → quest_sqX stage 1 = in progress
-    const sqKey = `quest_${npc.id.replace(/^npc_/, '')}`;
-    const hasActiveQuest = (state.player.quests[sqKey] || 0) === 1;
-    const isBoss = npc.type === 'BOSS';
-    const isShop = npc.type === 'SHOP';
-    ctx.fillStyle = isBoss ? '#ff4444' : hasActiveQuest ? '#ffaa00' : isShop ? '#ffdd44' : '#888888';
+
+    let dotColor = '#666666';
+    let markerColor: string | null = null;
+
+    if (npc.type === 'BOSS') {
+      dotColor = '#ff3333';
+      // bosses that haven't been defeated still show a red dot, no ?
+    } else if (npc.type === 'SHOP') {
+      dotColor = '#ffdd44';
+    } else if (MAIN_Q_NPCS.has(npc.id)) {
+      dotColor = '#ff3333';
+      if (qMain < 7) markerColor = '#ff3333'; // red ? until story is done
+    } else {
+      const sqKey = SIDE_Q_ID_MAP[npc.id] ?? `quest_${npc.id.replace(/^npc_/, '')}`;
+      const stage = state.player.quests[sqKey] || 0;
+      if (stage < 2) {
+        dotColor = '#ff8800';
+        markerColor = '#ff8800'; // orange ? for unfinished side quests
+      }
+    }
+
+    // Dot
+    ctx.fillStyle = dotColor;
     ctx.fillRect(nx - 1, ny - 1, 3, 3);
-    if (hasActiveQuest) {
-      ctx.fillStyle = '#ffaa00'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
-      ctx.fillText('!', nx + 1, ny - 2);
+
+    // Colored ? above the dot
+    if (markerColor) {
+      ctx.save();
+      ctx.font = 'bold 7px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = markerColor;
+      ctx.fillText('?', nx + 1, ny - 2);
+      ctx.restore();
     }
   }
 
