@@ -45,6 +45,10 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 _Populate as you build — sharp edges, "always run X before Y" rules._
 
+## Status
+
+All three workflows (Echo Realm frontend, API Server, Canvas/mockup-sandbox) are running, dependencies are installed, and the dev database schema has been pushed. Registration/login was verified working end-to-end.
+
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
