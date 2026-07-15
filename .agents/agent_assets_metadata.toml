@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "nyzaW13HZAJIDIdjxQuTz"
+uri = "file://attached_assets/generated_images/echo-realm-icon-scaled.png"
+type = "image"
+title = "Echo Realm — icon preview (32×32, shown at 10×)"
