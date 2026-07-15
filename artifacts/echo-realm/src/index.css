@@ -427,6 +427,52 @@ canvas {
 }
 
 /* Import section */
+/* Scrollable slot list */
+.slots-scroll {
+  width: 100%;
+  max-width: 660px;
+  overflow-y: auto;
+  max-height: 55vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  /* subtle scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #222 transparent;
+}
+.slots-scroll::-webkit-scrollbar { width: 4px; }
+.slots-scroll::-webkit-scrollbar-track { background: transparent; }
+.slots-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.slots-empty-hint {
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  color: #2a2a2a;
+  padding: 0.75rem 0;
+}
+
+/* Always-visible New Slot button at the bottom of the list */
+.slots-new-btn {
+  flex-shrink: 0;
+  width: 100%;
+  background: none;
+  border: 1px dashed #2a2a2a;
+  font-family: var(--noir);
+  font-size: 1.1rem;
+  letter-spacing: 0.18em;
+  color: #383838;
+  cursor: pointer;
+  padding: 0.65rem 1.25rem;
+  text-align: left;
+  transition: border-color 0.1s, color 0.1s;
+  margin-top: 0.25rem;
+}
+.slots-new-btn:hover {
+  border-color: #888;
+  border-style: solid;
+  color: #ccc;
+}
+
 .slots-import-section {
   width: 100%;
   max-width: 660px;
