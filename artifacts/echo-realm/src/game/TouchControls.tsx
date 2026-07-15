@@ -5,25 +5,32 @@ interface TouchControlsProps {
   stateRef: React.MutableRefObject<GameStateData>;
 }
 
-// On-screen touch controls for mobile/tablet play. Mirrors the keyboard
-// mapping used in engine.ts (Arrow keys for movement, 'z'/' ' for
-// confirm, 'x'/'Escape' for cancel, 'i' for inventory, 'q' for quest log).
+// On-screen touch controls for mobile/tablet play. engine.ts checks different
+// but overlapping key names depending on game mode (e.g. the title screen
+// only accepts ' ' or 'Enter', while dialogue/menus accept ' ' or 'z') — so
+// each logical action here presses every key name that any mode treats as
+// that action, acting as a translator between "touch button" and "keyboard key".
 export default function TouchControls({ stateRef }: TouchControlsProps) {
   const activeKeys = useRef<Set<string>>(new Set());
 
-  const setKey = useCallback((key: string, pressed: boolean) => {
-    stateRef.current.keys[key] = pressed;
-    if (pressed) activeKeys.current.add(key);
-    else activeKeys.current.delete(key);
+  const setKeys = useCallback((keys: string[], pressed: boolean) => {
+    for (const key of keys) {
+      stateRef.current.keys[key] = pressed;
+      if (pressed) activeKeys.current.add(key);
+      else activeKeys.current.delete(key);
+    }
   }, [stateRef]);
 
-  const bind = (key: string) => ({
-    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); setKey(key, true); },
-    onPointerUp: (e: React.PointerEvent) => { e.preventDefault(); setKey(key, false); },
-    onPointerLeave: (e: React.PointerEvent) => { e.preventDefault(); setKey(key, false); },
-    onPointerCancel: (e: React.PointerEvent) => { e.preventDefault(); setKey(key, false); },
-    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
-  });
+  const bind = (key: string | string[]) => {
+    const keys = Array.isArray(key) ? key : [key];
+    return {
+      onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, true); },
+      onPointerUp: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
+      onPointerLeave: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
+      onPointerCancel: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    };
+  };
 
   const dpadBtn = "flex items-center justify-center select-none touch-none active:bg-[#a855f7]/40 bg-[#1a0f2e] border-2 border-[#3a205e] text-[#c084fc] text-xl font-bold rounded";
   const actionBtn = "flex items-center justify-center select-none touch-none active:bg-[#a855f7]/40 bg-[#1a0f2e] border-2 border-[#a855f7] text-[#e9d5ff] font-bold rounded-full shadow-[0_0_10px_rgba(168,85,247,0.4)]";
@@ -53,7 +60,7 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
       {/* Action buttons */}
       <div className="grid grid-cols-2 gap-3 w-28">
         <button aria-label="Cancel" className={`${actionBtn} w-14 h-14 col-start-1`} {...bind('x')}>B</button>
-        <button aria-label="Confirm" className={`${actionBtn} w-14 h-14 col-start-2 -mt-6`} {...bind('z')}>A</button>
+        <button aria-label="Confirm" className={`${actionBtn} w-14 h-14 col-start-2 -mt-6`} {...bind([' ', 'z', 'Enter'])}>A</button>
       </div>
     </div>
   );
