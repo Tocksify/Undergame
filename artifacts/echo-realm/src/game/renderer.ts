@@ -1,6 +1,7 @@
 import { GameStateData, GameMode } from './types';
 import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT } from './constants';
 import { QUESTS } from './quests';
+import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, HairStyle } from './npcAppearance';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
 const C = {
@@ -22,17 +23,80 @@ const C = {
 
 const W = 768; const H = 576;
 
-function drawSprite(ctx: CanvasRenderingContext2D, wx: number, wy: number, col: string, eyeCol = C.black, hat = false) {
+function drawHair(ctx: CanvasRenderingContext2D, hxL: number, hyT: number, hs: number, color: string, style: HairStyle) {
+  ctx.fillStyle = color;
+  switch (style) {
+    case 'bald':
+      break;
+    case 'buzz':
+      ctx.fillRect(hxL, hyT - 1, hs, 3);
+      break;
+    case 'short':
+      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
+      ctx.fillRect(hxL - 1, hyT, 2, hs * 0.4);
+      ctx.fillRect(hxL + hs - 1, hyT, 2, hs * 0.4);
+      break;
+    case 'long':
+      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
+      ctx.fillRect(hxL - 2, hyT, 3, hs + 3);
+      ctx.fillRect(hxL + hs - 1, hyT, 3, hs + 3);
+      break;
+    case 'ponytail':
+      ctx.fillRect(hxL - 1, hyT - 2, hs + 2, 4);
+      ctx.fillRect(hxL + hs, hyT + 1, 3, hs * 0.9);
+      break;
+    case 'spiky':
+      for (let i = 0; i < 3; i++) ctx.fillRect(hxL + i * (hs / 3), hyT - 4, hs / 3 - 1, 5);
+      break;
+    case 'mohawk':
+      ctx.fillRect(hxL + hs * 0.35, hyT - 5, hs * 0.3, 6);
+      break;
+  }
+}
+
+function drawSprite(ctx: CanvasRenderingContext2D, wx: number, wy: number, ap: SpriteAppearance, hat = false) {
   const px = wx + 16; const py = wy + 8;
-  ctx.fillStyle = col; ctx.fillRect(px, py + 4, 16, 16);
-  ctx.fillStyle = col; ctx.fillRect(px + 2, py - 4, 12, 12);
-  ctx.fillStyle = eyeCol;
-  ctx.fillRect(px + 4, py - 1, 3, 3); ctx.fillRect(px + 9, py - 1, 3, 3);
-  ctx.strokeStyle = C.darkest; ctx.lineWidth = 1;
-  ctx.strokeRect(px, py + 4, 16, 16); ctx.strokeRect(px + 2, py - 4, 12, 12);
+  const cx = px + 8; // shared horizontal center for body/head, so size variation stays centered
+
+  // body — width/height vary slightly per NPC; bottom edge stays fixed
+  // so feet remain grounded regardless of the size jitter.
+  const bw = ap.bodyW; const bh = ap.bodyH;
+  const bodyBottom = py + 4 + 16;
+  const bx = cx - bw / 2; const by = bodyBottom - bh;
+  ctx.fillStyle = ap.cloth; ctx.fillRect(bx, by, bw, bh);
+  ctx.strokeStyle = C.darkest; ctx.lineWidth = 1; ctx.strokeRect(bx, by, bw, bh);
+
+  // head — bottom edge fixed at the "neck" line
+  const hs = ap.headSize;
+  const headBottom = py + 8;
+  const hxL = cx - hs / 2; const hyT = headBottom - hs;
+  ctx.fillStyle = ap.skin; ctx.fillRect(hxL, hyT, hs, hs);
+  ctx.strokeStyle = C.darkest; ctx.strokeRect(hxL, hyT, hs, hs);
+
+  // eyes
+  ctx.fillStyle = ap.eye;
+  ctx.fillRect(hxL + hs * 0.2, hyT + hs * 0.4, hs * 0.22, hs * 0.22);
+  ctx.fillRect(hxL + hs * 0.58, hyT + hs * 0.4, hs * 0.22, hs * 0.22);
+
+  // hair or hat (mutually exclusive)
   if (hat) {
     ctx.fillStyle = C.dim;
     ctx.fillRect(px, py - 8, 16, 4); ctx.fillRect(px + 3, py - 12, 10, 4);
+  } else {
+    drawHair(ctx, hxL, hyT, hs, ap.hair, ap.hairStyle);
+  }
+
+  // facial accessory
+  if (ap.accessory === 'glasses') {
+    ctx.strokeStyle = C.darkest; ctx.lineWidth = 1;
+    ctx.strokeRect(hxL + hs * 0.14, hyT + hs * 0.36, hs * 0.32, hs * 0.28);
+    ctx.strokeRect(hxL + hs * 0.54, hyT + hs * 0.36, hs * 0.32, hs * 0.28);
+  } else if (ap.accessory === 'beard') {
+    ctx.fillStyle = ap.hair;
+    ctx.fillRect(hxL + hs * 0.15, hyT + hs * 0.7, hs * 0.7, hs * 0.3);
+  } else if (ap.accessory === 'earrings') {
+    ctx.fillStyle = '#e8d98a';
+    ctx.fillRect(hxL - 2, hyT + hs * 0.5, 2, 2); ctx.fillRect(hxL + hs, hyT + hs * 0.5, 2, 2);
   }
 }
 
@@ -344,12 +408,12 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   // NPCs
   for (const npc of map.npcs) {
     if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
-    drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, npc.color, C.black, npc.id === 'maren');
+    drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, getNpcAppearance(npc.id, npc.color), npc.id === 'maren');
   }
 
   // player
   if (state.player.invincibility <= 0 || Math.floor(state.frameCount / 4) % 2 === 0) {
-    drawSprite(ctx, state.player.x, state.player.y, C.white, C.black);
+    drawSprite(ctx, state.player.x, state.player.y, PLAYER_APPEARANCE);
   }
 
   // interaction prompt

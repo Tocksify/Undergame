@@ -103,6 +103,47 @@ export const BOOKS: Record<string, BookData> = {
       "...ANNUAL LANTERN FESTIVAL — bring a lantern, bring a memory worth keeping, the Warden's office will supply the — [torn]\n\nOn the back, in pencil: 'We should still do this. Even just the two of us. Especially just the two of us.'",
     ],
   },
+  // ── SHORT FLAVOR NOTES (scattered through Crestfall/Ashfall filler houses) ──
+  'book_house_note_1': {
+    title: 'A Shopping List, Unfinished',
+    type: 'note',
+    pages: ["Bread. Salt. The blue thread, if the market still has it.\n\nFourth item is smudged out and rewritten three times. Whatever it was, they couldn't decide if they still needed it."],
+  },
+  'book_house_note_2': {
+    title: 'A Note on the Windowsill',
+    type: 'note',
+    pages: ["Fed the cat. Watered what's left of the herbs. Left the window cracked in case anyone comes back for either.\n\n— someone who isn't sure they're coming back either"],
+  },
+  'book_house_note_3': {
+    title: 'A Child\'s Drawing, Pinned Up',
+    type: 'note',
+    pages: ["Three stick figures and a lopsided sun. Underneath, in careful block letters: 'US. BEFORE.'\n\nNo one has taken it down."],
+  },
+  'book_house_note_4': {
+    title: 'A Receipt, Kept for No Reason',
+    type: 'note',
+    pages: ["One kettle, mended. One pair of boots, resoled. Paid in full, thank you kindly.\n\nSomeone kept this for eleven years. It was in a drawer, under everything else that mattered less."],
+  },
+  'book_house_note_5': {
+    title: 'A Line of Verse on a Doorframe',
+    type: 'note',
+    pages: ["Scratched into the wood, low, at a child's height:\n'grow tall, come home, grow tall, come home'\n\nThere are five more lines below it, each shorter than the last, marking someone who stopped growing taller before they stopped needing the reminder."],
+  },
+  'book_house_note_6': {
+    title: 'A Recipe Card, Stained',
+    type: 'note',
+    pages: ["'Mother's stew — the good kind, not the fast kind.'\n\nHalf the ingredients aren't sold anywhere anymore. The handwriting gets shakier toward the bottom, like it was copied twice, by two different hands, twenty years apart."],
+  },
+  'book_house_note_7': {
+    title: 'An Unsent Letter',
+    type: 'note',
+    pages: ["'I know it's been a long time. I know I should have written sooner. I keep starting this letter and it keeps sounding like an apology I don't know how to finish.'\n\nIt ends there, mid-sentence, folded but never sealed."],
+  },
+  'book_house_note_8': {
+    title: 'A Tally on the Wall',
+    type: 'note',
+    pages: ["Scratches in groups of five, dozens of them, counting something the note never names.\n\nDays, maybe. Or visitors. Or just proof, to whoever kept the tally, that time was still passing the way it used to."],
+  },
   // ── SECRET NOTE TRAIL (5 scattered clues) ────────────────────────
   'book_trail_note_1': {
     title: 'A Scrap of Directions',
@@ -909,7 +950,11 @@ function buildARFull(): { layout: string[][]; placements: Record<string, BlockPl
 }
 
 // ── HOUSE INTERIOR (14 × 9) — real furnished rooms, several variants
-function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet' | 'misc' | 'secret'): string[][] {
+export type HouseVariant =
+  | 'scholar' | 'abandoned' | 'study' | 'quiet' | 'misc' | 'secret'
+  | 'tavern' | 'library' | 'workshop' | 'garden' | 'nursery' | 'shrine' | 'bedroom' | 'cluttered' | 'sparse';
+
+function buildInterior(variant: HouseVariant): string[][] {
   const W = 14, H = 9;
   const L = buildMap(W, H, 'W');
   rect(L, 1, 1, W - 2, H - 2, 'P');
@@ -917,6 +962,9 @@ function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet' | 'm
   poke(L, 4, 1, 'P'); poke(L, W - 5, 1, 'P');
   rect(L, 5, 3, 8, 4, 'W');
   poke(L, 6, 3, 'M');
+  // NOTE: 'quiet' and 'secret' are load-bearing for the riddle that leads to the
+  // secret dungeon (CT_SECRET, CT_H4, CT_H5) and for the Ashfall portal house
+  // (CT_ASHDOOR) — their layouts must stay exactly as they are.
   if (variant === 'scholar') {
     vline(L, W - 3, 2, 6, 'W');
     poke(L, W - 3, 3, 'P'); poke(L, W - 3, 5, 'P');
@@ -937,6 +985,45 @@ function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet' | 'm
     rect(L, 1, 2, 3, 5, 'W');
     poke(L, 2, 4, 'P');
     poke(L, 2, 5, 'P'); // corridor tile connecting the back room to the passage — without this the exit tile is sealed on all four sides
+  } else if (variant === 'tavern') {
+    // A bar counter along the left wall, stools along the right.
+    vline(L, 2, 5, 6, 'W');
+    poke(L, 2, 5, 'M'); poke(L, 3, 6, 'M');
+    poke(L, 10, 5, 'M'); poke(L, 11, 6, 'M');
+  } else if (variant === 'library') {
+    // Bookshelves lining both side walls.
+    vline(L, 2, 2, 6, 'W'); vline(L, 11, 2, 6, 'W');
+    poke(L, 2, 4, 'M'); poke(L, 11, 4, 'M');
+  } else if (variant === 'workshop') {
+    // A workbench cluttered with half-finished tools.
+    rect(L, 2, 5, 3, 6, 'W');
+    poke(L, 2, 5, 'M'); poke(L, 3, 3, 'M'); poke(L, 10, 6, 'M');
+  } else if (variant === 'garden') {
+    // Potted plants scattered around an otherwise airy room.
+    poke(L, 2, 3, 'M'); poke(L, 2, 5, 'M');
+    poke(L, 11, 3, 'M'); poke(L, 11, 5, 'M');
+    poke(L, 6, 6, 'M'); poke(L, 7, 6, 'M');
+  } else if (variant === 'nursery') {
+    // A small bed and a toy left on the floor.
+    rect(L, 9, 5, 11, 6, 'W');
+    poke(L, 10, 5, 'M'); poke(L, 3, 6, 'M');
+  } else if (variant === 'shrine') {
+    // A symmetrical cluster of candles at the room's heart.
+    poke(L, 6, 5, 'M'); poke(L, 7, 5, 'M');
+    poke(L, 6, 6, 'M'); poke(L, 7, 6, 'M');
+  } else if (variant === 'bedroom') {
+    // A bed against the wall with a nightstand across the room.
+    rect(L, 2, 5, 4, 6, 'W');
+    poke(L, 3, 5, 'M'); poke(L, 10, 3, 'M');
+  } else if (variant === 'cluttered') {
+    // Boxes and belongings stacked everywhere.
+    poke(L, 2, 3, 'M'); poke(L, 3, 5, 'M');
+    poke(L, 10, 3, 'M'); poke(L, 11, 5, 'M');
+    poke(L, 2, 6, 'M'); poke(L, 11, 6, 'M');
+    rect(L, 9, 5, 10, 6, 'W');
+  } else if (variant === 'sparse') {
+    // Almost nothing — just bare floor and a single forgotten object.
+    poke(L, 7, 6, 'M');
   }
   poke(L, Math.floor(W / 2), H - 1, '<');
   return L;
@@ -1110,15 +1197,117 @@ const ctAshdoorLayout = buildInterior('quiet');
 poke(ctAshdoorLayout, 2, 4, 'ST');
 const ashfallStairsLayout = buildAshfallStairs();
 
-// Generic side-quest interiors and note-holding interiors — reuse the misc variant.
+// Generic side-quest interiors — reuse the misc variant (these already have
+// real quest-giver NPCs wired through CITY_SIDE_QUESTS, so their layout isn't
+// part of the "every house feels the same" problem).
 const sqInteriors: Record<string, string[][]> = {};
 for (let i = 1; i <= 10; i++) sqInteriors[`sq${i}`] = buildInterior('misc');
+
+// ── HOUSE VARIETY GENERATOR ───────────────────────────────────────────
+// The 5 "note" houses, 74 Crestfall filler houses, and 10 Ashfall filler
+// houses used to all be identical empty rooms. This deterministically
+// (same seed → same result, every load) assigns each one a distinct
+// furniture template, a matching name, and — for roughly two-thirds of
+// them — an inhabitant or a note/item to find, so wandering through town
+// doesn't feel like visiting the same room 89 times.
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const HOUSE_VARIANTS: HouseVariant[] = [
+  'tavern', 'library', 'workshop', 'garden', 'nursery', 'shrine', 'bedroom', 'cluttered', 'sparse', 'misc',
+];
+const HOUSE_VARIANT_NAMES: Record<string, string[]> = {
+  tavern: ['A Shuttered Tavern', 'The Empty Taproom', "A Barkeep's Quiet Room"],
+  library: ['A Dusty Library', "A Reader's Nook", 'Shelves Without a Keeper'],
+  workshop: ['A Cluttered Workshop', "A Tinkerer's Bench", 'Half-Finished Repairs'],
+  garden: ['A Quiet Garden Room', 'A House of Potted Green', 'A Sunlit Nook'],
+  nursery: ['A Small Nursery', "A Child's Old Room", 'A Room Kept Just So'],
+  shrine: ['A Small Shrine', 'A House of Candles', 'A Quiet Altar Room'],
+  bedroom: ['A Modest Bedroom', 'A Made Bed, Untouched', "Someone's Old Room"],
+  cluttered: ['A Cluttered House', "A Hoarder's Den", 'Boxes to the Ceiling'],
+  sparse: ['A Bare Room', 'An Empty House', 'Four Walls and a Floor'],
+  misc: ['A House', 'A Plain House', 'A Modest Home'],
+};
+const FILLER_NPC_NAMES = [
+  'A Tired Merchant', 'An Old Neighbor', 'A Quiet Tenant', 'A Restless Sleeper',
+  'A Wary Stranger', 'A Retired Clerk', 'A Sleepy Cat-Keeper', 'A Humming Weaver',
+  'A Careful Locksmith', "A Widow's Kin", 'An Idle Apprentice', 'A Lonely Collector',
+  'A Watchful Tenant', 'A Patient Mender', 'A Half-Packed Traveler',
+];
+const FILLER_NPC_COLORS = [
+  '#c9a9dd', '#a9c9dd', '#ddc9a9', '#a9ddc0', '#dda9a9', '#c0c0e0',
+  '#e0c0a0', '#a0c0e0', '#e0a0c0', '#c0e0a0',
+];
+const HOUSE_NOTE_BOOKS = [
+  'book_house_note_1', 'book_house_note_2', 'book_house_note_3', 'book_house_note_4',
+  'book_house_note_5', 'book_house_note_6', 'book_house_note_7', 'book_house_note_8',
+];
+
+export interface HouseContent {
+  variant: HouseVariant;
+  name: string;
+  npc?: { id: string; name: string; color: string };
+  note?: { item: string };
+  loot?: { item: string };
+}
+
+function makeHouseContent(seedKey: string): HouseContent {
+  const h = hashStr(seedKey);
+  const variant = HOUSE_VARIANTS[h % HOUSE_VARIANTS.length];
+  const names = HOUSE_VARIANT_NAMES[variant];
+  const name = names[Math.floor(h / 16) % names.length];
+  const roll = Math.floor(h / 256) % 3; // 0: inhabitant, 1: note/item, 2: empty (maybe small loot)
+  const content: HouseContent = { variant, name };
+  if (roll === 0) {
+    const npcName = FILLER_NPC_NAMES[Math.floor(h / 4096) % FILLER_NPC_NAMES.length];
+    const npcColor = FILLER_NPC_COLORS[Math.floor(h / 65536) % FILLER_NPC_COLORS.length];
+    content.npc = { id: `filler_${seedKey}`, name: npcName, color: npcColor };
+  } else if (roll === 1) {
+    content.note = { item: HOUSE_NOTE_BOOKS[Math.floor(h / 4096) % HOUSE_NOTE_BOOKS.length] };
+  } else if (Math.floor(h / 4096) % 2 === 0) {
+    const amt = 5 + (Math.floor(h / 8192) % 4) * 5; // 5, 10, 15, or 20
+    content.loot = { item: `echoes_${amt}` };
+  }
+  return content;
+}
+
+function houseContentNpcs(content: HouseContent): any[] {
+  if (!content.npc) return [];
+  return [{ id: content.npc.id, x: 7, y: 4, color: content.npc.color, name: content.npc.name, type: 'TALK' }];
+}
+function houseContentChests(content: HouseContent, seedKey: string): any[] {
+  if (content.note) return [{ id: `ch_${seedKey}`, flag: `ch_${seedKey}`, x: 3, y: 1, item: content.note.item }];
+  if (content.loot) return [{ id: `ch_${seedKey}`, flag: `ch_${seedKey}`, x: 3, y: 1, item: content.loot.item }];
+  return [];
+}
+
+const noteHouseContent: Record<string, HouseContent> = {};
 const noteInteriors: Record<string, string[][]> = {};
-for (let i = 1; i <= 5; i++) noteInteriors[`note${i}`] = buildInterior('misc');
+for (let i = 1; i <= 5; i++) {
+  const content = makeHouseContent(`ctnote${i}`);
+  noteHouseContent[`note${i}`] = content;
+  noteInteriors[`note${i}`] = buildInterior(content.variant);
+}
+const miscHouseContent: Record<string, HouseContent> = {};
 const miscInteriors: Record<string, string[][]> = {};
-for (let i = 1; i <= 74; i++) miscInteriors[`misc${i}`] = buildInterior('quiet');
+for (let i = 1; i <= 74; i++) {
+  const content = makeHouseContent(`ctmisc${i}`);
+  miscHouseContent[`misc${i}`] = content;
+  miscInteriors[`misc${i}`] = buildInterior(content.variant);
+}
+const arMiscHouseContent: Record<string, HouseContent> = {};
 const arMiscInteriors: Record<string, string[][]> = {};
-for (let i = 1; i <= 10; i++) arMiscInteriors[`misc${i}`] = buildInterior('misc');
+for (let i = 1; i <= 10; i++) {
+  const content = makeHouseContent(`armisc${i}`);
+  arMiscHouseContent[`misc${i}`] = content;
+  arMiscInteriors[`misc${i}`] = buildInterior(content.variant);
+}
 
 // ── CITY SIDE QUESTS ──────────────────────────────────────────────
 // Data-driven so the 10 buildings scattered through Crestfall don't
@@ -1400,8 +1589,8 @@ export const MAPS: Record<string, any> = {
       { id: 'door_secret', x: ctP.secret.doorX,   y: ctP.secret.doorY,       targetMapId: 'CT_SECRET', targetX: 7,  targetY: 6,  label: "A Quiet House" },
       { id: 'door_ashdoor', x: ctP.ashdoor.doorX, y: ctP.ashdoor.doorY,      targetMapId: 'CT_ASHDOOR', targetX: 7, targetY: 6,  label: "A House Marked in Ash" },
       ...CITY_SIDE_QUESTS.map(sq => ({ id: `door_${sq.id}`, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY, targetMapId: `CT_${sq.id.toUpperCase()}`, targetX: 7, targetY: 6, label: sq.title })),
-      ...Array.from({ length: 5 }, (_, i) => ({ id: `door_note${i + 1}`, x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY, targetMapId: `CT_NOTE${i + 1}`, targetX: 7, targetY: 6, label: 'An Old House' })),
-      ...Array.from({ length: 74 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'A House' })),
+      ...Array.from({ length: 5 }, (_, i) => ({ id: `door_note${i + 1}`, x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY, targetMapId: `CT_NOTE${i + 1}`, targetX: 7, targetY: 6, label: noteHouseContent[`note${i + 1}`].name })),
+      ...Array.from({ length: 74 }, (_, i) => ({ id: `door_misc${i + 1}`, x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY, targetMapId: `CT_MISC${i + 1}`, targetX: 7, targetY: 6, label: miscHouseContent[`misc${i + 1}`].name })),
     ],
     books: [],
     encounterPool: ['city_shade', 'street_wraith', 'hollow_guard'],
@@ -1578,7 +1767,7 @@ export const MAPS: Record<string, any> = {
     chests: [],
     doors: [
       { id: 'door_arena', x: arP.arena.doorX, y: arP.arena.doorY, targetMapId: 'AR_ARENA', targetX: 7, targetY: 7, label: 'Ashfall Manor' },
-      ...Array.from({ length: 10 }, (_, i) => ({ id: `door_ar_misc${i + 1}`, x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY, targetMapId: `AR_MISC${i + 1}`, targetX: 7, targetY: 6, label: 'An Ashen House' })),
+      ...Array.from({ length: 10 }, (_, i) => ({ id: `door_ar_misc${i + 1}`, x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY, targetMapId: `AR_MISC${i + 1}`, targetX: 7, targetY: 6, label: arMiscHouseContent[`misc${i + 1}`].name })),
     ],
     books: [],
     encounterPool: ['void_sentinel', 'ash_hound', 'cinder_wraith'],
@@ -1619,30 +1808,33 @@ export const MAPS: Record<string, any> = {
       exits: { '<': { mapId: 'CT', x: ctP[sq.id].doorX, y: ctP[sq.id].doorY + 1 } }
     }
   ])),
-  ...Object.fromEntries(Array.from({ length: 5 }, (_, i) => [
-    `CT_NOTE${i + 1}`, {
-      id: `CT_NOTE${i + 1}`, name: 'An Old House', width: 14, height: 9,
-      layout: noteInteriors[`note${i + 1}`],
-      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
-      exits: { '<': { mapId: 'CT', x: ctP[`note${i + 1}`].doorX, y: ctP[`note${i + 1}`].doorY + 1 } }
-    }
-  ])),
-  ...Object.fromEntries(Array.from({ length: 74 }, (_, i) => [
-    `CT_MISC${i + 1}`, {
-      id: `CT_MISC${i + 1}`, name: 'A House', width: 14, height: 9,
-      layout: miscInteriors[`misc${i + 1}`],
-      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
-      exits: { '<': { mapId: 'CT', x: ctP[`misc${i + 1}`].doorX, y: ctP[`misc${i + 1}`].doorY + 1 } }
-    }
-  ])),
-  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => [
-    `AR_MISC${i + 1}`, {
-      id: `AR_MISC${i + 1}`, name: 'An Ashen House', width: 14, height: 9,
-      layout: arMiscInteriors[`misc${i + 1}`],
-      npcs: [], chests: [], doors: [], books: [], encounterPool: [],
-      exits: { '<': { mapId: 'AR', x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY + 1 } }
-    }
-  ])),
+  ...Object.fromEntries(Array.from({ length: 5 }, (_, i) => {
+    const key = `note${i + 1}`; const content = noteHouseContent[key];
+    return [`CT_NOTE${i + 1}`, {
+      id: `CT_NOTE${i + 1}`, name: content.name, width: 14, height: 9,
+      layout: noteInteriors[key],
+      npcs: houseContentNpcs(content), chests: houseContentChests(content, `ctnote${i + 1}`), doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'CT', x: ctP[key].doorX, y: ctP[key].doorY + 1 } }
+    }];
+  })),
+  ...Object.fromEntries(Array.from({ length: 74 }, (_, i) => {
+    const key = `misc${i + 1}`; const content = miscHouseContent[key];
+    return [`CT_MISC${i + 1}`, {
+      id: `CT_MISC${i + 1}`, name: content.name, width: 14, height: 9,
+      layout: miscInteriors[key],
+      npcs: houseContentNpcs(content), chests: houseContentChests(content, `ctmisc${i + 1}`), doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'CT', x: ctP[key].doorX, y: ctP[key].doorY + 1 } }
+    }];
+  })),
+  ...Object.fromEntries(Array.from({ length: 10 }, (_, i) => {
+    const key = `misc${i + 1}`; const content = arMiscHouseContent[key];
+    return [`AR_MISC${i + 1}`, {
+      id: `AR_MISC${i + 1}`, name: content.name, width: 14, height: 9,
+      layout: arMiscInteriors[key],
+      npcs: houseContentNpcs(content), chests: houseContentChests(content, `armisc${i + 1}`), doors: [], books: [], encounterPool: [],
+      exits: { '<': { mapId: 'AR', x: arP[key].doorX, y: arP[key].doorY + 1 } }
+    }];
+  })),
 };
 
 // ── TELEPORT POINTS — unlocked as the player discovers each region ──

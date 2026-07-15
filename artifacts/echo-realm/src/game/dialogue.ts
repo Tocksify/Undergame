@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, DialogueNode } from './types';
-import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS } from './constants';
+import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS, MAPS } from './constants';
 
 export function getDialogueStartNode(state: GameStateData, npcId: string): DialogueNode {
   const qMain   = state.player.quests['quest_main']   || 0;
@@ -402,6 +402,30 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
       speaker: 'Morthus', color: '#7fd68a',
       nextId: 'co_cutscene_1',
     };
+  }
+
+  // ── FILLER TENANTS (generated flavor NPCs scattered through Crestfall/Ashfall
+  // filler houses) — a small pool of short lines, picked deterministically per
+  // npc id so each one is stable but the pool is shared instead of hand-written
+  // per house. ──
+  if (npcId.startsWith('filler_')) {
+    const lines = [
+      "Don't mind the mess. I've stopped noticing it myself.",
+      "This house used to be full. Now it's just full of quiet.",
+      "I keep the door unlocked. Habit, mostly. No one's come by in a while.",
+      "You're the first new face I've seen this week. Maybe this month.",
+      "I remember when this street had a name everyone used. Now it's just 'the street.'",
+      "Sit if you like. The chair's sturdier than it looks.",
+      "I don't ask travelers where they're headed anymore. Feels rude, somehow.",
+      "The Void took the house next door. Mine's still standing. I try not to think about why.",
+      "I talk to myself less than I used to. Or maybe just quieter.",
+      "Whatever you're looking for, I hope it's still where you left it.",
+      "Some days I forget what I came into this room for. Today it was you, apparently.",
+      "I keep the lamp lit past dark. Costs more oil than it's worth. I don't care.",
+    ];
+    let h = 0; for (let i = 0; i < npcId.length; i++) h = (h * 31 + npcId.charCodeAt(i)) >>> 0;
+    const mapNpc = MAPS[state.mapId]?.npcs?.find((n: any) => n.id === npcId);
+    return { text: lines[h % lines.length], speaker: mapNpc?.name || 'A Tenant', color: mapNpc?.color || '#c9c9c9' };
   }
 
   // ── A SURVIVOR (Crestfall City) ────────────────────────────────────
