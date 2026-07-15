@@ -34,7 +34,7 @@ export function updateGame(state: GameStateData) {
     if (justPressed(state, ' ') || justPressed(state, 'Enter')) {
       if (state.mode === GameMode.GAME_OVER) {
         state.player.hp = state.player.maxHp;
-        state.player.x = 8 * TILE_SIZE; state.player.y = 10 * TILE_SIZE;
+        state.player.x = 12 * TILE_SIZE; state.player.y = 8 * TILE_SIZE;
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
         state.mapId = 'VH';
       }

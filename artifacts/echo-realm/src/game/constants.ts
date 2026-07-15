@@ -51,6 +51,58 @@ export const BOOKS: Record<string, BookData> = {
       "Day 31:\nThe Void has reached the east quarter. I can hear it at night — not a sound exactly, more like the space where a sound used to be.\n\nI'm not leaving. My grandfather built this city with his hands. I will remember it into staying.",
     ],
   },
+  'book_innkeepers_notice': {
+    title: "A Notice Pinned to the Inn Door",
+    type: 'note',
+    pages: [
+      "TO ANY TRAVELER —\n\nRooms are free tonight. Rooms are free every night, if I'm honest. Bring news of the road if you have it, I'll trade you a bed for it.\n\nIf you're headed toward Crestfall: go carefully. The east gate isn't what it used to be.\n\n— Gregor",
+    ],
+  },
+  'book_stall_ledger_scrap': {
+    title: "A Torn Page from Zara's Ledger",
+    type: 'note',
+    pages: [
+      "...sold: 3 tonics, 1 ward, 1 rusty shard. Bought: nothing, no one's selling.\n\nTraded a crystal to a boy for a smooth grey stone. He said it was 'for naming things.' I didn't ask.\n\nNote to self: restock cloth wraps before the next caravan. If there is a next caravan.",
+    ],
+  },
+  'book_sa_marginalia': {
+    title: "Marginalia in a Water-Stained Book",
+    type: 'note',
+    pages: [
+      "Someone has written in the margins of every book on this shelf, in the same tired hand:\n\n'Still here.'\n'Still here.'\n'Still here, though the water's risen another inch.'\n\nThe last entry, on the final page of the final book:\n'If you're reading this, the shelf held. That's something. That's not nothing.'",
+    ],
+  },
+  'book_fr_frostnote': {
+    title: "A Note Frozen Into the Ruin Wall",
+    type: 'note',
+    pages: [
+      "We sealed the west room when the frost came through the cracks. Everything in it is probably still there, preserved, waiting.\n\nI keep meaning to go back for the letters. I keep not going back.\n\nSome memories you protect by leaving them exactly where the cold found them.",
+    ],
+  },
+  'book_wardens_report': {
+    title: "City Warden's Final Report",
+    author: 'Warden Talis',
+    type: 'journal',
+    pages: [
+      "Filed the evacuation order today. Half the households ignored it. The other half had nowhere else to go, which is its own kind of answer.\n\nThe void doesn't take a street all at once. It takes a house, then the house next to it looks less lived-in, and then it takes that one too.",
+      "If anyone finds this: the city was not abandoned. It was held onto, by people who had every reason to let go and didn't.\n\nThat matters. Write it down somewhere the Void can't reach.",
+    ],
+  },
+  'book_survivors_diary': {
+    title: "A Survivor's Diary",
+    type: 'journal',
+    pages: [
+      "Third week alone in this house. It isn't really alone — I talk to the furniture, and the furniture, to its credit, has started to feel like it's listening.\n\nI keep the door locked. Not because anything's tried it. Because locking it is a decision I can still make.",
+      "Someone should know we tried. Not just survived — tried. Kept the lamps lit. Kept the streets swept. Kept saying each other's names out loud so the Void couldn't practice forgetting them.\n\nIf you're reading this, say a name out loud right now. Any name. It helps.",
+    ],
+  },
+  'book_forgotten_flyer': {
+    title: "A Torn Flyer in the Street",
+    type: 'note',
+    pages: [
+      "...ANNUAL LANTERN FESTIVAL — bring a lantern, bring a memory worth keeping, the Warden's office will supply the — [torn]\n\nOn the back, in pencil: 'We should still do this. Even just the two of us. Especially just the two of us.'",
+    ],
+  },
 };
 
 // ── ITEMS ──────────────────────────────────────────────────────────
@@ -111,6 +163,41 @@ export const ITEMS: Record<string, Item> = {
     name: "Aldric's Private Ledger",
     desc: 'A merchant\'s personal journal from Crestfall.',
     price: 0, tier: 'common', category: 'book', bookId: 'book_merchants_ledger',
+  },
+  'book_innkeepers_notice': {
+    name: 'A Notice Pinned to the Door',
+    desc: 'A handwritten notice, weathered by rain.',
+    price: 0, tier: 'common', category: 'book', bookId: 'book_innkeepers_notice',
+  },
+  'book_stall_ledger_scrap': {
+    name: "Torn Ledger Page",
+    desc: "A scrap torn from Zara's sales ledger.",
+    price: 0, tier: 'common', category: 'book', bookId: 'book_stall_ledger_scrap',
+  },
+  'book_sa_marginalia': {
+    name: 'Water-Stained Marginalia',
+    desc: 'Handwritten notes crowding the margins of an old book.',
+    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_sa_marginalia',
+  },
+  'book_fr_frostnote': {
+    name: 'Frozen Wall Note',
+    desc: 'A note frozen into the stone of a ruined wall.',
+    price: 0, tier: 'uncommon', category: 'book', bookId: 'book_fr_frostnote',
+  },
+  'book_wardens_report': {
+    name: "City Warden's Final Report",
+    desc: 'An official report, unfiled and unfinished.',
+    price: 0, tier: 'rare', category: 'book', bookId: 'book_wardens_report',
+  },
+  'book_survivors_diary': {
+    name: "A Survivor's Diary",
+    desc: 'A diary kept by someone who stayed.',
+    price: 0, tier: 'rare', category: 'book', bookId: 'book_survivors_diary',
+  },
+  'book_forgotten_flyer': {
+    name: 'Torn Festival Flyer',
+    desc: 'A flyer for a festival that may never happen again.',
+    price: 0, tier: 'common', category: 'book', bookId: 'book_forgotten_flyer',
   },
 
   // ── ENCHANTED BOOKS ──
@@ -318,6 +405,9 @@ export const ENEMIES: Record<string, EnemyData> = {
 };
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────
+// All overworld maps below are built programmatically and verified for
+// full connectivity (every NPC, chest, door and exit is reachable from
+// the map's entry point) — see the design notes in replit.md.
 
 function poke(layout: string[][], x: number, y: number, tile: string) {
   if (layout[y] && layout[y][x] !== undefined) layout[y][x] = tile;
@@ -339,689 +429,503 @@ function vline(L: string[][], x: number, y1: number, y2: number, t: string) {
   for (let y = y1; y <= y2; y++) { if (L[y]?.[x] !== undefined) L[y][x] = t; }
 }
 
-// ── VERDANT HOLLOW (26 × 20) ──────────────────────────────────────
-// A real village: inn NW, elder cottage NE, market stall SW, town square centre
+// ── VERDANT HOLLOW (24 × 16) — real village with four buildings around a square
 function buildVH(): string[][] {
-  const L = buildMap(26, 20, 'T');
-  // Open interior
-  rect(L, 1, 1, 24, 18, 'P');
-  // --- Tree / forest bands ---
-  hline(L, 1, 1, 24, 'T');           // row 1 dense trees (except exits)
-  hline(L, 18, 1, 24, 'T');          // row 18 dense trees (except exits)
-  vline(L, 1, 1, 18, 'T');           // col 1
-  vline(L, 24, 1, 18, 'T');          // col 24 (east boundary)
-  // Tree clusters interior decoration
-  rect(L, 2, 2, 4, 3, 'T'); rect(L, 20, 2, 23, 3, 'T');
-  rect(L, 2, 15, 4, 17, 'T'); rect(L, 20, 15, 23, 17, 'T');
-  // --- Inn building NW (x=5-9, y=3-7) ---
-  rect(L, 5, 3, 9, 7, 'H');
-  poke(L, 7, 7, 'P'); // south door gap
-  rect(L, 6, 4, 8, 6, 'P'); // interior walkable
-  // Gregor stands at door gap row inside (7,6)
-  // --- Elder Maren's Cottage NE (x=16-20, y=3-7) ---
-  rect(L, 16, 3, 20, 7, 'H');
-  poke(L, 18, 7, 'P'); // south door gap
-  rect(L, 17, 4, 19, 6, 'P'); // interior
-  // Maren at (18,6) inside, player approaches from (18,8)
-  // --- Zara's Market Stall SW (x=5-9, y=12-16) ---
-  rect(L, 5, 12, 9, 16, 'H');
-  poke(L, 7, 12, 'P'); // north door gap
-  rect(L, 6, 13, 8, 15, 'P'); // interior
-  // Zara at (7,13)
-  // --- Hollow's Den SE corner (x=16-20, y=12-16) ---
-  rect(L, 16, 12, 20, 16, 'H');
-  poke(L, 18, 12, 'P'); // north door gap
-  rect(L, 17, 13, 19, 15, 'P'); // interior
-  // Town square centre with well
-  poke(L, 12, 9, 'M'); // well
-  poke(L, 13, 9, 'M');
-  poke(L, 6, 10, 'M'); poke(L, 20, 10, 'M'); // lamp posts
-  // Notice boards / decorative
-  poke(L, 11, 4, 'M'); poke(L, 14, 4, 'M'); // north plaza markers
-  poke(L, 11, 14, 'M'); poke(L, 14, 14, 'M'); // south plaza markers
-  // Exits
-  poke(L, 12, 0, '>'); // north → WW
-  poke(L, 25, 9, '!'); // east → CT
-  poke(L, 12, 19, '<'); // south (locked)
+  const W = 24, H = 16;
+  const L = buildMap(W, H, 'T');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  rect(L, 2, 2, 3, 3, 'T'); rect(L, W - 4, 2, W - 3, 3, 'T');
+  rect(L, 2, H - 4, 3, H - 3, 'T'); rect(L, W - 4, H - 4, W - 3, H - 3, 'T');
+
+  // Inn NW — Gregor
+  rect(L, 4, 2, 8, 5, 'H');
+  rect(L, 5, 3, 7, 4, 'P');
+  poke(L, 6, 5, 'P');
+  // Elder Maren's Cottage NE
+  rect(L, 15, 2, 19, 5, 'H');
+  rect(L, 16, 3, 18, 4, 'P');
+  poke(L, 17, 5, 'P');
+  // Zara's Market Stall SW
+  rect(L, 4, 10, 8, 13, 'H');
+  rect(L, 5, 11, 7, 12, 'P');
+  poke(L, 6, 10, 'P');
+  // Hollow's Den SE
+  rect(L, 15, 10, 19, 13, 'H');
+  rect(L, 16, 11, 18, 12, 'P');
+  poke(L, 17, 10, 'P');
+
+  // Town square decor
+  poke(L, 11, 8, 'M'); poke(L, 12, 8, 'M');
+  poke(L, 8, 7, 'M'); poke(L, 15, 7, 'M');
+  poke(L, 8, 9, 'M'); poke(L, 15, 9, 'M');
+
+  poke(L, 12, 0, '>');      // north -> Whispering Wastes
+  poke(L, W - 1, 8, '!');   // east -> Crestfall City
+  poke(L, 12, H - 1, '<');  // south (locked, flavor)
   return L;
 }
 
-// ── WHISPERING WASTES (28 × 22) ───────────────────────────────────
-// Open void wasteland — winding stone paths, monuments, danger zones
+// ── WHISPERING WASTES (22 × 16) — branching void wasteland, non-linear
 function buildWW(): string[][] {
-  const L = buildMap(28, 22, 'V'); // all void danger
-  // Hard border
-  rect(L, 0, 0, 27, 0, 'T'); rect(L, 0, 21, 27, 21, 'T');
-  vline(L, 0, 0, 21, 'T'); vline(L, 27, 0, 21, 'T');
-  // === Stone path network (winding, non-linear) ===
-  // South entry from VH at (13,20) → leads to a fork
-  vline(L, 13, 17, 21, 'P');
-  rect(L, 10, 17, 16, 18, 'P'); // south landing zone
-  // Western arm
-  hline(L, 15, 2, 14, 'P');
-  vline(L, 2, 8, 15, 'P');
-  rect(L, 2, 8, 6, 10, 'P'); // west clearing
-  vline(L, 6, 5, 10, 'P');
-  hline(L, 5, 6, 13, 'P');  // connects west to centre
-  // Central path  
-  vline(L, 13, 3, 16, 'P');
-  rect(L, 10, 12, 16, 15, 'P'); // mid clearing
-  rect(L, 9, 7, 14, 10, 'P');  // north clearing
-  // Eastern arm (leads to CT exit)
-  hline(L, 10, 14, 26, 'P');
-  vline(L, 20, 6, 10, 'P');
-  rect(L, 20, 6, 25, 8, 'P'); // east clearing
-  hline(L, 3, 14, 24, 'P');   // upper east road
-  hline(L, 6, 20, 26, 'P');   // east road to CT
-  poke(L, 27, 6, '!');         // east exit → CT
-  // North exit
-  hline(L, 2, 8, 16, 'P');
-  poke(L, 13, 1, 'P');         // approach
-  poke(L, 13, 0, '>');         // north → MS
-  // South exit (back to VH)
-  poke(L, 13, 21, '<');
-  // Monuments and ruins
-  poke(L, 7, 7, 'M'); poke(L, 7, 8, 'M');
-  poke(L, 19, 4, 'M'); poke(L, 20, 5, 'M');
-  poke(L, 3, 13, 'M'); poke(L, 23, 9, 'M');
-  poke(L, 15, 16, 'M');
-  // Safe stone patches near chests
-  rect(L, 3, 15, 5, 17, 'P');
-  rect(L, 22, 2, 25, 4, 'P');
+  const W = 22, H = 16;
+  const L = buildMap(W, H, 'V');
+  rect(L, 0, 0, W - 1, 0, 'T'); rect(L, 0, H - 1, W - 1, H - 1, 'T');
+  vline(L, 0, 0, H - 1, 'T'); vline(L, W - 1, 0, H - 1, 'T');
+
+  rect(L, 9, H - 3, 13, H - 2, 'P');
+  vline(L, 11, H - 5, H - 2, 'P');
+  poke(L, 11, H - 1, '<');
+
+  hline(L, H - 6, 3, 11, 'P');
+  vline(L, 3, 4, H - 6, 'P');
+  rect(L, 2, 3, 6, 5, 'P');
+
+  rect(L, 9, 8, 13, 10, 'P');
+  vline(L, 11, 5, 8, 'P');
+
+  hline(L, 4, 8, 14, 'P');
+  poke(L, 11, 3, 'P'); poke(L, 11, 2, 'P'); poke(L, 11, 1, 'P');
+  poke(L, 11, 0, '>');
+
+  hline(L, 6, 13, 18, 'P');
+  vline(L, 18, 3, 6, 'P');
+  rect(L, 15, 2, 19, 4, 'P');
+
+  poke(L, 5, 9, 'M'); poke(L, 6, 12, 'M');
+  poke(L, 16, 9, 'M'); poke(L, 8, 6, 'M');
   return L;
 }
 
-// ── MEMORY SANCTUM (26 × 20) ──────────────────────────────────────
-// Grand hall with columns, side alcoves, boss chamber at top
+// ── MEMORY SANCTUM (20 × 14) — grand hall with alcoves and columns
 function buildMS(): string[][] {
-  const L = buildMap(26, 20, 'W'); // mostly stone walls
-  // Main nave (centre corridor) — wide and open
-  rect(L, 5, 1, 20, 18, 'P');
-  // Side alcoves — west
-  rect(L, 1, 3, 4, 6, 'P');   // west alcove 1
-  rect(L, 1, 9, 4, 12, 'P');  // west alcove 2
-  rect(L, 1, 14, 4, 17, 'P'); // west alcove 3
-  // Side alcoves — east
-  rect(L, 21, 3, 24, 6, 'P');
-  rect(L, 21, 9, 24, 12, 'P');
-  rect(L, 21, 14, 24, 17, 'P');
-  // Columns (impassable W)
-  for (const cy of [4, 9, 14]) {
-    poke(L, 6, cy, 'W'); poke(L, 9, cy, 'W');
-    poke(L, 16, cy, 'W'); poke(L, 19, cy, 'W');
-  }
-  // Boss antechamber at top (slightly elevated)
-  rect(L, 8, 1, 17, 3, 'P');
-  poke(L, 12, 1, 'M'); poke(L, 13, 1, 'M'); // altar
-  // Chest alcove
-  rect(L, 22, 7, 24, 8, 'P');
-  // Exits
-  poke(L, 12, 0, '>'); // north → SA
-  poke(L, 13, 19, '<'); // south → WW
+  const W = 20, H = 14;
+  const L = buildMap(W, H, 'W');
+  rect(L, 6, 1, 13, 12, 'P');
+  rect(L, 1, 2, 4, 4, 'P'); rect(L, 1, 6, 4, 8, 'P'); rect(L, 1, 10, 4, 12, 'P');
+  poke(L, 5, 3, 'P'); poke(L, 5, 7, 'P'); poke(L, 5, 11, 'P');
+  rect(L, 15, 2, 18, 4, 'P'); rect(L, 15, 6, 18, 8, 'P'); rect(L, 15, 10, 18, 12, 'P');
+  poke(L, 14, 3, 'P'); poke(L, 14, 7, 'P'); poke(L, 14, 11, 'P');
+  for (const cy of [3, 7, 11]) { poke(L, 8, cy, 'W'); poke(L, 11, cy, 'W'); }
+  rect(L, 8, 0, 11, 1, 'P');
+  poke(L, 10, 1, 'M');
+  poke(L, 9, 0, '>');
+  poke(L, 9, H - 1, '<');
   return L;
 }
 
-// ── SUNKEN ARCHIVE (26 × 20) ──────────────────────────────────────
-// A drowned library: interconnected rooms with shelves, water channels
+// ── SUNKEN ARCHIVE (20 × 14) — drowned library, interconnected rooms
 function buildSA(): string[][] {
-  const L = buildMap(26, 20, 'W');
-  // Entry hall (south)
-  rect(L, 9, 15, 16, 18, 'P');
-  // Main reading room (centre-south)
-  rect(L, 4, 9, 21, 14, 'P');
-  // Archive stacks (north room)
-  rect(L, 2, 2, 23, 8, 'P');
-  // West annex
-  rect(L, 1, 10, 3, 13, 'P');
-  // East annex
-  rect(L, 22, 10, 24, 13, 'P');
-  // Bookshelf dividers (W walls creating aisles)
-  for (let x = 5; x <= 20; x += 5) vline(L, x, 3, 7, 'W');
-  // Water channel (V tiles — sunken, dangerous)
-  hline(L, 9, 4, 21, 'V');
-  poke(L, 4, 9, 'V'); poke(L, 21, 9, 'V');
-  // Re-open paths over water at crossing points
-  poke(L, 7, 9, 'P'); poke(L, 12, 9, 'P'); poke(L, 17, 9, 'P');
-  // Monuments/lecterns
-  poke(L, 3, 3, 'M'); poke(L, 22, 3, 'M');
-  poke(L, 12, 5, 'M'); poke(L, 13, 5, 'M');
-  // Exits
-  poke(L, 12, 0, '>'); // north → FR
-  poke(L, 13, 19, '<'); // south → MS
+  const W = 20, H = 14;
+  const L = buildMap(W, H, 'W');
+  rect(L, 7, 11, 12, 12, 'P');
+  rect(L, 3, 7, 16, 10, 'P');
+  rect(L, 1, 1, 18, 6, 'P');
+  rect(L, 1, 8, 2, 9, 'P'); rect(L, 17, 8, 18, 9, 'P');
+  vline(L, 5, 2, 5, 'W'); vline(L, 9, 2, 5, 'W'); vline(L, 13, 2, 5, 'W');
+  hline(L, 6, 3, 16, 'V');
+  poke(L, 6, 6, 'P'); poke(L, 10, 6, 'P'); poke(L, 14, 6, 'P');
+  poke(L, 3, 2, 'M'); poke(L, 16, 2, 'M');
+  poke(L, 9, 3, 'M'); poke(L, 10, 3, 'M');
+  poke(L, 9, 0, '>'); poke(L, 9, H - 1, '<');
   return L;
 }
 
-// ── FROSTBOUND REACH (28 × 20) ────────────────────────────────────
-// Frozen landscape: open fields, frozen lake centre, tree line, scattered refugees
+// ── FROSTBOUND REACH (22 × 15) — frozen fields looping around a lake
 function buildFR(): string[][] {
-  const L = buildMap(28, 20, 'T'); // tree/frost border
-  // Open snowy fields (P)
-  rect(L, 1, 1, 26, 18, 'P');
-  // Frozen lake (M tiles — impassable ice formations)
-  rect(L, 9, 7, 18, 13, 'M');
-  // Paths around the lake
-  hline(L, 6, 1, 26, 'P');   // north path
-  hline(L, 14, 1, 26, 'P');  // south path  
-  vline(L, 1, 1, 18, 'P');   // west path
-  vline(L, 26, 1, 18, 'P');  // east path
-  hline(L, 10, 1, 8, 'P');   // west lake bridge
-  hline(L, 10, 19, 26, 'P'); // east lake bridge
-  hline(L, 12, 1, 8, 'P');
-  hline(L, 12, 19, 26, 'P');
-  // Open patches with interest
-  rect(L, 2, 2, 7, 5, 'P');   // NW clearing
-  rect(L, 20, 2, 25, 5, 'P'); // NE clearing
-  rect(L, 2, 14, 7, 17, 'P'); // SW clearing
-  rect(L, 20, 14, 25, 17, 'P'); // SE clearing
-  // Frozen ruins
-  rect(L, 4, 8, 7, 12, 'W');
-  poke(L, 5, 9, 'P'); poke(L, 6, 9, 'P'); poke(L, 5, 10, 'P'); poke(L, 6, 10, 'P'); // interior ruin
-  rect(L, 20, 8, 23, 12, 'W');
-  poke(L, 21, 9, 'P'); poke(L, 22, 9, 'P'); poke(L, 21, 10, 'P'); poke(L, 22, 10, 'P');
-  // Ice monument markers
-  poke(L, 13, 7, 'M'); poke(L, 14, 7, 'M');
-  poke(L, 13, 13, 'M'); poke(L, 14, 13, 'M');
-  // Exits
-  poke(L, 13, 0, '>'); // north → AD
-  poke(L, 13, 19, '<'); // south → SA
+  const W = 22, H = 15;
+  const L = buildMap(W, H, 'T');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  rect(L, 8, 5, 13, 9, 'W');
+  hline(L, 3, 1, W - 2, 'P');
+  hline(L, 11, 1, W - 2, 'P');
+  vline(L, 1, 1, H - 2, 'P');
+  vline(L, W - 2, 1, H - 2, 'P');
+  rect(L, 2, 1, 5, 2, 'P'); rect(L, W - 6, 1, W - 3, 2, 'P');
+  rect(L, 2, H - 3, 5, H - 2, 'P'); rect(L, W - 6, H - 3, W - 3, H - 2, 'P');
+  rect(L, 3, 6, 6, 8, 'W');
+  poke(L, 4, 7, 'P'); poke(L, 5, 7, 'P'); poke(L, 4, 6, 'P');
+  rect(L, W - 7, 6, W - 4, 8, 'W');
+  poke(L, W - 6, 7, 'P'); poke(L, W - 5, 7, 'P'); poke(L, W - 6, 6, 'P');
+  poke(L, 10, 4, 'M'); poke(L, 11, 4, 'M');
+  poke(L, 10, 10, 'M'); poke(L, 11, 10, 'M');
+  poke(L, 10, 0, '>'); poke(L, 10, H - 1, '<');
   return L;
 }
 
-// ── ASHEN DESCENT (26 × 20) ───────────────────────────────────────
-// Volcanic cavern: ash drifts, lava channels (V), stone platforms
+// ── ASHEN DESCENT (22 × 15) — volcanic cavern, stone platforms over lava
 function buildAD(): string[][] {
-  const L = buildMap(26, 20, 'V'); // lava/ash floor
-  // Rocky walls forming the cavern skeleton
-  rect(L, 0, 0, 25, 0, 'W'); rect(L, 0, 19, 25, 19, 'W');
-  vline(L, 0, 0, 19, 'W'); vline(L, 25, 0, 19, 'W');
-  // Stone platform network
-  rect(L, 3, 2, 10, 6, 'P');    // NW platform
-  rect(L, 14, 2, 22, 6, 'P');   // NE platform
-  rect(L, 1, 8, 8, 13, 'P');    // W platform
-  rect(L, 10, 9, 15, 14, 'P');  // centre platform
-  rect(L, 17, 8, 24, 13, 'P');  // E platform
-  rect(L, 8, 15, 17, 18, 'P');  // south platform
-  // Bridges (narrow P paths)
-  hline(L, 4, 10, 14, 'P');     // NW-NE bridge
-  vline(L, 10, 3, 9, 'P');      // NW-centre bridge
-  vline(L, 14, 3, 9, 'P');
-  hline(L, 9, 8, 17, 'P');      // W-E bridge
-  vline(L, 12, 14, 16, 'P');    // centre-south bridge
-  vline(L, 13, 14, 16, 'P');
-  // Rocky walls / boulders mid-map
-  rect(L, 11, 4, 13, 6, 'W');
-  poke(L, 11, 5, 'V'); poke(L, 12, 5, 'V'); // lava gap in boulder
-  // Cinders / forge areas
-  poke(L, 5, 3, 'M'); poke(L, 20, 3, 'M'); // forge pillars
-  poke(L, 5, 4, 'M'); poke(L, 20, 4, 'M');
-  poke(L, 12, 10, 'M'); // centre altar
-  // Exits
-  poke(L, 12, 0, '>'); poke(L, 13, 0, '>'); // north → VN
-  poke(L, 12, 19, '<'); poke(L, 13, 19, '<'); // south → FR
+  const W = 22, H = 15;
+  const L = buildMap(W, H, 'V');
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
+  rect(L, 2, 2, 8, 4, 'P');
+  rect(L, 12, 2, 18, 4, 'P');
+  rect(L, 1, 6, 6, 9, 'P');
+  rect(L, 8, 7, 12, 9, 'P');
+  rect(L, 14, 6, 19, 9, 'P');
+  rect(L, 6, 11, 14, 13, 'P');
+  hline(L, 3, 8, 12, 'P');
+  vline(L, 5, 4, 6, 'P'); vline(L, 15, 4, 6, 'P');
+  hline(L, 8, 6, 14, 'P');
+  vline(L, 4, 9, 11, 'P'); vline(L, 16, 9, 11, 'P'); vline(L, 10, 9, 11, 'P');
+  rect(L, 9, 4, 11, 5, 'W');
+  poke(L, 4, 3, 'M'); poke(L, 16, 3, 'M'); poke(L, 10, 8, 'M');
+  poke(L, 10, 0, '>'); poke(L, 10, H - 1, '<');
   return L;
 }
 
-// ── VOID NEXUS (26 × 22) ──────────────────────────────────────────
-// The final arena: void everywhere, stone platforms arranged in a cathedral pattern
+// ── VOID NEXUS (20 × 16) — final cathedral arena
 function buildVN(): string[][] {
-  const L = buildMap(26, 22, 'V'); // pure void
-  // Outer ring of stone (walkable perimeter)
-  rect(L, 1, 1, 24, 20, 'P', ['V']); // fill with P but we'll add V back
-  // Re-void the interior (carved cathedral pattern)
-  rect(L, 3, 3, 22, 18, 'V');
-  // Stone nave (central)
-  rect(L, 10, 2, 15, 20, 'P');
-  // Transept arms
-  rect(L, 1, 9, 24, 13, 'P');
-  // Apse (boss alcove, top)
-  rect(L, 7, 1, 18, 5, 'P');
-  // Side chapels
-  rect(L, 1, 3, 5, 7, 'P');
-  rect(L, 20, 3, 24, 7, 'P');
-  rect(L, 1, 15, 5, 19, 'P');
-  rect(L, 20, 15, 24, 19, 'P');
-  // Void pools within the aisles (impassable void islands)
-  rect(L, 6, 6, 9, 8, 'V');
-  rect(L, 16, 6, 19, 8, 'V');
-  rect(L, 6, 14, 9, 16, 'V');
-  rect(L, 16, 14, 19, 16, 'V');
-  // Altar / boss position markers
-  poke(L, 11, 2, 'M'); poke(L, 12, 2, 'M'); poke(L, 13, 2, 'M'); poke(L, 14, 2, 'M');
-  poke(L, 11, 3, 'M'); poke(L, 14, 3, 'M');
-  // Chests on side chapels
-  // Pillar columns
-  for (const [cx, cy] of [[3,5],[3,11],[3,17],[22,5],[22,11],[22,17]]) { poke(L, cx, cy, 'M'); }
-  // Exits (south only — one way in)
-  poke(L, 12, 21, '<'); poke(L, 13, 21, '<');
+  const W = 20, H = 16;
+  const L = buildMap(W, H, 'V');
+  rect(L, 8, 1, 11, H - 2, 'P');
+  rect(L, 1, 7, W - 2, 9, 'P');
+  rect(L, 5, 1, 14, 3, 'P');
+  rect(L, 1, 2, 4, 5, 'P'); rect(L, 15, 2, 18, 5, 'P');
+  rect(L, 1, 11, 4, 14, 'P'); rect(L, 15, 11, 18, 14, 'P');
+  for (const [cx, cy] of [[2, 3], [2, 12], [17, 3], [17, 12]]) poke(L, cx, cy, 'M');
+  poke(L, 9, 1, 'M'); poke(L, 10, 1, 'M');
+  poke(L, 9, H - 1, '<');
   return L;
 }
 
-// ── HOUSE INTERIOR (16 × 10) ──────────────────────────────────────
-// A real interior: table, shelf, bed, storage
-function buildInteriorVariant(variant: number): string[][] {
-  const L = buildMap(16, 10, 'W');
-  // Floor
-  rect(L, 1, 1, 14, 8, 'P');
-  // Furniture walls
-  // Shelf along back wall
-  hline(L, 1, 2, 13, 'W');
-  // Table area centre
-  rect(L, 5, 3, 9, 5, 'W');
-  poke(L, 7, 4, 'P'); // seat
-  if (variant === 1) {
-    // Scholar's refuge: extra bookshelf east
-    vline(L, 13, 2, 6, 'W');
-    poke(L, 13, 4, 'P'); poke(L, 13, 5, 'P'); // gaps in shelf
-    poke(L, 12, 2, 'M'); // lectern
-  } else if (variant === 2) {
-    // Abandoned home: broken furniture, rubble
-    poke(L, 3, 3, 'W'); poke(L, 3, 4, 'W'); // broken corner
-    poke(L, 11, 6, 'W'); poke(L, 12, 6, 'W');
-    poke(L, 2, 2, 'M'); // hearth
-  } else if (variant === 3) {
-    // Old study: desk area left, shelves right
+// ── CRESTFALL CITY (24 × 18) — real city blocks around a plaza
+function buildCT(): string[][] {
+  const W = 24, H = 18;
+  const L = buildMap(W, H, 'G');
+  rect(L, 0, 0, W - 1, 0, 'W'); rect(L, 0, H - 1, W - 1, H - 1, 'W');
+  vline(L, 0, 0, H - 1, 'W'); vline(L, W - 1, 0, H - 1, 'W');
+
+  hline(L, 4, 1, W - 2, 'P'); hline(L, 9, 1, W - 2, 'P'); hline(L, 14, 1, W - 2, 'P');
+  vline(L, 6, 1, H - 2, 'P'); vline(L, 12, 1, H - 2, 'P'); vline(L, 18, 1, H - 2, 'P');
+
+  poke(L, 0, 9, '<'); poke(L, 1, 9, 'P'); // west gate -> Verdant Hollow
+
+  rect(L, 2, 1, 4, 3, 'H'); rect(L, 8, 1, 10, 3, 'H');
+  rect(L, 14, 1, 16, 3, 'H'); rect(L, 20, 1, 22, 3, 'H');
+
+  rect(L, 2, 5, 4, 8, 'H');   // Scholar's Refuge
+  rect(L, 8, 5, 10, 8, 'H');
+  rect(L, 14, 5, 16, 8, 'H'); // Abandoned Home
+  rect(L, 20, 5, 22, 8, 'H');
+
+  rect(L, 8, 10, 16, 13, 'V'); // central plaza — void seeping in
+  poke(L, 12, 11, 'M'); poke(L, 12, 12, 'M');
+
+  rect(L, 2, 10, 4, 13, 'H');  // Old Study
+  rect(L, 20, 10, 22, 13, 'H');
+
+  rect(L, 2, 15, 4, 16, 'H');   // former Warden's office
+  rect(L, 8, 15, 10, 16, 'H');
+  rect(L, 14, 15, 16, 16, 'H'); // survivor's shelter
+  rect(L, 20, 15, 22, 16, 'H');
+
+  return L;
+}
+
+// ── HOUSE INTERIOR (14 × 9) — real furnished rooms, several variants
+function buildInterior(variant: 'scholar' | 'abandoned' | 'study' | 'quiet'): string[][] {
+  const W = 14, H = 9;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  hline(L, 1, 2, W - 3, 'W');
+  poke(L, 4, 1, 'P'); poke(L, W - 5, 1, 'P');
+  rect(L, 5, 3, 8, 4, 'W');
+  poke(L, 6, 3, 'M');
+  if (variant === 'scholar') {
+    vline(L, W - 3, 2, 6, 'W');
+    poke(L, W - 3, 3, 'P'); poke(L, W - 3, 5, 'P');
+    poke(L, W - 4, 2, 'M');
+  } else if (variant === 'abandoned') {
+    poke(L, 2, 2, 'W'); poke(L, 3, 2, 'W');
+    poke(L, W - 3, H - 3, 'W');
+    poke(L, 2, 6, 'M');
+  } else if (variant === 'study') {
     rect(L, 1, 2, 3, 5, 'W');
     poke(L, 2, 3, 'P'); poke(L, 2, 4, 'P');
-    vline(L, 12, 2, 7, 'W');
-    poke(L, 12, 4, 'P'); poke(L, 12, 6, 'P');
+    vline(L, W - 3, 2, 6, 'W');
+    poke(L, W - 3, 3, 'P'); poke(L, W - 3, 5, 'P');
+  } else if (variant === 'quiet') {
+    poke(L, 3, 6, 'M'); poke(L, W - 4, 6, 'M');
   }
-  // South door exit
-  poke(L, 8, 9, '<');
+  poke(L, Math.floor(W / 2), H - 1, '<');
   return L;
 }
 
-// City of Crestfall (28 × 22)
-function buildCityLayout(): string[][] {
-  const W = 28, H = 22;
-  const L: string[][] = Array.from({ length: H }, () => Array(W).fill('G'));
-
-  // Border walls
-  for (let x = 0; x < W; x++) { L[0][x] = 'W'; L[H - 1][x] = 'W'; }
-  for (let y = 0; y < H; y++) { L[y][0] = 'W'; L[y][W - 1] = 'W'; }
-
-  // Horizontal roads
-  for (const ry of [3, 7, 11, 15, 19]) {
-    for (let x = 1; x < W - 1; x++) L[ry][x] = 'P';
-  }
-
-  // South exit at bottom wall
-  L[H - 1][13] = '<';
-
-  // fill rect helper (never overwrite W or P)
-  const fill = (sx: number, sy: number, ex: number, ey: number, t: string) => {
-    for (let y = sy; y <= ey; y++) for (let x = sx; x <= ex; x++) {
-      if (L[y] && L[y][x] !== undefined && L[y][x] !== 'W' && L[y][x] !== 'P') L[y][x] = t;
-    }
-  };
-
-  // y=1-2: top house row
-  fill(1, 1, 5, 2, 'H');  fill(8, 1, 12, 2, 'H');
-  fill(15, 1, 19, 2, 'H'); fill(22, 1, 26, 2, 'H');
-
-  // y=4-6: houses and void alternating
-  fill(1, 4, 4, 6, 'H');   fill(6, 4, 9, 6, 'V');
-  fill(11, 4, 14, 6, 'H'); fill(16, 4, 19, 6, 'V');
-  fill(21, 4, 24, 6, 'H');
-
-  // y=8-10: void and houses alternating
-  fill(1, 8, 4, 10, 'V');   fill(6, 8, 9, 10, 'H');
-  fill(11, 8, 14, 10, 'V'); fill(16, 8, 19, 10, 'H');
-  fill(21, 8, 24, 10, 'V');
-
-  // y=12-14: central plaza danger zone
-  fill(1, 12, 26, 14, 'V');
-  // buildings within the plaza
-  fill(2, 12, 4, 14, 'H');
-  fill(10, 12, 13, 14, 'H');
-  fill(19, 12, 21, 14, 'H');
-
-  // y=16-18: mixed again
-  fill(1, 16, 5, 18, 'H');  fill(7, 16, 10, 18, 'V');
-  fill(13, 16, 17, 18, 'H'); fill(20, 16, 23, 18, 'V');
-  fill(25, 16, 26, 18, 'H');
-
-  return L;
-}
-
-// Small interior house layout (12 × 8)
-function buildInterior(): string[][] {
-  const W = 12, H = 8;
-  const L: string[][] = Array.from({ length: H }, () => Array(W).fill('P'));
-  for (let x = 0; x < W; x++) { L[0][x] = 'W'; }
-  for (let y = 0; y < H; y++) { L[y][0] = 'W'; L[y][W - 1] = 'W'; }
-  // interior south wall with door gap
-  for (let x = 1; x < W - 1; x++) L[H - 1][x] = 'W';
-  L[H - 1][5] = '<'; // exit door
-  // some furniture-ish walls
-  for (let x = 2; x <= 9; x++) L[2][x] = 'W'; // back shelf
-  return L;
-}
-
-// ── CORRIDOR MAPS ──────────────────────────────────────────────────
-const msLayout: string[][] = [
-  "WWWWWWWWWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWWPWWWWWWW",
-  "WWWWWWW<WWWWWWW",
-].map(r => r.split(''));
-poke(msLayout, 7, 0, '>');
-
-const saLayout = buildCorridorMap(15, 12, 7, 'V');
-poke(saLayout, 7, 0, '>'); poke(saLayout, 7, 11, '<');
-poke(saLayout, 8, 2, 'P'); poke(saLayout, 8, 5, 'P'); poke(saLayout, 8, 8, 'P');
-for (let x = 3; x <= 11; x++) poke(saLayout, x, 6, x === 7 ? 'P' : 'M');
-
-const frLayout = buildCorridorMap(15, 12, 7, 'V');
-poke(frLayout, 7, 0, '>'); poke(frLayout, 7, 11, '<');
-poke(frLayout, 8, 2, 'P'); poke(frLayout, 8, 5, 'P'); poke(frLayout, 8, 8, 'P');
-for (let x = 3; x <= 11; x++) poke(frLayout, x, 6, x === 7 ? 'P' : 'M');
-
-const adLayout = buildCorridorMap(15, 12, 7, 'V');
-poke(adLayout, 7, 0, '>'); poke(adLayout, 7, 11, '<');
-poke(adLayout, 8, 2, 'P'); poke(adLayout, 8, 5, 'P'); poke(adLayout, 8, 8, 'P');
-for (let x = 3; x <= 11; x++) poke(adLayout, x, 6, x === 7 ? 'P' : 'M');
-
-const vnLayout = buildCorridorMap(15, 12, 7, 'V');
-poke(vnLayout, 7, 11, '<');
-for (let x = 3; x <= 11; x++) poke(vnLayout, x, 6, x === 7 ? 'P' : 'M');
-
-// City map
-const ctLayout = buildCityLayout();
-
-// Interior maps
-const intH1Layout = buildInterior();
-const intH2Layout = buildInterior();
-const intH3Layout = buildInterior();
-
+const vhLayout = buildVH();
+const wwLayout = buildWW();
+const msLayout = buildMS();
+const saLayout = buildSA();
+const frLayout = buildFR();
+const adLayout = buildAD();
+const vnLayout = buildVN();
+const ctLayout = buildCT();
+const ctH1Layout = buildInterior('scholar');
+const ctH2Layout = buildInterior('abandoned');
+const ctH3Layout = buildInterior('study');
+const ctH4Layout = buildInterior('quiet');
+const ctH5Layout = buildInterior('quiet');
 // ── MAPS ───────────────────────────────────────────────────────────
 export const MAPS: Record<string, any> = {
-  // ── VERDANT HOLLOW (21 × 15) ──────────────────────────────────────
+  // ── VERDANT HOLLOW (24 × 16) — a real village square with four buildings ──
   'VH': {
-    id: 'VH', name: 'Verdant Hollow', width: 21, height: 15,
-    layout: [
-      "TTTTTTTT>TTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTPPPPPTTTTTTTTTTT",
-      "TTTTPPPPPTTTTTTTTTTT",
-      "TTPPPPPPPTTTTTTTTTTTT",
-      "TTPPPPPPPTTTTTTTTTTTT",
-      "TTPPPPPPPTTTTTTTTTTTT",
-      "TTTTPPPPPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTTPTTTTTTTTTTT",
-      "TTTTTTTT<TTTTTTTTTTT",
-    ].map(r => r.split('')),
+    id: 'VH', name: 'Verdant Hollow', width: 24, height: 16,
+    layout: vhLayout,
     npcs: [
-      { id: 'gregor', x: 9,  y: 1,  color: '#888888', name: 'Gregor',       type: 'HEAL' },
-      { id: 'maren',  x: 9,  y: 3,  color: '#999999', name: 'Elder Maren',  type: 'TALK' },
-      { id: 'pip',    x: 9,  y: 6,  color: '#bbbbbb', name: 'Pip',          type: 'TALK' },
-      { id: 'zara',   x: 9,  y: 8,  color: '#dddddd', name: 'Zara',         type: 'SHOP' },
-      { id: 'hollow', x: 7,  y: 12, color: '#eeeeee', name: 'A Hollow',     type: 'TALK' },
-      { id: 'city_gate_guard', x: 11, y: 6, color: '#aaaaff', name: 'City Messenger', type: 'TALK' },
+      { id: 'gregor', x: 6,  y: 3,  color: '#888888', name: 'Gregor',       type: 'HEAL' },
+      { id: 'maren',  x: 17, y: 3,  color: '#999999', name: 'Elder Maren',  type: 'TALK' },
+      { id: 'zara',   x: 6,  y: 12, color: '#dddddd', name: 'Zara',         type: 'SHOP' },
+      { id: 'hollow', x: 17, y: 12, color: '#eeeeee', name: 'A Hollow',     type: 'TALK' },
+      { id: 'pip',    x: 10, y: 8,  color: '#bbbbbb', name: 'Pip',          type: 'TALK' },
+      { id: 'city_gate_guard', x: 20, y: 8, color: '#aaaaff', name: 'City Messenger', type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_vh1', flag: 'ch_vh1', x: 9, y: 11, item: 'echoes_30' },
+      { id: 'ch_vh1', flag: 'ch_vh1', x: 12, y: 12, item: 'echoes_30' },
+      { id: 'ch_vh_note1', flag: 'ch_vh_note1', x: 9, y: 5, item: 'book_innkeepers_notice' },
+      { id: 'ch_vh_note2', flag: 'ch_vh_note2', x: 9, y: 11, item: 'book_stall_ledger_scrap' },
     ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '>': { mapId: 'WW', x: 8, y: 13 },
-      '<': { mapId: 'VH', x: 8, y: 13, locked: true, lockMsg: "Void energy seals the south road." }
+      '>': { mapId: 'WW', x: 11, y: 13 },
+      '!': { mapId: 'CT', x: 1, y: 9 },
+      '<': { mapId: 'VH', x: 12, y: 8, locked: true, lockMsg: "Void energy seals the south road." }
     }
   },
 
-  // ── WHISPERING WASTES (21 × 15) ───────────────────────────────────
+  // ── WHISPERING WASTES (22 × 16) — branching wasteland loops, not a corridor ──
   'WW': {
-    id: 'WW', name: 'Whispering Wastes', width: 21, height: 15,
-    layout: [
-      "TTTTTTTT>TTTTTTTTTTT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TMMMVVVVPVVVVVVVVVVT",
-      "TMMMVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVMMMMVVT",
-      "TVVVVVVVPVVVVMMMMVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TMMMVVVVPVVVVVVVVVVT",
-      "TMMMVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TVVVVVVVPVVVVVVVVVVT",
-      "TTTTTTTT<TTTTTTTTTTT",
-    ].map(r => r.split('')),
+    id: 'WW', name: 'Whispering Wastes', width: 22, height: 16,
+    layout: wwLayout,
     npcs: [],
     chests: [
-      { id: 'ch_ww1', flag: 'ch_ww1', x: 1, y: 3,  item: 'spark' },
-      { id: 'ch_ww2', flag: 'ch_ww2', x: 1, y: 9,  item: 'echoes_60' },
+      { id: 'ch_ww1', flag: 'ch_ww1', x: 4,  y: 4, item: 'spark' },
+      { id: 'ch_ww2', flag: 'ch_ww2', x: 17, y: 3, item: 'echoes_60' },
     ],
     doors: [],
     books: [],
     encounterPool: ['wisp', 'crawler', 'specter'],
     exits: {
-      '>': { mapId: 'MS', x: 7, y: 10, reqQuest: 'quest_main', reqState: 2, lockMsg: "The Sanctum is sealed. Restore the village first." },
-      '<': { mapId: 'VH', x: 8, y: 1 }
+      '>': { mapId: 'MS', x: 9, y: 1, reqQuest: 'quest_main', reqState: 2, lockMsg: "The Sanctum is sealed. Restore the village first." },
+      '<': { mapId: 'VH', x: 12, y: 14 }
     }
   },
 
-  // ── MEMORY SANCTUM (15 × 12) ───────────────────────────────────────
+  // ── MEMORY SANCTUM (20 × 14) — nave, side alcoves and columns ──
   'MS': {
-    id: 'MS', name: 'Memory Sanctum', width: 15, height: 12,
+    id: 'MS', name: 'Memory Sanctum', width: 20, height: 14,
     layout: msLayout,
     npcs: [
-      { id: 'archivist', x: 7, y: 2, color: '#bbbbbb', name: 'The Archivist', type: 'BOSS', hideFlag: 'defeated_archivist' }
+      { id: 'archivist', x: 9, y: 1, color: '#bbbbbb', name: 'The Archivist', type: 'BOSS', hideFlag: 'defeated_archivist' }
     ],
     chests: [
-      { id: 'ch_ms1', flag: 'ch_ms1', x: 8, y: 5, item: 'echo' }
+      { id: 'ch_ms1', flag: 'ch_ms1', x: 2, y: 7, item: 'echo' }
     ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'WW', x: 8, y: 1 },
-      '>': { mapId: 'SA', x: 7, y: 10, reqQuest: 'quest_main', reqState: 3, lockMsg: "Something ancient still guards this passage." }
+      '<': { mapId: 'WW', x: 11, y: 1 },
+      '>': { mapId: 'SA', x: 9, y: 1, reqQuest: 'quest_main', reqState: 3, lockMsg: "Something ancient still guards this passage." }
     }
   },
 
-  // ── SUNKEN ARCHIVE (15 × 12) ────────────────────────────────────────
+  // ── SUNKEN ARCHIVE (20 × 14) — stacks, reading room, flooded aisle ──
   'SA': {
-    id: 'SA', name: 'Sunken Archive', width: 15, height: 12,
+    id: 'SA', name: 'Sunken Archive', width: 20, height: 14,
     layout: saLayout,
     npcs: [
-      { id: 'vess',     x: 8, y: 2, color: '#aaaaaa', name: 'Old Vess', type: 'TALK' },
-      { id: 'old_thom', x: 8, y: 5, color: '#c8c8c8', name: 'Old Thom', type: 'SHOP' },
+      { id: 'vess',     x: 9, y: 3, color: '#aaaaaa', name: 'Old Vess', type: 'TALK' },
+      { id: 'old_thom', x: 4, y: 8, color: '#c8c8c8', name: 'Old Thom', type: 'SHOP' },
     ],
     chests: [
-      { id: 'ch_sa1', flag: 'ch_sa1', x: 5, y: 9, item: 'bone_edge' }
+      { id: 'ch_sa1', flag: 'ch_sa1', x: 1,  y: 8, item: 'bone_edge' },
+      { id: 'ch_sa2', flag: 'ch_sa2', x: 15, y: 2, item: 'book_sa_marginalia' },
     ],
     doors: [],
     books: [],
     encounterPool: ['archive_wisp', 'ink_wraith'],
     exits: {
-      '<': { mapId: 'MS', x: 7, y: 10 },
-      '>': { mapId: 'FR', x: 7, y: 10, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
+      '<': { mapId: 'MS', x: 9, y: 1 },
+      '>': { mapId: 'FR', x: 9, y: 1, reqQuest: 'quest_main', reqState: 4, lockMsg: "Old Vess hasn't opened this way yet." }
     }
   },
 
-  // ── FROSTBOUND REACH (15 × 12) ──────────────────────────────────────
+  // ── FROSTBOUND REACH (22 × 15) — paths looping a frozen lake, two ruins ──
   'FR': {
-    id: 'FR', name: 'Frostbound Reach', width: 15, height: 12,
+    id: 'FR', name: 'Frostbound Reach', width: 22, height: 15,
     layout: frLayout,
     npcs: [
-      { id: 'warden_kess',        x: 8, y: 2, color: '#cfe8ff', name: 'Warden Kess',         type: 'TALK' },
-      { id: 'peddler_oren',       x: 8, y: 5, color: '#e8f4ff', name: 'Peddler Oren',        type: 'SHOP' },
-      { id: 'shivering_villager', x: 8, y: 8, color: '#bcd8ea', name: 'A Shivering Villager', type: 'TALK' },
+      { id: 'warden_kess',        x: 10, y: 3, color: '#cfe8ff', name: 'Warden Kess',         type: 'TALK' },
+      { id: 'peddler_oren',       x: 4,  y: 7, color: '#e8f4ff', name: 'Peddler Oren',        type: 'SHOP' },
+      { id: 'shivering_villager', x: 16, y: 7, color: '#bcd8ea', name: 'A Shivering Villager', type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_fr1', flag: 'ch_fr1', x: 5, y: 9, item: 'traveler_cloak' }
+      { id: 'ch_fr1', flag: 'ch_fr1', x: 4,  y: 12, item: 'traveler_cloak' },
+      { id: 'ch_fr2', flag: 'ch_fr2', x: 16, y: 12, item: 'book_fr_frostnote' },
     ],
     doors: [],
     books: [],
     encounterPool: ['frost_walker', 'rime_hound'],
     exits: {
-      '<': { mapId: 'SA', x: 7, y: 10 },
-      '>': { mapId: 'AD', x: 7, y: 10, reqQuest: 'quest_main', reqState: 5, lockMsg: "Warden Kess hasn't opened this road yet." }
+      '<': { mapId: 'SA', x: 9,  y: 1 },
+      '>': { mapId: 'AD', x: 10, y: 1, reqQuest: 'quest_main', reqState: 5, lockMsg: "Warden Kess hasn't opened this road yet." }
     }
   },
 
-  // ── ASHEN DESCENT (15 × 12) ──────────────────────────────────────────
+  // ── ASHEN DESCENT (22 × 15) — stone platforms and bridges over lava ──
   'AD': {
-    id: 'AD', name: 'Ashen Descent', width: 15, height: 12,
+    id: 'AD', name: 'Ashen Descent', width: 22, height: 15,
     layout: adLayout,
     npcs: [
-      { id: 'ember_sentinel', x: 8, y: 2, color: '#ff9966', name: 'Ember Sentinel',   type: 'TALK' },
-      { id: 'ashen_trader',   x: 8, y: 5, color: '#ffb380', name: 'The Ashen Trader', type: 'SHOP' },
-      { id: 'burned_scholar', x: 8, y: 8, color: '#d98c6b', name: 'A Burned Scholar', type: 'TALK' },
+      { id: 'ember_sentinel', x: 5,  y: 3, color: '#ff9966', name: 'Ember Sentinel',   type: 'TALK' },
+      { id: 'ashen_trader',   x: 3,  y: 7, color: '#ffb380', name: 'The Ashen Trader', type: 'SHOP' },
+      { id: 'burned_scholar', x: 16, y: 7, color: '#d98c6b', name: 'A Burned Scholar', type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_ad1', flag: 'ch_ad1', x: 5, y: 9, item: 'ember_plate' }
+      { id: 'ch_ad1', flag: 'ch_ad1', x: 8, y: 12, item: 'ember_plate' }
     ],
     doors: [],
     books: [],
     encounterPool: ['ash_hound', 'cinder_wraith'],
     exits: {
-      '<': { mapId: 'FR', x: 7, y: 10 },
-      '>': { mapId: 'VN', x: 7, y: 10, reqQuest: 'quest_main', reqState: 6, lockMsg: "The Ember Sentinel hasn't opened the Nexus road yet." }
+      '<': { mapId: 'FR', x: 10, y: 1 },
+      '>': { mapId: 'VN', x: 9,  y: 14, reqQuest: 'quest_main', reqState: 6, lockMsg: "The Ember Sentinel hasn't opened the Nexus road yet." }
     }
   },
 
-  // ── VOID NEXUS (15 × 12) — final area ───────────────────────────────
+  // ── VOID NEXUS (20 × 16) — final cathedral arena ──
   'VN': {
-    id: 'VN', name: 'Void Nexus', width: 15, height: 12,
+    id: 'VN', name: 'Void Nexus', width: 20, height: 16,
     layout: vnLayout,
     npcs: [
-      { id: 'boss', x: 7, y: 2, color: '#ffffff', name: 'Memory Wraith', type: 'BOSS' }
+      { id: 'boss', x: 9, y: 2, color: '#ffffff', name: 'Memory Wraith', type: 'BOSS' }
     ],
     chests: [
-      { id: 'ch_vn1', flag: 'ch_vn1', x: 4, y: 4, item: 'voidglass_dagger' },
-      { id: 'ch_vn2', flag: 'ch_vn2', x: 10, y: 8, item: 'voidsteel_mail' },
+      { id: 'ch_vn1', flag: 'ch_vn1', x: 2,  y: 4,  item: 'voidglass_dagger' },
+      { id: 'ch_vn2', flag: 'ch_vn2', x: 17, y: 13, item: 'voidsteel_mail' },
     ],
     doors: [],
     books: [],
     encounterPool: ['void_sentinel'],
     exits: {
-      '<': { mapId: 'AD', x: 7, y: 10 }
+      '<': { mapId: 'AD', x: 10, y: 13 }
     }
   },
 
-  // ── CRESTFALL CITY (28 × 22) ──────────────────────────────────────────
+  // ── CRESTFALL CITY (24 × 18) — real city blocks, streets and a plaza ──
   'CT': {
-    id: 'CT', name: 'Crestfall City', width: 28, height: 22,
+    id: 'CT', name: 'Crestfall City', width: 24, height: 18,
     layout: ctLayout,
     npcs: [
-      { id: 'city_warden',   x: 13, y: 20, color: '#aaaaff', name: 'City Warden',    type: 'TALK' },
-      { id: 'relic_broker',  x: 7,  y: 1,  color: '#ffcc88', name: 'Relic Broker',   type: 'SHOP' },
-      { id: 'city_survivor', x: 20, y: 7,  color: '#cccccc', name: 'A Survivor',     type: 'TALK' },
+      { id: 'city_warden',   x: 17, y: 10, color: '#aaaaff', name: 'City Warden',    type: 'TALK' },
+      { id: 'relic_broker',  x: 5,  y: 2,  color: '#ffcc88', name: 'Relic Broker',   type: 'SHOP' },
+      { id: 'city_survivor', x: 19, y: 6,  color: '#cccccc', name: 'A Survivor',     type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_ct1', flag: 'ch_ct1', x: 3,  y: 13, item: 'echoes_80' },
-      { id: 'ch_ct2', flag: 'ch_ct2', x: 11, y: 1,  item: 'ench_codex_living_flame' },
-      { id: 'ch_ct3', flag: 'ch_ct3', x: 20, y: 13, item: 'ench_grimoire_striking' },
+      { id: 'ch_ct1',      flag: 'ch_ct1',      x: 5,  y: 11, item: 'echoes_80' },
+      { id: 'ch_ct2',      flag: 'ch_ct2',      x: 11, y: 2,  item: 'ench_codex_living_flame' },
+      { id: 'ch_ct3',      flag: 'ch_ct3',      x: 13, y: 11, item: 'ench_grimoire_striking' },
+      { id: 'ch_ct_note',  flag: 'ch_ct_note',  x: 19, y: 11, item: 'book_forgotten_flyer' },
     ],
     // doors: enterable buildings. Player must be adjacent (manhattan dist = 1) to enter.
     doors: [
-      { id: 'door_h1', x: 3,  y: 1,  targetMapId: 'CT_H1', targetX: 5, targetY: 6, label: "Scholar's Refuge" },
-      { id: 'door_h2', x: 16, y: 1,  targetMapId: 'CT_H2', targetX: 5, targetY: 6, label: "Abandoned Home" },
-      { id: 'door_h3', x: 12, y: 12, targetMapId: 'CT_H3', targetX: 5, targetY: 6, label: "Old Study" },
-      { id: 'door_h4', x: 7,  y: 8,  targetMapId: 'CT_H4', targetX: 5, targetY: 6, label: "Empty House" },
-      { id: 'door_h5', x: 17, y: 8,  targetMapId: 'CT_H5', targetX: 5, targetY: 6, label: "Empty House" },
+      { id: 'door_h1', x: 4,  y: 6,  targetMapId: 'CT_H1', targetX: 7, targetY: 6, label: "Scholar's Refuge" },
+      { id: 'door_h2', x: 14, y: 6,  targetMapId: 'CT_H2', targetX: 7, targetY: 6, label: "Abandoned Home" },
+      { id: 'door_h3', x: 4,  y: 11, targetMapId: 'CT_H3', targetX: 7, targetY: 6, label: "Old Study" },
+      { id: 'door_h4', x: 4,  y: 15, targetMapId: 'CT_H4', targetX: 7, targetY: 6, label: "Warden's Old Office" },
+      { id: 'door_h5', x: 14, y: 15, targetMapId: 'CT_H5', targetX: 7, targetY: 6, label: "Survivor's Shelter" },
     ],
     books: [],
     encounterPool: ['city_shade', 'street_wraith', 'hollow_guard'],
     exits: {
-      '<': { mapId: 'VH', x: 9, y: 7 }
+      '<': { mapId: 'VH', x: 22, y: 8 }
     }
   },
 
-  // ── SCHOLAR'S REFUGE (12 × 8 interior) ────────────────────────────
+  // ── SCHOLAR'S REFUGE (14 × 9 interior) ──
   'CT_H1': {
-    id: 'CT_H1', name: "Scholar's Refuge", width: 12, height: 8,
-    layout: intH1Layout,
+    id: 'CT_H1', name: "Scholar's Refuge", width: 14, height: 9,
+    layout: ctH1Layout,
     npcs: [],
     chests: [
-      { id: 'ch_h1_book', flag: 'ch_h1_book', x: 6, y: 1, item: 'book_keepers_codex' },
-      { id: 'ch_h1_enc',  flag: 'ch_h1_enc',  x: 9, y: 1, item: 'ench_tome_iron_veil' },
+      { id: 'ch_h1_book', flag: 'ch_h1_book', x: 3,  y: 1, item: 'book_keepers_codex' },
+      { id: 'ch_h1_enc',  flag: 'ch_h1_enc',  x: 10, y: 1, item: 'ench_tome_iron_veil' },
     ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 3, y: 2 }
+      '<': { mapId: 'CT', x: 5, y: 6 }
     }
   },
 
-  // ── ABANDONED HOME (12 × 8 interior) ──────────────────────────────
+  // ── ABANDONED HOME (14 × 9 interior) ──
   'CT_H2': {
-    id: 'CT_H2', name: 'Abandoned Home', width: 12, height: 8,
-    layout: intH2Layout,
+    id: 'CT_H2', name: 'Abandoned Home', width: 14, height: 9,
+    layout: ctH2Layout,
     npcs: [],
     chests: [
-      { id: 'ch_h2_letter', flag: 'ch_h2_letter', x: 3, y: 1, item: 'book_childs_letter' },
-      { id: 'ch_h2_verse',  flag: 'ch_h2_verse',  x: 8, y: 1, item: 'book_forgotten_verse' },
+      { id: 'ch_h2_letter', flag: 'ch_h2_letter', x: 3,  y: 1, item: 'book_childs_letter' },
+      { id: 'ch_h2_verse',  flag: 'ch_h2_verse',  x: 10, y: 1, item: 'book_forgotten_verse' },
     ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 16, y: 2 }
+      '<': { mapId: 'CT', x: 13, y: 6 }
     }
   },
 
-  // ── OLD STUDY (12 × 8 interior) ────────────────────────────────────
+  // ── OLD STUDY (14 × 9 interior) ──
   'CT_H3': {
-    id: 'CT_H3', name: "Old Study", width: 12, height: 8,
-    layout: intH3Layout,
+    id: 'CT_H3', name: "Old Study", width: 14, height: 9,
+    layout: ctH3Layout,
     npcs: [],
     chests: [
-      { id: 'ch_h3_cipher',  flag: 'ch_h3_cipher',  x: 4, y: 1, item: 'book_cipher_note' },
-      { id: 'ch_h3_ledger',  flag: 'ch_h3_ledger',  x: 8, y: 1, item: 'book_merchants_ledger' },
+      { id: 'ch_h3_cipher', flag: 'ch_h3_cipher', x: 3,  y: 1, item: 'book_cipher_note' },
+      { id: 'ch_h3_ledger', flag: 'ch_h3_ledger', x: 10, y: 1, item: 'book_merchants_ledger' },
     ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 12, y: 13 }
+      '<': { mapId: 'CT', x: 5, y: 11 }
     }
   },
 
-  // ── EMPTY HOUSE 4 (12 × 8 interior) ───────────────────────────────
+  // ── WARDEN'S OLD OFFICE (14 × 9 interior) ──
   'CT_H4': {
-    id: 'CT_H4', name: 'Abandoned House', width: 12, height: 8,
-    layout: buildInterior(),
+    id: 'CT_H4', name: "Warden's Old Office", width: 14, height: 9,
+    layout: ctH4Layout,
     npcs: [],
-    chests: [],
+    chests: [
+      { id: 'ch_h4_report', flag: 'ch_h4_report', x: 3,  y: 1, item: 'book_wardens_report' },
+      { id: 'ch_h4_tonic',  flag: 'ch_h4_tonic',  x: 10, y: 1, item: 'tonic' },
+    ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 7, y: 9 }
+      '<': { mapId: 'CT', x: 5, y: 15 }
     }
   },
 
-  // ── EMPTY HOUSE 5 (12 × 8 interior) ───────────────────────────────
+  // ── SURVIVOR'S SHELTER (14 × 9 interior) ──
   'CT_H5': {
-    id: 'CT_H5', name: 'Abandoned House', width: 12, height: 8,
-    layout: buildInterior(),
+    id: 'CT_H5', name: "Survivor's Shelter", width: 14, height: 9,
+    layout: ctH5Layout,
     npcs: [],
-    chests: [],
+    chests: [
+      { id: 'ch_h5_diary',   flag: 'ch_h5_diary',   x: 3,  y: 1, item: 'book_survivors_diary' },
+      { id: 'ch_h5_crystal', flag: 'ch_h5_crystal', x: 10, y: 1, item: 'crystal' },
+    ],
     doors: [],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'CT', x: 17, y: 9 }
+      '<': { mapId: 'CT', x: 13, y: 15 }
     }
   },
 };
@@ -1030,10 +934,10 @@ export const INITIAL_STATE: GameStateData = {
   mode: GameMode.TITLE,
   mapId: 'VH',
   player: {
-    x: 8 * TILE_SIZE,
-    y: 10 * TILE_SIZE,
-    targetX: 8 * TILE_SIZE,
-    targetY: 10 * TILE_SIZE,
+    x: 12 * TILE_SIZE,
+    y: 8 * TILE_SIZE,
+    targetX: 12 * TILE_SIZE,
+    targetY: 8 * TILE_SIZE,
     hp: 20, maxHp: 20,
     echoes: 0,
     inventory: [],
