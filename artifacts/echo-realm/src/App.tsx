@@ -15,7 +15,7 @@ import {
   type SaveSlot,
 } from '@workspace/api-client-react';
 import Game from './game/Game';
-import { GameStateData } from './game/types';
+import { GameStateData, GameMode } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState, SavedGameState } from './game/save';
 import { audio } from './game/audio';
 import './index.css';
@@ -132,6 +132,11 @@ function AppInner() {
   const onExit = useCallback(() => {
     setInitialState(null);
     setActiveSlot(null);
+    // Game.tsx's render loop (and its audio.syncMusic calls) stops as soon as
+    // this component unmounts, so whatever track was playing in-game would
+    // otherwise keep looping forever over the title/slots screen. Force the
+    // engine back to the title track explicitly.
+    audio.syncMusic({ mode: GameMode.TITLE, mapId: '', battle: null });
     if (isGuest) { setIsGuest(false); setScreen('auth'); }
     else { setScreen('slots'); slotsQuery.refetch(); }
   }, [isGuest, slotsQuery]);

@@ -467,29 +467,35 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.restore();
 
   // ── HUD ────────────────────────────────────────────────────────────
-  const HUD_H = 60;
+  // Single-line HUD: HP/echoes/level, the Q/M/I shortcut hints, and the map
+  // name all share one row (plus the thin HP bar right under it) — keep any
+  // future additions here inline rather than adding a second text row.
+  const HUD_H = 38;
   ctx.fillStyle = 'rgba(8,8,8,0.88)'; ctx.fillRect(0, 0, W, HUD_H);
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, HUD_H); ctx.lineTo(W, HUD_H); ctx.stroke();
 
-  ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
-  ctx.fillStyle = C.white;  ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, 14, 25);
-  ctx.fillStyle = C.silver; ctx.fillText(`|`, 100, 25);
-  ctx.fillStyle = C.light;  ctx.fillText(`${state.player.echoes} ECHOES`, 114, 25);
-  ctx.fillStyle = C.silver; ctx.fillText(`|`, 218, 25);
-  ctx.fillStyle = C.light;  ctx.fillText(`LV.${state.player.level}`, 230, 25);
-
-  ctx.fillStyle = C.gray;   ctx.textAlign = 'right';
-  ctx.fillText(map.name.toUpperCase(), W - 14, 25);
+  const hy = 20;
+  ctx.textAlign = 'left'; ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = C.white;  ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, 14, hy);
+  let sx = 14 + ctx.measureText(`HP ${state.player.hp}/${state.player.maxHp}`).width + 10;
+  ctx.fillStyle = C.silver; ctx.fillText(`|`, sx, hy); sx += 10;
+  ctx.fillStyle = C.light;  ctx.fillText(`${state.player.echoes} ECHOES`, sx, hy);
+  sx += ctx.measureText(`${state.player.echoes} ECHOES`).width + 10;
+  ctx.fillStyle = C.silver; ctx.fillText(`|`, sx, hy); sx += 10;
+  ctx.fillStyle = C.light;  ctx.fillText(`LV.${state.player.level}`, sx, hy);
+  sx += ctx.measureText(`LV.${state.player.level}`).width + 18;
 
   const hpPct = state.player.hp / state.player.maxHp;
-  ctx.fillStyle = C.darkest; ctx.fillRect(14, 28, 80, 6);
+  ctx.fillStyle = C.darkest; ctx.fillRect(14, 24, 80, 6);
   ctx.fillStyle = hpPct > 0.5 ? C.silver : hpPct > 0.25 ? C.gray : '#666666';
-  ctx.fillRect(14, 28, Math.floor(80 * hpPct), 6);
+  ctx.fillRect(14, 24, Math.floor(80 * hpPct), 6);
 
-  // ── Quest / Stats / Inventory sections, each with a notification badge
+  // ── Quest / Stats / Inventory hints, each with a notification badge
   // showing how many pending updates (quest changes, stat points, new items)
-  // the player hasn't looked at yet.
+  // the player hasn't looked at yet. Rendered inline on the same HUD row as
+  // HP/echoes/level (not a separate row) so the shortcuts stay glanceable
+  // without eating extra vertical space.
   const questBadge = countQuestNotifications(state);
   const statBadge = state.player.statPoints;
   const itemBadge = Math.max(0, state.player.inventory.length - state.notifications.itemsBaseline);
@@ -498,18 +504,16 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     { label: 'STATS', key: 'M', badge: statBadge },
     { label: 'ITEMS', key: 'I', badge: itemBadge },
   ];
-  let sx = 14;
-  const sy = 40;
   ctx.textAlign = 'left';
   for (const sec of sections) {
     ctx.font = 'bold 12px monospace';
     ctx.fillStyle = sec.badge > 0 ? '#ffcc44' : C.silver;
     const secText = `[${sec.key}] ${sec.label}`;
-    ctx.fillText(secText, sx, sy);
+    ctx.fillText(secText, sx, hy);
     const tw = ctx.measureText(secText).width;
     if (sec.badge > 0) {
       const bx = sx + tw + 10;
-      const by = sy - 8;
+      const by = hy - 8;
       const pulse = 0.75 + 0.25 * Math.sin(state.frameCount * 0.12);
       ctx.save();
       ctx.globalAlpha = pulse;
@@ -522,9 +526,12 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
       ctx.textAlign = 'left';
       sx = bx + 18;
     } else {
-      sx += tw + 22;
+      sx += tw + 20;
     }
   }
+
+  ctx.fillStyle = C.gray;   ctx.textAlign = 'right'; ctx.font = 'bold 13px monospace';
+  ctx.fillText(map.name.toUpperCase(), W - 14, hy);
 
   ctx.textAlign = 'center'; ctx.font = '11px monospace'; ctx.fillStyle = C.dim;
   ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  M Stats  |  ESC Menu', W / 2, H - 6);

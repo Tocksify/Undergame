@@ -761,24 +761,44 @@ function buildSA(): string[][] {
   return L;
 }
 
-// ── FROSTBOUND REACH (22 × 15) — frozen fields looping around a lake
+// ── FROSTBOUND REACH (22 × 15 room + wide hunting perimeter) — frozen fields
+// looping around a lake, ringed by open tundra where Frost Walkers actually
+// spawn.
 // Frostbound Reach's original 22×15 frozen-lake room, offset into the middle
-// of a larger map (see buildFR below) and surrounded by a perimeter of 'V'
-// danger tiles — without a 'V' tile the encounter-roll in engine.ts never
-// fires, which is why quest_frost (kill Frost Walkers) had nothing to fight.
-const FR_OX = 4, FR_OY = 4;
+// of a much larger map (see buildFR below) and surrounded on all four sides
+// by a wide perimeter of 'V' danger tiles — without a 'V' tile the
+// encounter-roll in engine.ts never fires, which is why quest_frost (kill
+// Frost Walkers) had nothing to fight. The perimeter was widened from a thin
+// 4-tile border to a real hunting ground (FR_PAD tiles deep on every side,
+// reachable from all four sides of the room, not just east/west).
+const FR_PAD = 10;
+const FR_OX = FR_PAD, FR_OY = FR_PAD;
 
 function buildFR(): string[][] {
   const IW = 22, IH = 15;
-  const PAD = 4;
+  const PAD = FR_PAD;
   const W = IW + PAD * 2, H = IH + PAD * 2;
 
   // The whole canvas starts as 'V' — walkable danger tiles that roll a chance
-  // of a Frost Walker / Rime Hound encounter every step (see engine.ts).
+  // of a Frost Walker / Rime Hound encounter every step (see engine.ts). This
+  // is the actual hunting ground for quest_frost, so it needs to be sizeable,
+  // not just a thin border strip.
   const L = buildMap(W, H, 'V');
   // A solid tree line contains the player at the map's true outer edge.
   rect(L, 0, 0, W - 1, 0, 'T'); rect(L, 0, H - 1, W - 1, H - 1, 'T');
   vline(L, 0, 0, H - 1, 'T'); vline(L, W - 1, 0, H - 1, 'T');
+
+  // Scatter frozen boulders/dead trees through the perimeter as impassable
+  // obstacles, so the hunting ground reads as terrain rather than an empty
+  // rectangle of danger tiles.
+  const obstacles: [number, number][] = [
+    [3, 3], [3, H - 4], [W - 4, 3], [W - 4, H - 4],
+    [3, Math.floor(H / 2)], [W - 4, Math.floor(H / 2)],
+    [Math.floor(W / 2) - 4, 3], [Math.floor(W / 2) + 4, 3],
+    [Math.floor(W / 2) - 4, H - 4], [Math.floor(W / 2) + 4, H - 4],
+    [6, 6], [W - 7, 6], [6, H - 7], [W - 7, H - 7],
+  ];
+  for (const [ox, oy] of obstacles) poke(L, ox, oy, 'T');
 
   // The original room, unchanged, stamped into the middle of the canvas.
   const inner = buildMap(IW, IH, 'T');
@@ -799,10 +819,13 @@ function buildFR(): string[][] {
   poke(inner, 10, 0, '>'); poke(inner, 10, IH - 1, '<');
   for (let y = 0; y < IH; y++) for (let x = 0; x < IW; x++) L[y + FR_OY][x + FR_OX] = inner[y][x];
 
-  // Breach the room's east/west walls so the player can step out into the
-  // surrounding tundra perimeter to actually find Frost Walkers, and back in.
-  poke(L, FR_OX, FR_OY + 7, 'P');
-  poke(L, FR_OX + IW - 1, FR_OY + 7, 'P');
+  // Breach the room's walls on all four sides so players can step out into
+  // the surrounding tundra perimeter from any direction to hunt Frost
+  // Walkers, and back in — not just a single east/west corridor.
+  poke(L, FR_OX, FR_OY + 4, 'P');  poke(L, FR_OX, FR_OY + 10, 'P');
+  poke(L, FR_OX + IW - 1, FR_OY + 4, 'P'); poke(L, FR_OX + IW - 1, FR_OY + 10, 'P');
+  poke(L, FR_OX + 6, FR_OY, 'P');  poke(L, FR_OX + 15, FR_OY, 'P');
+  poke(L, FR_OX + 6, FR_OY + IH - 1, 'P'); poke(L, FR_OX + 15, FR_OY + IH - 1, 'P');
 
   return L;
 }
@@ -1529,7 +1552,7 @@ export const MAPS: Record<string, any> = {
 
   // ── FROSTBOUND REACH (22 × 15) — paths looping a frozen lake, two ruins ──
   'FR': {
-    id: 'FR', name: 'Frostbound Reach', width: 22 + 4 * 2, height: 15 + 4 * 2,
+    id: 'FR', name: 'Frostbound Reach', width: 22 + FR_PAD * 2, height: 15 + FR_PAD * 2,
     layout: frLayout,
     npcs: [
       { id: 'warden_kess',        x: 10 + FR_OX, y: 3 + FR_OY,  color: '#cfe8ff', name: 'Warden Kess',         type: 'TALK' },
