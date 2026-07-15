@@ -127,6 +127,8 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy }: Game
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       cancelAnimationFrame(animationFrameId);
+      // Stop procedural music so it doesn't bleed over the menu MP3.
+      audio.stop();
     };
   }, [onSave, onExit, onEndLegacy]);
 

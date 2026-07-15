@@ -177,7 +177,7 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
             onMouseEnter={() => audio.playSfx('hover')}
             onClick={e => { e.stopPropagation(); audio.playSfx('confirm'); onNewSlot(); }}
           >
-            ＋&nbsp;&nbsp;NEW SLOT
+            + NEW SLOT
           </button>
         </div>
 
@@ -188,7 +188,7 @@ export default function SaveSlots({ onBack, onLoadSlot, onNewSlot, onLoadFromFil
             onMouseEnter={() => audio.playSfx('hover')}
             onClick={handleImport}
           >
-            📂&nbsp;&nbsp;LOAD FROM FILE&nbsp;&nbsp;<span className="slots-import-ext">.ersav</span>
+            LOAD FROM FILE&nbsp;&nbsp;<span className="slots-import-ext">.ersav</span>
           </button>
           {importError && <p className="slots-import-error">{importError}</p>}
           <p className="slots-import-hint">

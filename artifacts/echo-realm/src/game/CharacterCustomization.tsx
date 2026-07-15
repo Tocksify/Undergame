@@ -153,8 +153,8 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
         <div className="cc-divider" />
 
         <div className="cc-actions">
-          <button className="cc-btn-back"  {...sfxProps(onBack)}>◀  BACK</button>
-          <button className="cc-btn-start" {...sfxProps(confirm)}>BEGIN JOURNEY  ▶</button>
+          <button className="cc-btn-back"  {...sfxProps(onBack)}>BACK</button>
+          <button className="cc-btn-start" {...sfxProps(confirm)}>BEGIN JOURNEY</button>
         </div>
       </div>
     </div>

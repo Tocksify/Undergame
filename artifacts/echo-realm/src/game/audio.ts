@@ -343,6 +343,12 @@ class AudioEngine {
     this.activeDef = null;
   }
 
+  /** Immediately stop all procedural music (call when the Game component unmounts). */
+  stop() {
+    this.stopCurrentTrack(0.25);
+    this.currentKey = null; // next syncMusic call will restart cleanly
+  }
+
   private startTrack(def: TrackDef) {
     const ctx = this.ctx!;
     const now = ctx.currentTime;
