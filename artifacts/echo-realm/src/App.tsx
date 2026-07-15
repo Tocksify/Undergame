@@ -228,7 +228,7 @@ function AppInner() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#0f0518]">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#0f0518] px-2 py-4">
       {children}
     </div>
   );

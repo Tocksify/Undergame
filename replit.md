@@ -25,6 +25,7 @@ A Memory Keeper's Tale — a retro terminal-style RPG (movement, dialogue, battl
 ## Where things live
 
 - `artifacts/echo-realm/src/game/` — game engine, renderer, battle system, dialogue, constants (currently a small prototype: single short story, no shops/quests/save system yet)
+- `artifacts/echo-realm/src/game/TouchControls.tsx` — on-screen D-pad/action buttons shown automatically on touch devices, mirrors the keyboard mapping in `engine.ts`
 - `artifacts/api-server/src/` — Express routes/middlewares
 - `lib/db/src/schema/` — Drizzle schema
 

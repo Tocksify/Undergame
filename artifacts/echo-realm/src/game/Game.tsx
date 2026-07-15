@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { GameStateData } from './types';
 import { updateGame } from './engine';
 import { renderGame } from './renderer';
+import TouchControls from './TouchControls';
 
 interface GameProps {
   initialState: GameStateData;
@@ -13,6 +14,9 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameStateData>(initialState);
   const savingRef = useRef(false);
+  const [isTouchDevice] = useState(
+    () => typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)').matches)
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -70,13 +74,16 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
   }, [onSave, onExit]);
 
   return (
-    <div className="relative shadow-[0_0_50px_rgba(168,85,247,0.3)] rounded-lg overflow-hidden">
-      <canvas
-        ref={canvasRef}
-        width={768}
-        height={576}
-        className="block bg-[#0f0518] border-4 border-[#3a205e]"
-      />
+    <div className="flex flex-col items-center w-full max-w-[768px]">
+      <div className="relative shadow-[0_0_50px_rgba(168,85,247,0.3)] rounded-lg overflow-hidden w-full">
+        <canvas
+          ref={canvasRef}
+          width={768}
+          height={576}
+          className="block bg-[#0f0518] border-4 border-[#3a205e] w-full h-auto"
+        />
+      </div>
+      {isTouchDevice && <TouchControls stateRef={stateRef} />}
     </div>
   );
 }
