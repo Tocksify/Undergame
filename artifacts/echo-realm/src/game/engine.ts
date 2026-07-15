@@ -385,8 +385,8 @@ export function updateGame(state: GameStateData) {
   if (state.mode === GameMode.TELEPORT) {
     const available = TELEPORT_POINTS.filter(p => state.player.flags['discovered_' + p.id]);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
-    if (justPressed(state, 'ArrowUp'))   { state.teleportIndex = Math.max(0, state.teleportIndex - 1); return; }
-    if (justPressed(state, 'ArrowDown')) { state.teleportIndex = Math.min(available.length - 1, state.teleportIndex + 1); return; }
+    if (justPressed(state, 'ArrowUp')   || justPressed(state, 'w')) { state.teleportIndex = Math.max(0, state.teleportIndex - 1); return; }
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) { state.teleportIndex = Math.min(available.length - 1, state.teleportIndex + 1); return; }
     if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
       const dest = available[state.teleportIndex];
       if (dest) {

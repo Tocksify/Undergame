@@ -1000,7 +1000,27 @@ function buildArenaBoss(): string[][] {
   return L;
 }
 
+// ── SOUTH ROAD (16 × 10) — a dirt road leading south from Verdant Hollow (placeholder)
+function buildSR(): string[][] {
+  const W = 16, H = 10;
+  const L = buildMap(W, H, 'T');
+  // Dirt path through the forest
+  rect(L, 4, 0, 11, H - 1, 'P');
+  // Wider cleared area in the middle
+  rect(L, 3, 2, 12, H - 3, 'G');
+  rect(L, 4, 0, 11, H - 1, 'P');
+  // Tree border
+  vline(L, 0, 0, H - 1, 'T'); vline(L, 1, 0, H - 1, 'T'); vline(L, 2, 0, H - 1, 'T');
+  vline(L, W - 1, 0, H - 1, 'T'); vline(L, W - 2, 0, H - 1, 'T'); vline(L, W - 3, 0, H - 1, 'T');
+  // Scatter trees inside for atmosphere
+  for (const [tx, ty] of [[3, 1], [3, 8], [12, 0], [12, 9], [2, 4], [13, 5]]) poke(L, tx, ty, 'T');
+  // North exit — back to Verdant Hollow
+  poke(L, 7, 0, '>');
+  return L;
+}
+
 const vhLayout = buildVH();
+const srLayout = buildSR();
 const wwLayout = buildWW();
 const msLayout = buildMS();
 const saLayout = buildSA();
@@ -1134,7 +1154,21 @@ export const MAPS: Record<string, any> = {
     exits: {
       '>': { mapId: 'WW', x: 11, y: 13 },
       '!': { mapId: 'CT', x: 1, y: 50 },
-      '<': { mapId: 'VH', x: 12, y: 8, locked: true, lockMsg: "Void energy seals the south road." }
+      '<': { mapId: 'SR', x: 7, y: 8, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." }
+    }
+  },
+
+  // ── SOUTH ROAD (16 × 10) — placeholder stub; endgame content TBD ──
+  'SR': {
+    id: 'SR', name: 'South Road', width: 16, height: 10,
+    layout: srLayout,
+    npcs: [],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: {
+      '>': { mapId: 'VH', x: 12, y: 14 }
     }
   },
 
@@ -1263,17 +1297,13 @@ export const MAPS: Record<string, any> = {
     id: 'CT', name: 'Crestfall City', width: 100, height: 100,
     layout: ctLayout,
     npcs: [
-      { id: 'city_warden',   x: ctP.wardenoffice.doorX,  y: ctP.wardenoffice.doorY - 1, color: '#aaaaff', name: 'City Warden',    type: 'TALK' },
-      { id: 'relic_broker',  x: ctP.study.doorX,  y: ctP.study.doorY - 1,  color: '#ffcc88', name: 'Relic Broker',   type: 'SHOP' },
-      { id: 'city_survivor', x: ctP.shelter.doorX,  y: ctP.shelter.doorY - 1,  color: '#cccccc', name: 'A Survivor',     type: 'TALK' },
-      ...CITY_SIDE_QUESTS.map(sq => ({ id: sq.npcId, x: ctP[sq.id].doorX, y: ctP[sq.id].doorY - 1, color: '#c9a9dd', name: sq.npcName, type: 'TALK' })),
     ],
     chests: [
       { id: 'ch_ct1',      flag: 'ch_ct1',      x: 50,  y: 46, item: 'echoes_80' },
       { id: 'ch_ct_note',  flag: 'ch_ct_note',  x: 52,  y: 54,  item: 'book_forgotten_flyer' },
       ...Array.from({ length: 5 }, (_, i) => {
         const p = ctP[`note${i + 1}`];
-        return { id: `ch_ct_trail${i + 1}`, flag: `trail_note_${i + 1}`, x: p.doorX, y: p.doorY - 1, item: `book_trail_note_${i + 1}` };
+        return { id: `ch_ct_trail${i + 1}`, flag: `trail_note_${i + 1}`, x: p.doorX, y: p.doorY + 1, item: `book_trail_note_${i + 1}` };
       }),
     ],
     // doors: enterable buildings. Player must be adjacent (manhattan dist = 1) to enter.
@@ -1348,7 +1378,7 @@ export const MAPS: Record<string, any> = {
   'CT_H3': {
     id: 'CT_H3', name: "Old Study", width: 14, height: 9,
     layout: ctH3Layout,
-    npcs: [],
+    npcs: [{ id: 'relic_broker', x: 7, y: 4, color: '#ffcc88', name: 'Relic Broker', type: 'SHOP' }],
     chests: [
       { id: 'ch_h3_cipher', flag: 'ch_h3_cipher', x: 3,  y: 1, item: 'book_cipher_note' },
       { id: 'ch_h3_ledger', flag: 'ch_h3_ledger', x: 10, y: 1, item: 'book_merchants_ledger' },
@@ -1363,7 +1393,7 @@ export const MAPS: Record<string, any> = {
   'CT_H4': {
     id: 'CT_H4', name: "Warden's Old Office", width: 14, height: 9,
     layout: ctH4Layout,
-    npcs: [],
+    npcs: [{ id: 'city_warden', x: 7, y: 4, color: '#aaaaff', name: 'City Warden', type: 'TALK' }],
     chests: [
       { id: 'ch_h4_report', flag: 'ch_h4_report', x: 3,  y: 1, item: 'book_wardens_report' },
       { id: 'ch_h4_tonic',  flag: 'ch_h4_tonic',  x: 10, y: 1, item: 'tonic' },
@@ -1378,7 +1408,7 @@ export const MAPS: Record<string, any> = {
   'CT_H5': {
     id: 'CT_H5', name: "Survivor's Shelter", width: 14, height: 9,
     layout: ctH5Layout,
-    npcs: [],
+    npcs: [{ id: 'city_survivor', x: 7, y: 4, color: '#cccccc', name: 'A Survivor', type: 'TALK' }],
     chests: [
       { id: 'ch_h5_diary',   flag: 'ch_h5_diary',   x: 3,  y: 1, item: 'book_survivors_diary' },
       { id: 'ch_h5_crystal', flag: 'ch_h5_crystal', x: 10, y: 1, item: 'crystal' },
@@ -1414,7 +1444,9 @@ export const MAPS: Record<string, any> = {
     npcs: [
       { id: 'echo_warden', x: 7, y: 5, color: '#6d28d9', name: 'The Echo Warden', type: 'BOSS', hideFlag: 'defeated_echo_warden' },
     ],
-    chests: [],
+    chests: [
+      { id: 'ch_echo_note', flag: 'ch_echo_note', x: 2, y: 3, item: 'book_mysterious_note' },
+    ],
     doors: [],
     books: [],
     encounterPool: [],

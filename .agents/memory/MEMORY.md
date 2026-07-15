@@ -1,1 +1,2 @@
 - [Echo Realm architecture](echo-realm-architecture.md) — canvas RPG engine patterns worth reusing: hideFlag NPCs, generic Acts, per-map encounter pools, SHOPS/QUESTS registries.
+- [Echo Realm building access](echo-realm-building-access.md) — CT city buildings: NPCs/chests must be in interior maps or at doorY+1 (never doorY-1 which is inside wall H tiles).

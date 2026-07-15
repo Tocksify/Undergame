@@ -181,6 +181,24 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
+  // ── THE ECHO WARDEN (secret dungeon beneath Crestfall) ──────────
+  if (npcId === 'echo_warden') {
+    return {
+      text: "YOU FOUND THE PASSAGE. FEW DO. WHAT IS BURIED BENEATH THIS CITY WAS HIDDEN HERE LONG BEFORE IT HAD A NAME. GIVE IT BACK, OR EARN IT.",
+      speaker: 'The Echo Warden', color: '#6d28d9',
+      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['echo_warden'])); }
+    };
+  }
+
+  // ── THE RINGKEEPER (Ashfall Ring arena boss) ─────────────────────
+  if (npcId === 'ring_boss') {
+    return {
+      text: "YOU STAND IN THE RING. THE BLESSING CANNOT BE GIVEN — ONLY WON. PROVE YOURSELF WORTHY OF WHAT THIS CITY REMEMBERS.",
+      speaker: 'The Ringkeeper', color: '#0ea5e9',
+      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['ring_boss'])); }
+    };
+  }
+
   // ── THE ARCHIVIST (Memory Sanctum mid-boss) ───────────────────────
   if (npcId === 'archivist') {
     return {
@@ -404,7 +422,7 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
   }
   if (nextId === 'city_gate_how') {
     return {
-      text: "Head east from the village — the city gate is open but the streets are dangerous. The Warden is holding up near the gate entrance. She can guide you. Don't bother with the old south road — it's been sealed by the Void for as long as anyone can remember.",
+      text: "Head east from the village — the city gate is open but the streets are dangerous. The Warden is holding up near the gate entrance. She can guide you. The old south road is sealed for now, but I hear it opens when the Void is finally put to rest.",
       speaker: 'City Messenger', color: '#aaaaff',
       action: (s) => { s.uiMessage = "Crestfall City added to your known locations."; s.uiMessageTimer = 150; }
     };

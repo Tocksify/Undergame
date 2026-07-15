@@ -437,6 +437,8 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     });
   }
 
+  if (state.mode === GameMode.OVERWORLD) renderMinimap(ctx, state);
+
   if (state.mode === GameMode.DIALOGUE)  renderDialogue(ctx, state);
   if (state.mode === GameMode.MENU)      renderMenu(ctx, state);
   if (state.mode === GameMode.SHOP)      renderShop(ctx, state);
@@ -444,6 +446,91 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   if (state.mode === GameMode.QUEST_LOG) renderQuests(ctx, state);
 
   drawScanlines(ctx);
+}
+
+// ── MINIMAP (overworld corner overlay) ────────────────────────────
+function renderMinimap(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  const map = MAPS[state.mapId];
+  const MM = 120;
+  const MM_X = W - MM - 10;
+  const MM_Y = 44;
+
+  // Background frame (includes room for map-name label at bottom)
+  ctx.fillStyle = 'rgba(0,0,0,0.82)';
+  ctx.fillRect(MM_X - 2, MM_Y - 2, MM + 4, MM + 16);
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = 1;
+  ctx.strokeRect(MM_X - 2, MM_Y - 2, MM + 4, MM + 16);
+
+  const scale = Math.min(MM / map.width, MM / map.height);
+  const offX = MM_X + (MM - map.width * scale) / 2;
+  const offY = MM_Y + (MM - map.height * scale) / 2;
+  const tw = Math.max(1, scale);
+  const th = Math.max(1, scale);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(MM_X, MM_Y, MM, MM); ctx.clip();
+
+  // Tile layer — simplified palette
+  for (let ty = 0; ty < map.height; ty++) {
+    for (let tx = 0; tx < map.width; tx++) {
+      const tile = map.layout[ty]?.[tx];
+      let color: string | null = null;
+      if      (tile === 'G') color = '#1e1e1e';
+      else if (tile === 'P') color = '#2e2e2e';
+      else if (tile === 'H') color = '#404040';
+      else if (tile === 'W') color = '#505050';
+      else if (tile === 'T') color = '#141414';
+      else if (tile === 'V') color = '#0a0a1e';
+      else if (tile === 'M') color = '#282828';
+      else if (tile === '>' || tile === '<' || tile === '!' || tile === '@') color = '#888888';
+      if (color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(Math.floor(offX + tx * scale), Math.floor(offY + ty * scale),
+          Math.ceil(tw), Math.ceil(th));
+      }
+    }
+  }
+
+  // Building door markers (blue squares)
+  for (const door of (map.doors || [])) {
+    ctx.fillStyle = '#334499';
+    ctx.fillRect(
+      Math.floor(offX + door.x * scale) - 1, Math.floor(offY + door.y * scale) - 1,
+      Math.max(2, Math.ceil(tw) + 2), Math.max(2, Math.ceil(th) + 2)
+    );
+  }
+
+  // NPC dots — colour-coded by type, with quest indicator
+  for (const npc of (map.npcs || [])) {
+    if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
+    const nx = Math.floor(offX + npc.x * scale);
+    const ny = Math.floor(offY + npc.y * scale);
+    // side-quest NPCs: id pattern npc_sqX → quest_sqX stage 1 = in progress
+    const sqKey = `quest_${npc.id.replace(/^npc_/, '')}`;
+    const hasActiveQuest = (state.player.quests[sqKey] || 0) === 1;
+    const isBoss = npc.type === 'BOSS';
+    const isShop = npc.type === 'SHOP';
+    ctx.fillStyle = isBoss ? '#ff4444' : hasActiveQuest ? '#ffaa00' : isShop ? '#ffdd44' : '#888888';
+    ctx.fillRect(nx - 1, ny - 1, 3, 3);
+    if (hasActiveQuest) {
+      ctx.fillStyle = '#ffaa00'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
+      ctx.fillText('!', nx + 1, ny - 2);
+    }
+  }
+
+  // Player dot (blinks every 15 frames)
+  if (Math.floor(state.frameCount / 15) % 2 === 0) {
+    const ptx = Math.floor(offX + (state.player.x / TILE_SIZE) * scale);
+    const pty = Math.floor(offY + (state.player.y / TILE_SIZE) * scale);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(ptx - 1, pty - 1, 3, 3);
+  }
+
+  ctx.restore();
+
+  // Map name label below minimap
+  ctx.fillStyle = '#555555'; ctx.font = '8px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(map.name, MM_X + MM / 2, MM_Y + MM + 11);
 }
 
 // ── BOOK READ ──────────────────────────────────────────────────────
@@ -1167,7 +1254,8 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
     const visible = available.slice(scrollOffset, scrollOffset + maxVisible);
 
     ctx.save();
-    ctx.beginPath(); ctx.rect(224, listTop - 26, 320, 100 + boxH - (listTop - 26) - 130); ctx.clip();
+    const clipH = Math.min(available.length, maxVisible) * rowH + 8;
+    ctx.beginPath(); ctx.rect(224, listTop - 4, 320, clipH); ctx.clip();
     ctx.textAlign = 'left';
     visible.forEach((pt, vi) => {
       const i = scrollOffset + vi;
@@ -1196,7 +1284,7 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
   }
 
   ctx.fillStyle = '#333355'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
-  ctx.fillText('[↑↓] select  |  [SPACE] travel  |  [X] cancel', W / 2, 100 + boxH - 20);
+  ctx.fillText('[↑↓/WS] select  |  [SPACE] travel  |  [X] cancel', W / 2, 100 + boxH - 20);
 }
 
 // ── STAT ALLOCATION (M key) ──────────────────────────────────────────
