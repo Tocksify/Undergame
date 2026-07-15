@@ -319,22 +319,315 @@ export const ENEMIES: Record<string, EnemyData> = {
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────
 
-function buildCorridorMap(width: number, height: number, laneCol: number, danger: string): string[][] {
-  const rows: string[][] = [];
-  for (let y = 0; y < height; y++) {
-    const row: string[] = [];
-    for (let x = 0; x < width; x++) {
-      if (x === 0 || x === width - 1 || y === 0 || y === height - 1) row.push('W');
-      else if (x === laneCol) row.push('P');
-      else row.push(danger);
-    }
-    rows.push(row);
-  }
-  return rows;
-}
-
 function poke(layout: string[][], x: number, y: number, tile: string) {
   if (layout[y] && layout[y][x] !== undefined) layout[y][x] = tile;
+}
+
+function buildMap(w: number, h: number, fill = 'T'): string[][] {
+  return Array.from({ length: h }, () => Array(w).fill(fill));
+}
+
+function rect(L: string[][], x1: number, y1: number, x2: number, y2: number, t: string, skip: string[] = []) {
+  for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) {
+    if (skip.length === 0 || !skip.includes(L[y]?.[x] ?? '')) if (L[y]?.[x] !== undefined) L[y][x] = t;
+  }
+}
+function hline(L: string[][], y: number, x1: number, x2: number, t: string) {
+  for (let x = x1; x <= x2; x++) { if (L[y]?.[x] !== undefined) L[y][x] = t; }
+}
+function vline(L: string[][], x: number, y1: number, y2: number, t: string) {
+  for (let y = y1; y <= y2; y++) { if (L[y]?.[x] !== undefined) L[y][x] = t; }
+}
+
+// ── VERDANT HOLLOW (26 × 20) ──────────────────────────────────────
+// A real village: inn NW, elder cottage NE, market stall SW, town square centre
+function buildVH(): string[][] {
+  const L = buildMap(26, 20, 'T');
+  // Open interior
+  rect(L, 1, 1, 24, 18, 'P');
+  // --- Tree / forest bands ---
+  hline(L, 1, 1, 24, 'T');           // row 1 dense trees (except exits)
+  hline(L, 18, 1, 24, 'T');          // row 18 dense trees (except exits)
+  vline(L, 1, 1, 18, 'T');           // col 1
+  vline(L, 24, 1, 18, 'T');          // col 24 (east boundary)
+  // Tree clusters interior decoration
+  rect(L, 2, 2, 4, 3, 'T'); rect(L, 20, 2, 23, 3, 'T');
+  rect(L, 2, 15, 4, 17, 'T'); rect(L, 20, 15, 23, 17, 'T');
+  // --- Inn building NW (x=5-9, y=3-7) ---
+  rect(L, 5, 3, 9, 7, 'H');
+  poke(L, 7, 7, 'P'); // south door gap
+  rect(L, 6, 4, 8, 6, 'P'); // interior walkable
+  // Gregor stands at door gap row inside (7,6)
+  // --- Elder Maren's Cottage NE (x=16-20, y=3-7) ---
+  rect(L, 16, 3, 20, 7, 'H');
+  poke(L, 18, 7, 'P'); // south door gap
+  rect(L, 17, 4, 19, 6, 'P'); // interior
+  // Maren at (18,6) inside, player approaches from (18,8)
+  // --- Zara's Market Stall SW (x=5-9, y=12-16) ---
+  rect(L, 5, 12, 9, 16, 'H');
+  poke(L, 7, 12, 'P'); // north door gap
+  rect(L, 6, 13, 8, 15, 'P'); // interior
+  // Zara at (7,13)
+  // --- Hollow's Den SE corner (x=16-20, y=12-16) ---
+  rect(L, 16, 12, 20, 16, 'H');
+  poke(L, 18, 12, 'P'); // north door gap
+  rect(L, 17, 13, 19, 15, 'P'); // interior
+  // Town square centre with well
+  poke(L, 12, 9, 'M'); // well
+  poke(L, 13, 9, 'M');
+  poke(L, 6, 10, 'M'); poke(L, 20, 10, 'M'); // lamp posts
+  // Notice boards / decorative
+  poke(L, 11, 4, 'M'); poke(L, 14, 4, 'M'); // north plaza markers
+  poke(L, 11, 14, 'M'); poke(L, 14, 14, 'M'); // south plaza markers
+  // Exits
+  poke(L, 12, 0, '>'); // north → WW
+  poke(L, 25, 9, '!'); // east → CT
+  poke(L, 12, 19, '<'); // south (locked)
+  return L;
+}
+
+// ── WHISPERING WASTES (28 × 22) ───────────────────────────────────
+// Open void wasteland — winding stone paths, monuments, danger zones
+function buildWW(): string[][] {
+  const L = buildMap(28, 22, 'V'); // all void danger
+  // Hard border
+  rect(L, 0, 0, 27, 0, 'T'); rect(L, 0, 21, 27, 21, 'T');
+  vline(L, 0, 0, 21, 'T'); vline(L, 27, 0, 21, 'T');
+  // === Stone path network (winding, non-linear) ===
+  // South entry from VH at (13,20) → leads to a fork
+  vline(L, 13, 17, 21, 'P');
+  rect(L, 10, 17, 16, 18, 'P'); // south landing zone
+  // Western arm
+  hline(L, 15, 2, 14, 'P');
+  vline(L, 2, 8, 15, 'P');
+  rect(L, 2, 8, 6, 10, 'P'); // west clearing
+  vline(L, 6, 5, 10, 'P');
+  hline(L, 5, 6, 13, 'P');  // connects west to centre
+  // Central path  
+  vline(L, 13, 3, 16, 'P');
+  rect(L, 10, 12, 16, 15, 'P'); // mid clearing
+  rect(L, 9, 7, 14, 10, 'P');  // north clearing
+  // Eastern arm (leads to CT exit)
+  hline(L, 10, 14, 26, 'P');
+  vline(L, 20, 6, 10, 'P');
+  rect(L, 20, 6, 25, 8, 'P'); // east clearing
+  hline(L, 3, 14, 24, 'P');   // upper east road
+  hline(L, 6, 20, 26, 'P');   // east road to CT
+  poke(L, 27, 6, '!');         // east exit → CT
+  // North exit
+  hline(L, 2, 8, 16, 'P');
+  poke(L, 13, 1, 'P');         // approach
+  poke(L, 13, 0, '>');         // north → MS
+  // South exit (back to VH)
+  poke(L, 13, 21, '<');
+  // Monuments and ruins
+  poke(L, 7, 7, 'M'); poke(L, 7, 8, 'M');
+  poke(L, 19, 4, 'M'); poke(L, 20, 5, 'M');
+  poke(L, 3, 13, 'M'); poke(L, 23, 9, 'M');
+  poke(L, 15, 16, 'M');
+  // Safe stone patches near chests
+  rect(L, 3, 15, 5, 17, 'P');
+  rect(L, 22, 2, 25, 4, 'P');
+  return L;
+}
+
+// ── MEMORY SANCTUM (26 × 20) ──────────────────────────────────────
+// Grand hall with columns, side alcoves, boss chamber at top
+function buildMS(): string[][] {
+  const L = buildMap(26, 20, 'W'); // mostly stone walls
+  // Main nave (centre corridor) — wide and open
+  rect(L, 5, 1, 20, 18, 'P');
+  // Side alcoves — west
+  rect(L, 1, 3, 4, 6, 'P');   // west alcove 1
+  rect(L, 1, 9, 4, 12, 'P');  // west alcove 2
+  rect(L, 1, 14, 4, 17, 'P'); // west alcove 3
+  // Side alcoves — east
+  rect(L, 21, 3, 24, 6, 'P');
+  rect(L, 21, 9, 24, 12, 'P');
+  rect(L, 21, 14, 24, 17, 'P');
+  // Columns (impassable W)
+  for (const cy of [4, 9, 14]) {
+    poke(L, 6, cy, 'W'); poke(L, 9, cy, 'W');
+    poke(L, 16, cy, 'W'); poke(L, 19, cy, 'W');
+  }
+  // Boss antechamber at top (slightly elevated)
+  rect(L, 8, 1, 17, 3, 'P');
+  poke(L, 12, 1, 'M'); poke(L, 13, 1, 'M'); // altar
+  // Chest alcove
+  rect(L, 22, 7, 24, 8, 'P');
+  // Exits
+  poke(L, 12, 0, '>'); // north → SA
+  poke(L, 13, 19, '<'); // south → WW
+  return L;
+}
+
+// ── SUNKEN ARCHIVE (26 × 20) ──────────────────────────────────────
+// A drowned library: interconnected rooms with shelves, water channels
+function buildSA(): string[][] {
+  const L = buildMap(26, 20, 'W');
+  // Entry hall (south)
+  rect(L, 9, 15, 16, 18, 'P');
+  // Main reading room (centre-south)
+  rect(L, 4, 9, 21, 14, 'P');
+  // Archive stacks (north room)
+  rect(L, 2, 2, 23, 8, 'P');
+  // West annex
+  rect(L, 1, 10, 3, 13, 'P');
+  // East annex
+  rect(L, 22, 10, 24, 13, 'P');
+  // Bookshelf dividers (W walls creating aisles)
+  for (let x = 5; x <= 20; x += 5) vline(L, x, 3, 7, 'W');
+  // Water channel (V tiles — sunken, dangerous)
+  hline(L, 9, 4, 21, 'V');
+  poke(L, 4, 9, 'V'); poke(L, 21, 9, 'V');
+  // Re-open paths over water at crossing points
+  poke(L, 7, 9, 'P'); poke(L, 12, 9, 'P'); poke(L, 17, 9, 'P');
+  // Monuments/lecterns
+  poke(L, 3, 3, 'M'); poke(L, 22, 3, 'M');
+  poke(L, 12, 5, 'M'); poke(L, 13, 5, 'M');
+  // Exits
+  poke(L, 12, 0, '>'); // north → FR
+  poke(L, 13, 19, '<'); // south → MS
+  return L;
+}
+
+// ── FROSTBOUND REACH (28 × 20) ────────────────────────────────────
+// Frozen landscape: open fields, frozen lake centre, tree line, scattered refugees
+function buildFR(): string[][] {
+  const L = buildMap(28, 20, 'T'); // tree/frost border
+  // Open snowy fields (P)
+  rect(L, 1, 1, 26, 18, 'P');
+  // Frozen lake (M tiles — impassable ice formations)
+  rect(L, 9, 7, 18, 13, 'M');
+  // Paths around the lake
+  hline(L, 6, 1, 26, 'P');   // north path
+  hline(L, 14, 1, 26, 'P');  // south path  
+  vline(L, 1, 1, 18, 'P');   // west path
+  vline(L, 26, 1, 18, 'P');  // east path
+  hline(L, 10, 1, 8, 'P');   // west lake bridge
+  hline(L, 10, 19, 26, 'P'); // east lake bridge
+  hline(L, 12, 1, 8, 'P');
+  hline(L, 12, 19, 26, 'P');
+  // Open patches with interest
+  rect(L, 2, 2, 7, 5, 'P');   // NW clearing
+  rect(L, 20, 2, 25, 5, 'P'); // NE clearing
+  rect(L, 2, 14, 7, 17, 'P'); // SW clearing
+  rect(L, 20, 14, 25, 17, 'P'); // SE clearing
+  // Frozen ruins
+  rect(L, 4, 8, 7, 12, 'W');
+  poke(L, 5, 9, 'P'); poke(L, 6, 9, 'P'); poke(L, 5, 10, 'P'); poke(L, 6, 10, 'P'); // interior ruin
+  rect(L, 20, 8, 23, 12, 'W');
+  poke(L, 21, 9, 'P'); poke(L, 22, 9, 'P'); poke(L, 21, 10, 'P'); poke(L, 22, 10, 'P');
+  // Ice monument markers
+  poke(L, 13, 7, 'M'); poke(L, 14, 7, 'M');
+  poke(L, 13, 13, 'M'); poke(L, 14, 13, 'M');
+  // Exits
+  poke(L, 13, 0, '>'); // north → AD
+  poke(L, 13, 19, '<'); // south → SA
+  return L;
+}
+
+// ── ASHEN DESCENT (26 × 20) ───────────────────────────────────────
+// Volcanic cavern: ash drifts, lava channels (V), stone platforms
+function buildAD(): string[][] {
+  const L = buildMap(26, 20, 'V'); // lava/ash floor
+  // Rocky walls forming the cavern skeleton
+  rect(L, 0, 0, 25, 0, 'W'); rect(L, 0, 19, 25, 19, 'W');
+  vline(L, 0, 0, 19, 'W'); vline(L, 25, 0, 19, 'W');
+  // Stone platform network
+  rect(L, 3, 2, 10, 6, 'P');    // NW platform
+  rect(L, 14, 2, 22, 6, 'P');   // NE platform
+  rect(L, 1, 8, 8, 13, 'P');    // W platform
+  rect(L, 10, 9, 15, 14, 'P');  // centre platform
+  rect(L, 17, 8, 24, 13, 'P');  // E platform
+  rect(L, 8, 15, 17, 18, 'P');  // south platform
+  // Bridges (narrow P paths)
+  hline(L, 4, 10, 14, 'P');     // NW-NE bridge
+  vline(L, 10, 3, 9, 'P');      // NW-centre bridge
+  vline(L, 14, 3, 9, 'P');
+  hline(L, 9, 8, 17, 'P');      // W-E bridge
+  vline(L, 12, 14, 16, 'P');    // centre-south bridge
+  vline(L, 13, 14, 16, 'P');
+  // Rocky walls / boulders mid-map
+  rect(L, 11, 4, 13, 6, 'W');
+  poke(L, 11, 5, 'V'); poke(L, 12, 5, 'V'); // lava gap in boulder
+  // Cinders / forge areas
+  poke(L, 5, 3, 'M'); poke(L, 20, 3, 'M'); // forge pillars
+  poke(L, 5, 4, 'M'); poke(L, 20, 4, 'M');
+  poke(L, 12, 10, 'M'); // centre altar
+  // Exits
+  poke(L, 12, 0, '>'); poke(L, 13, 0, '>'); // north → VN
+  poke(L, 12, 19, '<'); poke(L, 13, 19, '<'); // south → FR
+  return L;
+}
+
+// ── VOID NEXUS (26 × 22) ──────────────────────────────────────────
+// The final arena: void everywhere, stone platforms arranged in a cathedral pattern
+function buildVN(): string[][] {
+  const L = buildMap(26, 22, 'V'); // pure void
+  // Outer ring of stone (walkable perimeter)
+  rect(L, 1, 1, 24, 20, 'P', ['V']); // fill with P but we'll add V back
+  // Re-void the interior (carved cathedral pattern)
+  rect(L, 3, 3, 22, 18, 'V');
+  // Stone nave (central)
+  rect(L, 10, 2, 15, 20, 'P');
+  // Transept arms
+  rect(L, 1, 9, 24, 13, 'P');
+  // Apse (boss alcove, top)
+  rect(L, 7, 1, 18, 5, 'P');
+  // Side chapels
+  rect(L, 1, 3, 5, 7, 'P');
+  rect(L, 20, 3, 24, 7, 'P');
+  rect(L, 1, 15, 5, 19, 'P');
+  rect(L, 20, 15, 24, 19, 'P');
+  // Void pools within the aisles (impassable void islands)
+  rect(L, 6, 6, 9, 8, 'V');
+  rect(L, 16, 6, 19, 8, 'V');
+  rect(L, 6, 14, 9, 16, 'V');
+  rect(L, 16, 14, 19, 16, 'V');
+  // Altar / boss position markers
+  poke(L, 11, 2, 'M'); poke(L, 12, 2, 'M'); poke(L, 13, 2, 'M'); poke(L, 14, 2, 'M');
+  poke(L, 11, 3, 'M'); poke(L, 14, 3, 'M');
+  // Chests on side chapels
+  // Pillar columns
+  for (const [cx, cy] of [[3,5],[3,11],[3,17],[22,5],[22,11],[22,17]]) { poke(L, cx, cy, 'M'); }
+  // Exits (south only — one way in)
+  poke(L, 12, 21, '<'); poke(L, 13, 21, '<');
+  return L;
+}
+
+// ── HOUSE INTERIOR (16 × 10) ──────────────────────────────────────
+// A real interior: table, shelf, bed, storage
+function buildInteriorVariant(variant: number): string[][] {
+  const L = buildMap(16, 10, 'W');
+  // Floor
+  rect(L, 1, 1, 14, 8, 'P');
+  // Furniture walls
+  // Shelf along back wall
+  hline(L, 1, 2, 13, 'W');
+  // Table area centre
+  rect(L, 5, 3, 9, 5, 'W');
+  poke(L, 7, 4, 'P'); // seat
+  if (variant === 1) {
+    // Scholar's refuge: extra bookshelf east
+    vline(L, 13, 2, 6, 'W');
+    poke(L, 13, 4, 'P'); poke(L, 13, 5, 'P'); // gaps in shelf
+    poke(L, 12, 2, 'M'); // lectern
+  } else if (variant === 2) {
+    // Abandoned home: broken furniture, rubble
+    poke(L, 3, 3, 'W'); poke(L, 3, 4, 'W'); // broken corner
+    poke(L, 11, 6, 'W'); poke(L, 12, 6, 'W');
+    poke(L, 2, 2, 'M'); // hearth
+  } else if (variant === 3) {
+    // Old study: desk area left, shelves right
+    rect(L, 1, 2, 3, 5, 'W');
+    poke(L, 2, 3, 'P'); poke(L, 2, 4, 'P');
+    vline(L, 12, 2, 7, 'W');
+    poke(L, 12, 4, 'P'); poke(L, 12, 6, 'P');
+  }
+  // South door exit
+  poke(L, 8, 9, '<');
+  return L;
 }
 
 // City of Crestfall (28 × 22)
