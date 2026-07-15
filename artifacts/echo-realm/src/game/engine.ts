@@ -35,7 +35,13 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.BATTLE) {
     handleBattleInput(state);
-    updateBattlePhase(state);
+    // handleBattleInput can end the battle mid-frame (e.g. fleeing or
+    // finishing the END phase), which nulls out state.battle and may switch
+    // state.mode away from BATTLE. Guard against running the phase update
+    // against a battle that no longer exists.
+    if (state.mode === GameMode.BATTLE && state.battle) {
+      updateBattlePhase(state);
+    }
     return;
   }
 
