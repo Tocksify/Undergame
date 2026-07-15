@@ -41,7 +41,7 @@ function f(note: string): number {
 // so loops don't feel like the same 2 bars looping forever.
 const TRACKS: Record<string, TrackDef> = {
   title: {
-    bpm: 70, chordWave: 'sine', filterFreq: 1400, volume: 0.5,
+    bpm: 70, chordWave: 'sine', filterFreq: 1400, volume: 0.28,
     chord: [f('A3'), f('C4'), f('E4')],
     chordAlt: [f('F3'), f('A3'), f('C4')],
     bass: [f('A2'), null, null, null, f('E3'), null, null, null, f('A2'), null, null, null, f('C3'), null, null, null],

@@ -183,15 +183,66 @@ function spawnProjectiles(b: BattleState) {
   } else if (b.enemy.id === 'specter' && t % 40 === 0) {
     b.projectiles.push({ x: 234, y: boxY, vx: 4, vy: 0, w: 12, h: 12, color: '#38bdf8', wave: true, waveStartY: boxY });
   } else if (b.enemy.id === 'boss') {
-    if (t % 12 === 0) {
+    // Dense inward barrage from the arena edge — faster and more frequent
+    if (t % 7 === 0) {
       const angle = Math.random() * Math.PI * 2;
-      b.projectiles.push({ x: boxX + Math.cos(angle) * 150, y: boxY + Math.sin(angle) * 150, vx: -Math.cos(angle) * 3, vy: -Math.sin(angle) * 3, w: 14, h: 14, color: '#ef4444' });
+      b.projectiles.push({ x: boxX + Math.cos(angle) * 150, y: boxY + Math.sin(angle) * 150, vx: -Math.cos(angle) * 5.5, vy: -Math.sin(angle) * 5.5, w: 14, h: 14, color: '#ef4444' });
     }
-    if (t % 60 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 6, vy: 0, w: 20, h: 20, color: '#8b5cf6' });
+    // Fast soul-tracking beam — fires more often
+    if (t % 38 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 10, vy: 0, w: 22, h: 22, color: '#8b5cf6' });
+    // Rotating 4-arm spiral burst
+    if (t % 18 === 0) {
+      for (let i = 0; i < 4; i++) {
+        const a = (t * 0.18) + (i * Math.PI / 2);
+        b.projectiles.push({ x: boxX, y: boxY, vx: Math.cos(a) * 4.5, vy: Math.sin(a) * 4.5, w: 11, h: 11, color: '#f97316' });
+      }
+    }
+  } else if (b.enemy.id === 'archivist') {
+    // Rapid horizontal ink spray across full arena height
+    if (t % 8 === 0) {
+      b.projectiles.push({ x: 234, y: boxY - 90 + Math.random() * 180, vx: 5.5, vy: 0, w: 13, h: 13, color: '#1e40af' });
+    }
+    // Aimed shot locked to soul position
+    if (t % 28 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 20, h: 20, color: '#7c3aed' });
+    // Pages falling from above
+    if (t % 16 === 0) {
+      b.projectiles.push({ x: boxX - 100 + Math.random() * 200, y: 310, vx: 0, vy: 5, w: 16, h: 10, color: '#93c5fd' });
+    }
+  } else if (b.enemy.id === 'echo_warden') {
+    // Rotating tri-shot from arena centre
+    if (t % 9 === 0) {
+      const angle = t * 0.22;
+      for (let i = 0; i < 3; i++) {
+        const a = angle + (i * Math.PI * 2 / 3);
+        b.projectiles.push({ x: boxX, y: boxY, vx: Math.cos(a) * 5.5, vy: Math.sin(a) * 5.5, w: 13, h: 13, color: '#10b981' });
+      }
+    }
+    // Fast soul-tracking side shot
+    if (t % 32 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 18, h: 18, color: '#34d399' });
+  } else if (b.enemy.id === 'ring_boss') {
+    // Fast wave volleys — lots of them
+    if (t % 14 === 0) {
+      const wy = boxY - 40 + Math.random() * 80;
+      b.projectiles.push({ x: 234, y: wy, vx: 6.5, vy: 0, w: 14, h: 14, color: '#f59e0b', wave: true, waveStartY: wy });
+    }
+    // Inward ring burst
+    if (t % 11 === 0) {
+      const angle = t * 0.28;
+      b.projectiles.push({ x: boxX + Math.cos(angle) * 130, y: boxY + Math.sin(angle) * 100, vx: -Math.cos(angle) * 5.5, vy: -Math.sin(angle) * 5.5, w: 15, h: 15, color: '#ef4444' });
+    }
+    // Slow massive soul-seeker
+    if (t % 42 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 8, vy: 0, w: 24, h: 24, color: '#dc2626' });
+  } else if (b.enemy.id === 'hollow_guard') {
+    // Faster falling columns, wider spread
+    if (t % 10 === 0) {
+      b.projectiles.push({ x: boxX - 80 + Math.random() * 160, y: 310, vx: 0, vy: 5.5, w: 16, h: 10, color: '#9ca3af' });
+    }
+    // Side shots to cut off escape lanes
+    if (t % 22 === 0) {
+      b.projectiles.push({ x: 234, y: boxY - 55 + Math.random() * 110, vx: 5, vy: 0, w: 13, h: 13, color: '#6b7280' });
+    }
   } else if ((b.enemy.id === 'city_shade' || b.enemy.id === 'street_wraith') && t % 22 === 0) {
     b.projectiles.push({ x: 234, y: boxY - 70 + Math.random() * 140, vx: 3.5, vy: 0, w: 11, h: 11, color: b.enemy.color });
-  } else if (b.enemy.id === 'hollow_guard' && t % 18 === 0) {
-    b.projectiles.push({ x: boxX, y: 310 + Math.random() * 195, vx: 0, vy: 3.5, w: 14, h: 8, color: '#9ca3af' });
   } else if (t % 20 === 0) {
     b.projectiles.push({ x: 234, y: boxY - 60 + Math.random() * 120, vx: 3.5, vy: 0, w: 12, h: 12, color: b.enemy.color });
   }
