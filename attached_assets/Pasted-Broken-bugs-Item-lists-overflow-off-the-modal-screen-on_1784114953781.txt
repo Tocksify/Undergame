@@ -1,0 +1,19 @@
+Broken (bugs)
+
+Item lists overflow off the modal/screen on the Quest Log, the enchant-item picker, the Tome/Blessing screen, and the teleport ("Memory Transit") menu — none of them scroll, they just keep drawing past the box edge. Inventory is fine, matches what you saw.
+The story is inconsistent: South Road is hard-locked in the map data with no code that ever unlocks it, even at 100% story completion — so nobody could ever reach it as things stand. Also, it's a "City Messenger" (not Maren) telling you to head south, while the real route to Crestfall is actually east — that dialogue is just pointing the wrong way.
+The second city (Ashfall Ring) exists in the code and lore (that's what the mysterious note refers to), but there's no working way to unlock/discover it, so it can't show up in your teleport list even on a maxed-out save.
+Not built at all yet
+
+Minimap with quest markers (red/orange question marks)
+Any music or sound effects — battle music, map music, UI button/hover/keypress sounds. Zero audio exists right now.
+WASD movement on the teleport menu (it's arrow-keys only there)
+NPC visual variety — everyone's a same-size colored square; no hair/face/size differences
+Any leveling or stat-point system — the game currently only grows power through gear and enchantments, there's no XP, levels, or a stat screen (no "M" key exists)
+Header HUD only shows HP/Echoes/map name — no quest text, stats text, inventory text, or notification badges
+The "glo" account with a maxed 100%-complete save slot + an empty save slot — no seed accounts exist
+The whole South Road endgame sequence (forest → dirt road → village, Morthus, the cutscene with your parents, the ending) — none of it exists yet
+More character names
+Turn-based combat rework — combat today is Undertale-style (menu choice + real-time dodge minigame), not the more traditional turn-based fight you're asking for
+
+Start with minimap first, , then fix all broken bugs, and for ashfall ring, to access it, its in one of the buildings, and the notes should lead you to it, you have to find these notes, all around crestfall, and we can find it by referencing our minimap, and the notes.
