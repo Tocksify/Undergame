@@ -47,7 +47,7 @@ _Populate as you build — sharp edges, "always run X before Y" rules._
 
 ## Status
 
-All three workflows (Echo Realm frontend, API Server, Canvas/mockup-sandbox) are running, dependencies are installed, and the dev database schema has been pushed. Registration/login was verified working end-to-end.
+Re-imported from GitHub and re-verified on 2026-07-15: dependencies installed, dev DB schema pushed, all three workflows (Echo Realm frontend, API Server, Canvas/mockup-sandbox) running, login screen renders correctly.
 
 ## Pointers
 
