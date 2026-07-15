@@ -54,4 +54,14 @@ export const QUESTS: QuestEntry[] = [
     isDone: (s) => (s.player.quests['quest_ash'] || 0) === 2,
     label: (s) => `Embers of the Forgotten — defeat ${s.player.questProgress['ash_kills'] || 0}/2 Cinder Wraiths`,
   },
+  {
+    id: 'quest_city',
+    isActive: (s) => (s.player.quests['quest_city'] || 0) > 0,
+    isDone: (s) => (s.player.quests['quest_city'] || 0) === 2,
+    label: (s) => {
+      const done = s.player.quests['quest_city'] === 2;
+      if (done) return 'Reclaim Crestfall — city cleared. Collect your reward from the Warden.';
+      return `Reclaim Crestfall — silence ${s.player.questProgress['city_clears'] || 0}/5 city shades`;
+    },
+  },
 ];

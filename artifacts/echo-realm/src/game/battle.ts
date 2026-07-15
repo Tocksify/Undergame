@@ -1,19 +1,8 @@
 import { GameStateData, GameMode, EnemyData, BattleState } from './types';
 import { justPressed } from './engine';
-import { ITEMS } from './constants';
-
-function weaponAtkBonus(state: GameStateData): number {
-  const w = state.player.equipment.weapon;
-  return w && ITEMS[w] ? ITEMS[w].atk ?? 0 : 0;
-}
-
-function armorDefBonus(state: GameStateData): number {
-  const a = state.player.equipment.armor;
-  return a && ITEMS[a] ? ITEMS[a].def ?? 0 : 0;
-}
+import { ITEMS, getWeaponAtkBonus, getArmorDefBonus } from './constants';
 
 // Checks whether resonance has reached the threshold to "remember" the enemy.
-// Returns true if the battle ended as a result.
 function tryCompleteRemember(state: GameStateData): boolean {
   const b = state.battle!;
   if (b.resonance < 3) return false;
@@ -31,7 +20,7 @@ export function handleBattleInput(state: GameStateData) {
   const b = state.battle!;
   if (b.phase === 'MENU') {
     if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) b.menuIndex = Math.max(0, b.menuIndex - 1);
-    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) b.menuIndex = Math.min(4, b.menuIndex + 1); // REMEMBER, FORGET, ACT, ITEMS, FLEE
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) b.menuIndex = Math.min(4, b.menuIndex + 1);
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (b.menuIndex === 0) {
         b.phase = 'MINIGAME'; b.minigame = { cursorX: 0, type: 'REMEMBER', mult: b.flags.spark ? 2 : 1 }; b.flags.spark = false;
@@ -54,28 +43,26 @@ export function handleBattleInput(state: GameStateData) {
     }
   } else if (b.phase === 'MINIGAME') {
     b.timer++;
-    b.minigame!.cursorX = (Math.sin(b.timer * 0.1) + 1) / 2; // 0 to 1
+    b.minigame!.cursorX = (Math.sin(b.timer * 0.1) + 1) / 2;
 
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const dist = Math.abs(b.minigame!.cursorX - 0.5);
       let hitType = 'MISS';
       if (dist < 0.08) hitType = 'PERFECT';
       else if (dist < 0.2) hitType = 'GOOD';
-      
+
       const mult = b.minigame!.mult;
       if (b.minigame!.type === 'REMEMBER') {
         if (hitType === 'PERFECT') { b.resonance += 1; b.actionMsg = "Perfect Resonance!"; }
         else if (hitType === 'GOOD') { b.actionMsg = "Good connection."; }
         else { b.actionMsg = "The memory slips away..."; }
-        
         if (tryCompleteRemember(state)) return;
-      } else { // FORGET
-        let dmg = ((hitType === 'PERFECT' ? 10 : hitType === 'GOOD' ? 5 : 2) * mult) + weaponAtkBonus(state);
+      } else {
+        let dmg = ((hitType === 'PERFECT' ? 10 : hitType === 'GOOD' ? 5 : 2) * mult) + getWeaponAtkBonus(state);
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
       }
-      
       b.phase = 'ACTION'; b.timer = 0;
     }
   } else if (b.phase === 'DODGE') {
@@ -84,7 +71,6 @@ export function handleBattleInput(state: GameStateData) {
     if (state.keys['ArrowDown'] || state.keys['s']) sy = 1;
     if (state.keys['ArrowLeft'] || state.keys['a']) sx = -1;
     if (state.keys['ArrowRight'] || state.keys['d']) sx = 1;
-    
     b.soulX += sx * 4; b.soulY += sy * 4;
     b.soulX = Math.max(240, Math.min(528, b.soulX));
     b.soulY = Math.max(326, Math.min(514, b.soulY));
@@ -101,15 +87,15 @@ export function updateBattlePhase(state: GameStateData) {
     b.timer++;
     if (b.timer > 60) {
       if (b.flags.confused) {
-         b.actionMsg = "The enemy is confused and skips its turn!";
-         b.flags.confused = false;
-         b.timer = -60; // Extra pause
+        b.actionMsg = "The enemy is confused and skips its turn!";
+        b.flags.confused = false;
+        b.timer = -60;
       } else {
-         b.phase = 'DODGE'; b.timer = 300; b.projectiles = [];
+        b.phase = 'DODGE'; b.timer = 300; b.projectiles = [];
       }
     }
-    if (b.timer === 0 && b.phase === 'ACTION') { // Recovered from confused
-       b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null;
+    if (b.timer === 0 && b.phase === 'ACTION') {
+      b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null;
     }
   } else if (b.phase === 'DODGE') {
     b.timer--;
@@ -117,18 +103,16 @@ export function updateBattlePhase(state: GameStateData) {
     for (const p of b.projectiles) {
       p.x += p.vx; p.y += p.vy;
       if (p.wave) p.y = p.waveStartY! + Math.sin(p.x * 0.05) * 50;
-      
       const dx = p.x - b.soulX; const dy = p.y - b.soulY;
-      if (dx*dx + dy*dy < 100) { // Hit
+      if (dx * dx + dy * dy < 100) {
         if (state.player.invincibility <= 0) {
-          const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - armorDefBonus(state));
+          const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - getArmorDefBonus(state));
           state.player.hp -= dmg;
           state.player.invincibility = 30;
           b.voidWard = false;
         }
       }
     }
-    
     if (state.player.hp <= 0) { state.mode = GameMode.GAME_OVER; }
     if (b.timer <= 0) { b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null; }
   }
@@ -139,7 +123,6 @@ function handleAct(state: GameStateData, actId: string) {
   const act = b.enemy.acts.find(a => a.id === actId);
   if (!act) return;
 
-  // ── special-cased acts that need a specific quest item ──
   if (act.id === 'name') {
     if (state.player.inventory.includes('stone')) { b.resonance = 3; tryCompleteRemember(state); }
     else { b.actionMsg = "You don't have a Naming Stone."; }
@@ -159,7 +142,6 @@ function handleAct(state: GameStateData, actId: string) {
     return;
   }
 
-  // ── generic act effects ──
   switch (act.effect) {
     case 'weaken':
       b.enemy.atk = Math.max(1, b.enemy.atk - (act.power ?? 1));
@@ -170,7 +152,7 @@ function handleAct(state: GameStateData, actId: string) {
       b.actionMsg = "It pauses, confused.";
       break;
     case 'damage': {
-      const dmg = (act.power ?? 5) + weaponAtkBonus(state);
+      const dmg = (act.power ?? 5) + getWeaponAtkBonus(state);
       b.enemy.hp -= dmg;
       b.actionMsg = `Dealt ${dmg} dmg.`;
       if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
@@ -192,22 +174,25 @@ function handleAct(state: GameStateData, actId: string) {
 function spawnProjectiles(b: BattleState) {
   const t = 300 - b.timer;
   const boxX = 384; const boxY = 420;
-  
+
   if (b.enemy.id === 'wisp' && t % 25 === 0) {
-    b.projectiles.push({ x: 234, y: boxY - 80 + Math.random()*160, vx: 3, vy: 0, w: 10, h: 10, color: '#a855f7' });
+    b.projectiles.push({ x: 234, y: boxY - 80 + Math.random() * 160, vx: 3, vy: 0, w: 10, h: 10, color: '#a855f7' });
   } else if (b.enemy.id === 'crawler' && t % 15 === 0) {
     const angle = t * 0.1;
-    b.projectiles.push({ x: boxX, y: boxY, vx: Math.cos(angle)*4, vy: Math.sin(angle)*4, w: 16, h: 16, color: '#1f2937' });
+    b.projectiles.push({ x: boxX, y: boxY, vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4, w: 16, h: 16, color: '#1f2937' });
   } else if (b.enemy.id === 'specter' && t % 40 === 0) {
     b.projectiles.push({ x: 234, y: boxY, vx: 4, vy: 0, w: 12, h: 12, color: '#38bdf8', wave: true, waveStartY: boxY });
   } else if (b.enemy.id === 'boss') {
     if (t % 12 === 0) {
       const angle = Math.random() * Math.PI * 2;
-      b.projectiles.push({ x: boxX + Math.cos(angle)*150, y: boxY + Math.sin(angle)*150, vx: -Math.cos(angle)*3, vy: -Math.sin(angle)*3, w: 14, h: 14, color: '#ef4444' });
+      b.projectiles.push({ x: boxX + Math.cos(angle) * 150, y: boxY + Math.sin(angle) * 150, vx: -Math.cos(angle) * 3, vy: -Math.sin(angle) * 3, w: 14, h: 14, color: '#ef4444' });
     }
     if (t % 60 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 6, vy: 0, w: 20, h: 20, color: '#8b5cf6' });
+  } else if ((b.enemy.id === 'city_shade' || b.enemy.id === 'street_wraith') && t % 22 === 0) {
+    b.projectiles.push({ x: 234, y: boxY - 70 + Math.random() * 140, vx: 3.5, vy: 0, w: 11, h: 11, color: b.enemy.color });
+  } else if (b.enemy.id === 'hollow_guard' && t % 18 === 0) {
+    b.projectiles.push({ x: boxX, y: 310 + Math.random() * 195, vx: 0, vy: 3.5, w: 14, h: 8, color: '#9ca3af' });
   } else if (t % 20 === 0) {
-    // generic fallback pattern for any enemy without a bespoke pattern above
     b.projectiles.push({ x: 234, y: boxY - 60 + Math.random() * 120, vx: 3.5, vy: 0, w: 12, h: 12, color: b.enemy.color });
   }
 }
@@ -248,6 +233,14 @@ function endBattle(state: GameStateData) {
     if (b.enemy.id === 'boss' && b.endType === 'REMEMBERED') {
       state.player.quests['quest_main'] = 7;
       state.mode = GameMode.VICTORY;
+    }
+    // City clear quest
+    if (['city_shade', 'street_wraith', 'hollow_guard'].includes(b.enemy.id) && state.player.quests['quest_city'] === 1) {
+      state.player.questProgress['city_clears'] = (state.player.questProgress['city_clears'] || 0) + 1;
+      if ((state.player.questProgress['city_clears'] || 0) >= 5) {
+        state.player.quests['quest_city'] = 2;
+        state.uiMessage = "The city grows quieter. Report to the Warden."; state.uiMessageTimer = 180;
+      }
     }
   }
   state.battle = null;

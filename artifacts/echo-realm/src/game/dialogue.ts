@@ -5,6 +5,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
   const qMain   = state.player.quests['quest_main']   || 0;
   const qName   = state.player.quests['quest_name']   || 0;
   const qHollow = state.player.quests['quest_hollow'] || 0;
+  const qCity   = state.player.quests['quest_city']   || 0;
 
   // ── GREGOR (innkeeper / healer) ──────────────────────────────────
   if (npcId === 'gregor') {
@@ -28,7 +29,10 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
           action: (s) => {
             s.player.quests['quest_main'] = 2;
             s.player.echoes += 100;
-            if (s.player.inventory.length <= 6) { s.player.inventory.push('tonic'); s.player.inventory.push('tonic'); }
+            if (s.player.inventory.length <= 10) {
+              s.player.inventory.push('tonic'); s.player.enchantedSlots.push(null);
+              s.player.inventory.push('tonic'); s.player.enchantedSlots.push(null);
+            }
             s.uiMessage = "Quest: The Lost Memories  COMPLETE! +100 Echoes +2 Tonics"; s.uiMessageTimer = 180;
           }
         };
@@ -63,15 +67,14 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
-  // ── ZARA (shop — prompt only, actual shop opens via SHOP mode) ───
+  // ── ZARA (shop) ──────────────────────────────────────────────────
   if (npcId === 'zara') {
-    // Engine opens shop directly for SHOP-type NPCs, so this is a fallback
     return {
       text: "Welcome! I trade in Memory Shards, curiosities, and things people wished they'd kept. You lose something? I might have it.",
       speaker: 'Zara', color: '#dddddd',
       options: [
         { label: "Show me your wares.", action: (s) => { s.mode = GameMode.SHOP; s.shopIndex = 0; } },
-        { label: "Just looking."       }
+        { label: "Just looking." }
       ]
     };
   }
@@ -85,7 +88,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
           speaker: 'A Hollow', color: '#eeeeee',
           action: (s) => {
             s.player.flags['hollow_reward'] = true;
-            if (s.player.inventory.length < 8) s.player.inventory.push('ward');
+            if (s.player.inventory.length < 12) { s.player.inventory.push('ward'); s.player.enchantedSlots.push(null); }
             s.uiMessage = "Quest: The Hollow Heart  COMPLETE! Received Void Ward."; s.uiMessageTimer = 180;
           }
         };
@@ -100,7 +103,19 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
       speaker: 'A Hollow', color: '#eeeeee',
       options: [
         { label: "I will find your memories.", action: (s) => { s.player.quests['quest_hollow'] = 1; s.uiMessage = "Quest Added: The Hollow Heart (Defeat 2 Specters)"; s.uiMessageTimer = 180; } },
-        { label: "I am sorry."               }
+        { label: "I am sorry." }
+      ]
+    };
+  }
+
+  // ── CITY GATE GUARD / MESSENGER ───────────────────────────────────
+  if (npcId === 'city_gate_guard') {
+    return {
+      text: "Keeper — a word. Crestfall City to the east is overrun with shades and hollow guards. The city gates are open, but no one dares go in. We need someone who can remember them back to peace.",
+      speaker: 'City Messenger', color: '#aaaaff',
+      options: [
+        { label: "I'll go to Crestfall.", nextId: 'city_gate_how' },
+        { label: "Tell me more about the city.", nextId: 'city_gate_lore' },
       ]
     };
   }
@@ -114,10 +129,9 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
-  // ── OLD VESS (Sunken Archive gate + side quest) ───────────────────
+  // ── OLD VESS (Sunken Archive) ─────────────────────────────────────
   if (npcId === 'vess') {
     const qArchive = state.player.quests['quest_archive'] || 0;
-    const qMain = state.player.quests['quest_main'] || 0;
     if (qArchive === 1 && (state.player.questProgress['archive_kills'] || 0) >= 3) {
       return {
         text: "Three wraiths silenced... you've done what I could not. Take my ward — may it guard your memory as it guarded mine.",
@@ -125,7 +139,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_archive'] = 2;
           s.player.echoes += 80;
-          if (s.player.inventory.length < 8) s.player.inventory.push('archivist_ward');
+          if (s.player.inventory.length < 12) { s.player.inventory.push('archivist_ward'); s.player.enchantedSlots.push(null); }
           s.uiMessage = "Quest Complete: The Waterlogged Ledger! +80 Echoes +Archivist's Ward"; s.uiMessageTimer = 180;
         }
       };
@@ -156,9 +170,8 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
-  // ── WARDEN KESS (Frostbound Reach gate) ───────────────────────────
+  // ── WARDEN KESS (Frostbound Reach) ────────────────────────────────
   if (npcId === 'warden_kess') {
-    const qMain = state.player.quests['quest_main'] || 0;
     if (qMain >= 5) return { text: "Stay warm out there, Keeper.", speaker: 'Warden Kess', color: '#cfe8ff' };
     if (state.player.flags['defeated_frost_walker']) {
       return {
@@ -170,7 +183,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     return { text: "The Reach is frozen in a moment none of us can remember. Face one of the Frost Walkers and prove the cold hasn't claimed you.", speaker: 'Warden Kess', color: '#cfe8ff' };
   }
 
-  // ── A SHIVERING VILLAGER (Frostbound Reach side quest) ────────────
+  // ── A SHIVERING VILLAGER (Frostbound Reach) ───────────────────────
   if (npcId === 'shivering_villager') {
     const q = state.player.quests['quest_frost'] || 0;
     if (q === 1 && (state.player.questProgress['frost_kills'] || 0) >= 2) {
@@ -180,7 +193,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_frost'] = 2;
           s.player.echoes += 60;
-          if (s.player.inventory.length < 8) s.player.inventory.push('frost_fang');
+          if (s.player.inventory.length < 12) { s.player.inventory.push('frost_fang'); s.player.enchantedSlots.push(null); }
           s.uiMessage = "Quest Complete: Thaw the Watcher! +60 Echoes +Frost Fang"; s.uiMessageTimer = 180;
         }
       };
@@ -196,9 +209,8 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
-  // ── EMBER SENTINEL (Ashen Descent gate) ───────────────────────────
+  // ── EMBER SENTINEL (Ashen Descent) ────────────────────────────────
   if (npcId === 'ember_sentinel') {
-    const qMain = state.player.quests['quest_main'] || 0;
     if (qMain >= 6) return { text: "The Nexus awaits. Go — and remember us, whatever happens.", speaker: 'Ember Sentinel', color: '#ff9966' };
     if (state.player.flags['defeated_ash_hound']) {
       return {
@@ -210,7 +222,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     return { text: "The Descent burns with memories that refuse to die. An Ash Hound guards these embers. Defeat one, and I'll let you pass.", speaker: 'Ember Sentinel', color: '#ff9966' };
   }
 
-  // ── A BURNED SCHOLAR (Ashen Descent side quest) ───────────────────
+  // ── A BURNED SCHOLAR (Ashen Descent) ─────────────────────────────
   if (npcId === 'burned_scholar') {
     const q = state.player.quests['quest_ash'] || 0;
     if (q === 1 && (state.player.questProgress['ash_kills'] || 0) >= 2) {
@@ -220,7 +232,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_ash'] = 2;
           s.player.echoes += 100;
-          if (s.player.inventory.length < 8) s.player.inventory.push('cinder_blade');
+          if (s.player.inventory.length < 12) { s.player.inventory.push('cinder_blade'); s.player.enchantedSlots.push(null); }
           s.uiMessage = "Quest Complete: Embers of the Forgotten! +100 Echoes +Cinder Blade"; s.uiMessageTimer = 180;
         }
       };
@@ -245,6 +257,60 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
+  // ── CITY WARDEN (Crestfall City) ───────────────────────────────────
+  if (npcId === 'city_warden') {
+    if (qCity === 2) {
+      if (!state.player.flags['city_reward']) {
+        return {
+          text: "You've done it. The streets are quieter. I can hear... footsteps again. Real ones. Here — the city's emergency reserves. They're yours.",
+          speaker: 'City Warden', color: '#aaaaff',
+          action: (s) => {
+            s.player.flags['city_reward'] = true;
+            s.player.echoes += 150;
+            if (s.player.inventory.length < 12) { s.player.inventory.push('phoenix_ash'); s.player.enchantedSlots.push(null); }
+            s.uiMessage = "Quest: Reclaim Crestfall COMPLETE! +150 Echoes +Phoenix Ash"; s.uiMessageTimer = 200;
+          }
+        };
+      }
+      return { text: "The city breathes again. Thank you, Keeper.", speaker: 'City Warden', color: '#aaaaff' };
+    }
+    if (qCity === 1) {
+      return { text: `${Math.max(0, 5 - (state.player.questProgress['city_clears'] || 0))} more shades to silence. The east quarter is worst — be careful.`, speaker: 'City Warden', color: '#aaaaff' };
+    }
+    return {
+      text: "Keeper — you came. The city is overrun. City Shades, Street Wraiths, Hollow Guards — they walk the old routes like they still live here. Silence five of them. Please.",
+      speaker: 'City Warden', color: '#aaaaff',
+      options: [
+        { label: "I'll clear the city.", action: (s) => { s.player.quests['quest_city'] = 1; s.uiMessage = "Quest Added: Reclaim Crestfall (Silence 5 shades)"; s.uiMessageTimer = 160; } },
+        { label: "Tell me about Crestfall.", nextId: 'warden_lore' }
+      ]
+    };
+  }
+
+  // ── RELIC BROKER (Crestfall City shop) ────────────────────────────
+  if (npcId === 'relic_broker') {
+    return {
+      text: "I salvage what the shades leave behind. Enchanted tomes, crystals, wards. You want power? I have it — at a price.",
+      speaker: 'Relic Broker', color: '#ffcc88',
+      options: [
+        { label: "Show me your wares.", action: (s) => { s.mode = GameMode.SHOP; s.shopIndex = 0; s.shopNpcId = 'relic_broker'; } },
+        { label: "Those tomes — what do they do?", nextId: 'broker_tomes' }
+      ]
+    };
+  }
+
+  // ── A SURVIVOR (Crestfall City) ────────────────────────────────────
+  if (npcId === 'city_survivor') {
+    return {
+      text: "I've been hiding in this corner for three days. The shades don't notice me — I think they only chase people who still have a lot to remember. That's... a terrible thought, isn't it.",
+      speaker: 'A Survivor', color: '#cccccc',
+      options: [
+        { label: "Are you all right?", nextId: 'survivor_ok' },
+        { label: "Stay hidden. It'll be over soon." }
+      ]
+    };
+  }
+
   return { text: '...', speaker: 'Unknown' };
 }
 
@@ -265,7 +331,7 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
   }
   if (nextId === 'pip_wastes') {
     return {
-      text: "Stay on the memory-grass — the pale green patches — if you need a breather. The void tiles are dark and dangerous. The creatures there aren't evil, just... lost. Like us.",
+      text: "Stay on the memory-grass — the pale patches — if you need a breather. The void tiles are dark and dangerous. The creatures there aren't evil, just... lost. Like us.",
       speaker: 'Pip', color: '#bbbbbb'
     };
   }
@@ -273,6 +339,42 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
     return {
       text: "The Ledger records every memory the Archive ever swallowed. Somewhere in these stacks is a page with your name on it, Keeper. Best not to go looking.",
       speaker: 'Old Vess', color: '#aaaaaa'
+    };
+  }
+  if (nextId === 'city_gate_how') {
+    return {
+      text: "Head south from the village — there's a path through the old road. The city gate is open but the streets are dangerous. The Warden is holding up near the south entrance. She can guide you.",
+      speaker: 'City Messenger', color: '#aaaaff',
+      action: (s) => { s.uiMessage = "Crestfall City added to your known locations."; s.uiMessageTimer = 150; }
+    };
+  }
+  if (nextId === 'city_gate_lore') {
+    return {
+      text: "Crestfall was the largest city in the Realm before the Void spread. Thousands lived there. Now... the shades walk the old streets. They aren't violent by nature — but the forgetting has made them dangerous.",
+      speaker: 'City Messenger', color: '#aaaaff',
+      options: [{ label: "I'll go help.", nextId: 'city_gate_how' }]
+    };
+  }
+  if (nextId === 'warden_lore') {
+    return {
+      text: "Crestfall was built on memory. Every stone was laid with a name carved into it — a practice the founders believed would keep the city standing. The Void doesn't like names. It's been trying to eat them ever since.",
+      speaker: 'City Warden', color: '#aaaaff'
+    };
+  }
+  if (nextId === 'broker_tomes') {
+    return {
+      text: "Enchanted tomes bind a spell to whatever you choose — a weapon, armor. The book is consumed. The item gains the enchantment, marked with a Z in your records. Not every tome works on every item — read the description carefully.",
+      speaker: 'Relic Broker', color: '#ffcc88',
+      options: [
+        { label: "Show me your wares.", action: (s) => { s.mode = GameMode.SHOP; s.shopIndex = 0; s.shopNpcId = 'relic_broker'; } },
+        { label: "Good to know." }
+      ]
+    };
+  }
+  if (nextId === 'survivor_ok') {
+    return {
+      text: "I'm... fine. I found a letter in that house over there, from a child to her father. I read it three times. I don't know why I kept reading it. I think I needed to remember that people like that existed.",
+      speaker: 'A Survivor', color: '#cccccc'
     };
   }
   return { text: '...', speaker: 'System' };

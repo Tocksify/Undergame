@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, TILE_SIZE, recomputeMaxHp } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp } from './constants';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 
@@ -9,6 +9,18 @@ export function justPressed(state: GameStateData, key: string) {
 }
 
 function isExitTile(t: string) { return t === '>' || t === '<' || t === '!'; }
+
+// Remove item at slot i from inventory, keeping enchantedSlots in sync
+export function removeInventoryItem(state: GameStateData, index: number) {
+  state.player.inventory.splice(index, 1);
+  state.player.enchantedSlots.splice(index, 1);
+}
+
+// Add item to inventory, keeping enchantedSlots in sync
+export function addInventoryItem(state: GameStateData, itemId: string) {
+  state.player.inventory.push(itemId);
+  state.player.enchantedSlots.push(null);
+}
 
 export function updateGame(state: GameStateData) {
   state.frameCount++;
@@ -26,8 +38,6 @@ export function updateGame(state: GameStateData) {
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
         state.mapId = 'VH';
       }
-      // Loaded saves can resume mid-battle (see save.ts) — state.battle is
-      // only populated when the save was captured while fighting.
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
     return;
@@ -37,12 +47,95 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.BATTLE) {
     handleBattleInput(state);
-    // handleBattleInput can end the battle mid-frame (e.g. fleeing or
-    // finishing the END phase), which nulls out state.battle and may switch
-    // state.mode away from BATTLE. Guard against running the phase update
-    // against a battle that no longer exists.
     if (state.mode === GameMode.BATTLE && state.battle) {
       updateBattlePhase(state);
+    }
+    return;
+  }
+
+  // ── BOOK READ ──────────────────────────────────────────────────────
+  if (state.mode === GameMode.BOOK_READ) {
+    const book = state.bookRead.bookId ? BOOKS[state.bookRead.bookId] : null;
+    if (!book) { state.mode = GameMode.INVENTORY; return; }
+
+    const totalPages = book.pages.length;
+
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd') || justPressed(state, ' ') || justPressed(state, 'z')) {
+      if (state.bookRead.page < totalPages - 1) {
+        state.bookRead.page++;
+      } else {
+        // Last page — close book, return to inventory
+        state.mode = GameMode.INVENTORY;
+        state.inventoryIndex = state.bookRead.fromInventoryIndex;
+        state.bookRead.bookId = null;
+      }
+    }
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) {
+      if (state.bookRead.page > 0) state.bookRead.page--;
+    }
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      state.mode = GameMode.INVENTORY;
+      state.inventoryIndex = state.bookRead.fromInventoryIndex;
+      state.bookRead.bookId = null;
+    }
+    return;
+  }
+
+  // ── ENCHANT SELECT ─────────────────────────────────────────────────
+  if (state.mode === GameMode.ENCHANT_SELECT) {
+    const enchSlot = state.enchantSelect.enchantBookSlot;
+    const enchBookId = state.player.inventory[enchSlot];
+    const enchItem = enchBookId ? ITEMS[enchBookId] : null;
+    if (!enchItem || !enchItem.enchantData) { state.mode = GameMode.INVENTORY; return; }
+
+    const compatible = state.player.inventory
+      .map((id, i) => ({ id, i }))
+      .filter(({ id, i }) => {
+        const it = ITEMS[id];
+        return it && enchItem.enchantData!.compatibleCategories.includes(it.category as any)
+          && i !== enchSlot
+          && !state.player.enchantedSlots[i]; // not already enchanted
+      });
+
+    if (compatible.length === 0) {
+      state.uiMessage = "No compatible items to enchant.";
+      state.uiMessageTimer = 120;
+      state.mode = GameMode.INVENTORY;
+      return;
+    }
+
+    const maxIdx = compatible.length - 1;
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))
+      state.enchantSelect.cursorIndex = Math.max(0, state.enchantSelect.cursorIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's'))
+      state.enchantSelect.cursorIndex = Math.min(maxIdx, state.enchantSelect.cursorIndex + 1);
+
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      state.mode = GameMode.INVENTORY;
+      return;
+    }
+
+    if (justPressed(state, ' ') || justPressed(state, 'z')) {
+      const target = compatible[state.enchantSelect.cursorIndex];
+      // Apply enchantment: mark target slot, remove enchanted book
+      state.player.enchantedSlots[target.i] = enchBookId;
+      removeInventoryItem(state, enchSlot < target.i ? enchSlot : enchSlot); // remove book
+      // Re-index after splice: if enchSlot < target.i, target shifted down by 1
+      // Actually enchantedSlots[target.i] was set before removal.
+      // After removal we need to clean up properly.
+      // Let's redo: set enchant on target, then remove book.
+      // If enchSlot < target.i: after splice(enchSlot,1), target is now at target.i-1
+      // We already set enchantedSlots[target.i] = enchBookId before splice — the splice
+      // shifts it correctly since we're using the array itself.
+      // So the flow: set [target.i] = enchBookId, splice enchSlot → enchantedSlots shifts.
+      // If enchSlot < target.i: [target.i] becomes [target.i-1] after splice — correct!
+      // If enchSlot > target.i: [target.i] stays — correct!
+      recomputeMaxHp(state);
+      const itemName = ITEMS[target.id]?.name ?? target.id;
+      state.uiMessage = `${itemName} is now enchanted [Z]!`;
+      state.uiMessageTimer = 150;
+      state.mode = GameMode.INVENTORY;
+      state.inventoryIndex = Math.max(0, state.inventoryIndex - (enchSlot < state.inventoryIndex ? 1 : 0));
     }
     return;
   }
@@ -60,9 +153,6 @@ export function updateGame(state: GameStateData) {
         else { state.saveRequested = true; }
       }
       if (state.menuIndex === 4) {
-        // Save & Quit: guests have nothing to persist, so just exit; logged
-        // in players save first and the exit is deferred until the save
-        // finishes (see Game.tsx), so progress is never lost mid-write.
         if (state.meta.isGuest) { state.exitRequested = true; }
         else { state.saveRequested = true; state.quitAfterSave = true; }
       }
@@ -72,14 +162,54 @@ export function updateGame(state: GameStateData) {
   }
 
   if (state.mode === GameMode.INVENTORY) {
-    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
-    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.inventoryIndex = Math.min(Math.max(0, state.player.inventory.length - 1), state.inventoryIndex + 1);
+    const inv = state.player.inventory;
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))
+      state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's'))
+      state.inventoryIndex = Math.min(Math.max(0, inv.length - 1), state.inventoryIndex + 1);
+
     if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'i')) {
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
-    if ((justPressed(state, ' ') || justPressed(state, 'z')) && state.player.inventory.length > 0) {
-      const id = state.player.inventory[state.inventoryIndex];
+
+    if ((justPressed(state, ' ') || justPressed(state, 'z')) && inv.length > 0) {
+      const idx = state.inventoryIndex;
+      const id = inv[idx];
       const item = ITEMS[id];
+      if (!item) return;
+
+      // ── BOOK: open reader ──
+      if (item.category === 'book') {
+        if (item.bookId && BOOKS[item.bookId]) {
+          state.bookRead = { bookId: item.bookId, page: 0, fromInventoryIndex: idx };
+          state.mode = GameMode.BOOK_READ;
+        } else {
+          state.uiMessage = "The pages are unreadable."; state.uiMessageTimer = 90;
+        }
+        return;
+      }
+
+      // ── ENCHANTED BOOK: enter enchant-select ──
+      if (item.category === 'enchanted_book') {
+        if (state.battle) {
+          state.uiMessage = "Can't enchant in battle."; state.uiMessageTimer = 90;
+          return;
+        }
+        // Find compatible items in inventory
+        const compat = inv.filter((iid, i) => {
+          const it = ITEMS[iid];
+          return it && item.enchantData!.compatibleCategories.includes(it.category as any) && i !== idx && !state.player.enchantedSlots[i];
+        });
+        if (compat.length === 0) {
+          state.uiMessage = "No compatible unenchanted items to enchant."; state.uiMessageTimer = 120;
+          return;
+        }
+        state.enchantSelect = { enchantBookSlot: idx, cursorIndex: 0 };
+        state.mode = GameMode.ENCHANT_SELECT;
+        return;
+      }
+
+      // ── existing item logic ──
       let consumed = false;
       let handled = false;
 
@@ -94,24 +224,32 @@ export function updateGame(state: GameStateData) {
         state.uiMessageTimer = 90; handled = true;
       } else if (item.category === 'key') {
         state.uiMessage = "A keepsake. Best not discarded."; state.uiMessageTimer = 90; handled = true;
-      } else if (id === 'crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); consumed = true; }
-      else if (id === 'tonic') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5); consumed = true; }
-      else if (id === 'greater_crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 25); consumed = true; }
-      else if (id === 'phoenix_ash') {
-        state.player.hp = state.player.maxHp;
-        if (state.battle) state.battle.flags.confused = false;
-        consumed = true;
-      } else if (state.battle) {
-        if (id === 'ward')  { state.battle.voidWard = true; consumed = true; }
-        if (id === 'spark') { state.battle.flags.spark = true; consumed = true; }
-        if (id === 'dust')  { state.battle.flags.confused = true; consumed = true; }
-      }
+      } else if (id === 'crystal')         { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); consumed = true; }
+        else if (id === 'tonic')           { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5);  consumed = true; }
+        else if (id === 'greater_crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 25); consumed = true; }
+        else if (id === 'phoenix_ash') {
+          state.player.hp = state.player.maxHp;
+          if (state.battle) state.battle.flags.confused = false;
+          consumed = true;
+        } else if (state.battle) {
+          if (id === 'ward')  { state.battle.voidWard = true; consumed = true; }
+          if (id === 'spark') { state.battle.flags.spark = true; consumed = true; }
+          if (id === 'dust')  { state.battle.flags.confused = true; consumed = true; }
+        }
 
-      if (consumed) { state.player.inventory.splice(state.inventoryIndex, 1); handled = true; }
-      state.inventoryIndex = Math.max(0, Math.min(state.inventoryIndex, state.player.inventory.length - 1));
-      if (state.battle && (consumed || handled)) { state.mode = GameMode.BATTLE; state.battle.phase = 'ACTION'; state.battle.actionMsg = "Used item!"; state.battle.timer = 0; }
-      else if (!state.battle && consumed) { state.uiMessage = "Used item."; state.uiMessageTimer = 60; }
-      else if (!handled) { state.uiMessage = "Can't use that here."; state.uiMessageTimer = 60; }
+      if (consumed) {
+        // If the consumed item was enchanted, remove its enchantment entry too
+        removeInventoryItem(state, idx);
+        handled = true;
+      }
+      state.inventoryIndex = Math.max(0, Math.min(state.inventoryIndex, inv.length - 1));
+      if (state.battle && (consumed || handled)) {
+        state.mode = GameMode.BATTLE; state.battle!.phase = 'ACTION'; state.battle!.actionMsg = "Used item!"; state.battle!.timer = 0;
+      } else if (!state.battle && consumed) {
+        state.uiMessage = "Used item."; state.uiMessageTimer = 60;
+      } else if (!handled) {
+        state.uiMessage = "Can't use that here."; state.uiMessageTimer = 60;
+      }
     }
     return;
   }
@@ -129,10 +267,10 @@ export function updateGame(state: GameStateData) {
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const item = ITEMS[shopItems[state.shopIndex]];
-      if (state.player.inventory.length >= 8) { state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60; }
+      if (state.player.inventory.length >= 12) { state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60; }
       else if (state.player.echoes >= item.price) {
         state.player.echoes -= item.price;
-        state.player.inventory.push(shopItems[state.shopIndex]);
+        addInventoryItem(state, shopItems[state.shopIndex]);
         state.uiMessage = "Bought: " + item.name; state.uiMessageTimer = 60;
       } else { state.uiMessage = "Not enough Echoes!"; state.uiMessageTimer = 60; }
     }
@@ -190,10 +328,9 @@ export function updateGame(state: GameStateData) {
     else if (state.player.x > state.player.targetX) state.player.x = Math.max(state.player.targetX, state.player.x - spd);
     if (state.player.y < state.player.targetY) state.player.y = Math.min(state.player.targetY, state.player.y + spd);
     else if (state.player.y > state.player.targetY) state.player.y = Math.max(state.player.targetY, state.player.y - spd);
-    return; // don't process input while moving
+    return;
   }
 
-  // arrived at target — pending encounter?
   if (state.pendingEncounter) {
     startBattle(state, state.pendingEncounter);
     state.pendingEncounter = null;
@@ -203,9 +340,10 @@ export function updateGame(state: GameStateData) {
   const tx = Math.floor(state.player.x / TILE_SIZE);
   const ty = Math.floor(state.player.y / TILE_SIZE);
 
-  // detect adjacent interactables (NPCs with a satisfied hideFlag are gone for good)
+  // detect adjacent interactables
   const visibleNpcs = map.npcs.filter((n: any) => !n.hideFlag || !state.player.flags[n.hideFlag]);
   let intFound: any = null;
+
   for (const npc of visibleNpcs) {
     if (Math.abs(npc.x - tx) + Math.abs(npc.y - ty) === 1) { intFound = { type: 'NPC', npc, x: npc.x, y: npc.y }; break; }
   }
@@ -216,6 +354,14 @@ export function updateGame(state: GameStateData) {
       }
     }
   }
+  if (!intFound) {
+    for (const door of (map.doors || [])) {
+      if (Math.abs(door.x - tx) + Math.abs(door.y - ty) === 1) {
+        intFound = { type: 'DOOR', door, x: door.x, y: door.y }; break;
+      }
+    }
+  }
+
   // standing on exit tile?
   const curTile = map.layout[ty]?.[tx] ?? '';
   if (isExitTile(curTile)) {
@@ -237,6 +383,16 @@ export function updateGame(state: GameStateData) {
           state.adjacentInteractable = null;
         }
       }
+    } else if (intFound.type === 'DOOR') {
+      const door = intFound.door;
+      if (door.locked) {
+        state.uiMessage = door.lockMsg ?? "The door is locked."; state.uiMessageTimer = 120;
+      } else {
+        state.mapId = door.targetMapId;
+        state.player.x = door.targetX * TILE_SIZE; state.player.y = door.targetY * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.adjacentInteractable = null;
+      }
     } else if (intFound.type === 'NPC') {
       if (intFound.npc.type === 'SHOP') {
         state.mode = GameMode.SHOP; state.shopIndex = 0; state.shopNpcId = intFound.npc.id;
@@ -252,13 +408,17 @@ export function updateGame(state: GameStateData) {
         state.player.echoes += amt;
         state.uiMessage = `Found ${amt} Echoes!`; state.uiMessageTimer = 120;
       } else {
-        if (state.player.inventory.length < 8) state.player.inventory.push(intFound.chest.item);
-        state.uiMessage = `Found: ${ITEMS[intFound.chest.item]?.name ?? intFound.chest.item}!`; state.uiMessageTimer = 120;
+        if (state.player.inventory.length < 12) {
+          addInventoryItem(state, intFound.chest.item);
+          state.uiMessage = `Found: ${ITEMS[intFound.chest.item]?.name ?? intFound.chest.item}!`; state.uiMessageTimer = 120;
+        } else {
+          state.uiMessage = "Inventory full — couldn't pick up item!"; state.uiMessageTimer = 120;
+        }
       }
     }
   }
 
-  // movement input (only when not interacting this frame)
+  // movement input
   if (!(intFound && (justPressed(state, ' ') || justPressed(state, 'z')))) {
     let dx = 0; let dy = 0;
     if (state.keys['ArrowUp']    || state.keys['w']) dy = -1;
@@ -275,7 +435,6 @@ export function updateGame(state: GameStateData) {
         if (!impassable) {
           state.player.targetX = ntx * TILE_SIZE;
           state.player.targetY = nty * TILE_SIZE;
-          // random encounter on void tiles
           if (tile === 'V' && Math.random() < 0.15) {
             const pool = (map.encounterPool && map.encounterPool.length) ? map.encounterPool : ['wisp'];
             state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[pool[Math.floor(Math.random() * pool.length)]]));

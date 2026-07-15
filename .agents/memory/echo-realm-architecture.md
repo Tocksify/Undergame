@@ -1,11 +1,34 @@
 ---
-name: Echo Realm engine architecture
-description: Durable patterns used in the Echo Realm terminal-RPG artifact (canvas-based JS game) for gating, enemies, shops, and quests — read before extending its content.
+name: Echo Realm architecture
+description: Key patterns, decisions, and gotchas for the Echo Realm RPG codebase.
 ---
 
-Echo Realm (artifacts/echo-realm) is a canvas-rendered RPG with a shared `MAPS` object (one entry per area) holding tiles, NPCs, exits, and an `encounterPool`. Several non-obvious conventions keep content additions cheap:
+## Engine patterns
+- `enchantedSlots: (string|null)[]` is a parallel array to `inventory[]`. Use `removeInventoryItem(state, i)` and `addInventoryItem(state, id)` helpers (in engine.ts) whenever mutating inventory — they splice both arrays in sync.
+- `map.doors[]` array for enterable buildings. Player detects adjacency (Manhattan distance === 1) same as NPCs/chests. Interior maps exit via `<` tile.
+- `map.books[]` field exists on all maps (can be empty) — books are chest items, not a separate pickup type.
+- `pendingEncounter` is set on grass step, then consumed after movement resolves (to avoid starting battle mid-move).
+- `hideFlag` on NPCs: NPC hidden when `state.player.flags[npc.hideFlag]` is truthy.
 
-- **One-time NPCs use a generic `hideFlag` on the NPC def**, checked as `!npc.hideFlag || !player.flags[npc.hideFlag]` everywhere NPCs are read (movement blocking, interaction, rendering). Never mutate `MAPS[...].npcs` directly to remove a defeated NPC — the map object is shared/reused across game sessions, so mutating it corrupts subsequent playthroughs. `battle.ts` auto-sets a `defeated_<enemyId>` flag on every battle win, which doubles as both the hideFlag trigger and a lightweight "prove yourself" gate for area gate-keeper NPCs.
-- **Acts (battle abilities) are generic over an `effect` field** (`resonance`/`weaken`/`confuse`/`damage`/`flavor`) rather than hardcoded per-enemy-id logic, so new enemies/bosses need zero bespoke battle scripting unless they require a quest item (handled via `requiresItem` + a small special-case list in `handleAct`).
-- **Shops and quests are data-driven registries** (`SHOPS` in constants.ts, `QUESTS` in quests.ts) rather than hardcoded UI lists — new shops/quests are additive, and the renderer/engine just loop over the registry.
-- **Enemy sprites have a generic fallback branch** in `drawEnemySprite` so new enemies render immediately without bespoke pixel art; bespoke sprites are opt-in polish, not required for correctness.
+## Item categories
+- `category`: `weapon | armor | key | consumable | book | enchanted_book`
+- `subcategory`: `medical | def | utility` (consumables only)
+- Enchanted items show `[Z]` suffix in inventory; `enchantedSlots[i]` holds the enchanted_book id.
+- `getWeaponAtkBonus(state)` and `getArmorDefBonus(state)` in constants.ts account for enchantments — always use these, never read enchantData directly in battle/engine.
+
+## Game modes
+- `BOOK_READ = 10`: arrow keys page through book, ESC/X closes, last page auto-close on SPACE
+- `ENCHANT_SELECT = 11`: cursor through compatible unenchanted items; SPACE applies enchant and removes book from inventory
+
+## City quest (quest_city)
+- Triggered via `city_gate_guard` NPC in VH → dialogue → `city_warden` NPC in CT starts formal quest
+- Progress tracked in `state.player.questProgress['city_clears']`; counted in `endBattle` for city_shade / street_wraith / hollow_guard
+- Reward from `city_warden` after quest_city === 2, guarded by `city_reward` flag
+
+## Books system
+- 5 books in `BOOKS` registry (constants.ts): keepers_codex, childs_letter, forgotten_verse, cipher_note, merchants_ledger
+- Books are inventory items (category: 'book'); reading from INVENTORY opens BOOK_READ mode
+- Enchanted books (category: 'enchanted_book') open ENCHANT_SELECT from INVENTORY
+
+## Pre-existing TS errors (not game files)
+- `src/App.tsx` has 3 pre-existing errors (api-client-react build, implicit any) — these are not regressions

@@ -8,13 +8,16 @@ export enum GameMode {
   MENU,
   QUEST_LOG,
   GAME_OVER,
-  VICTORY
+  VICTORY,
+  BOOK_READ,    // 10 - reading a collected book
+  ENCHANT_SELECT // 11 - picking an item to enchant
 }
 
-export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
+export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
 
 export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key';
+export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'key' | 'book' | 'enchanted_book';
+export type ItemSubcategory = 'medical' | 'def' | 'utility';
 
 export interface Item {
   name: string;
@@ -22,9 +25,24 @@ export interface Item {
   price: number;
   tier: ItemTier;
   category: ItemCategory;
+  subcategory?: ItemSubcategory;
   atk?: number;
   def?: number;
   maxHp?: number;
+  bookId?: string; // references BOOKS registry
+  enchantData?: {
+    compatibleCategories: ('weapon' | 'armor')[];
+    atk?: number;
+    def?: number;
+    maxHp?: number;
+  };
+}
+
+export interface BookData {
+  title: string;
+  author?: string;
+  type: 'story' | 'note' | 'poem' | 'journal' | 'cipher';
+  pages: string[];
 }
 
 export interface DialogueNode {
@@ -98,8 +116,9 @@ export interface GameStateData {
     maxHp: number;
     echoes: number;
     inventory: string[];
+    enchantedSlots: (string | null)[]; // parallel to inventory; enchant-book-id or null
     equipment: { weapon: string | null; armor: string | null };
-    quests: Record<string, number>; // 0: inactive, 1: active, 2: complete (main quest uses more stages)
+    quests: Record<string, number>;
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
     invincibility: number;
@@ -127,4 +146,15 @@ export interface GameStateData {
   exitRequested: boolean;
   quitAfterSave: boolean;
   meta: { isGuest: boolean };
+  // Book reader state
+  bookRead: {
+    bookId: string | null;
+    page: number;
+    fromInventoryIndex: number;
+  };
+  // Enchant-select state
+  enchantSelect: {
+    enchantBookSlot: number; // inventory index of the enchanted_book being applied
+    cursorIndex: number;     // which compatible item is highlighted
+  };
 }
