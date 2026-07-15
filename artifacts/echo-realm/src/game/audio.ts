@@ -291,6 +291,13 @@ class AudioEngine {
   }
 
   // ── Music ──
+  // Per-track music gain multiplier applied on top of masterGain.
+  // Enforced every syncMusic call so it's always live — no dependency on
+  // track restarts or HMR behaviour.
+  private static readonly MUSIC_GAIN: Record<string, number> = {
+    title: 0.15,
+  };
+
   syncMusic(state: SyncState) {
     let key: string;
     if (state.mode === GameMode.TITLE) key = 'title';
@@ -298,6 +305,11 @@ class AudioEngine {
     else if (state.mode === GameMode.BATTLE && state.battle) key = BOSS_ENEMY_IDS.has(state.battle.enemy.id) ? 'battle_boss' : 'battle';
     else key = trackForMap(state.mapId);
     this.playTrack(key);
+    // Actively enforce per-track volume every frame so volume changes in code
+    // take effect immediately without needing a track restart or page reload.
+    if (this.musicGain) {
+      this.musicGain.gain.value = AudioEngine.MUSIC_GAIN[key] ?? 1.0;
+    }
   }
 
   private playTrack(key: string) {
