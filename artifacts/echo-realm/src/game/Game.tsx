@@ -7,6 +7,10 @@ import { audio, MODAL_MODES } from './audio';
 
 const CONFIRM_KEYS = [' ', 'z', 'Enter'];
 const CANCEL_KEYS = ['Escape', 'x', 'q'];
+// Arrow/WASD keys double as movement (silent) in OVERWORLD and as menu
+// navigation (audible) everywhere else, so the generic key-sfx below only
+// suppresses them while actually walking the map.
+const MOVEMENT_KEYS = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
 
 interface GameProps {
   initialState: GameStateData;
@@ -78,7 +82,10 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
       }
       if (!firedSfx) {
         for (const k in state.keys) {
-          if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('key'); break; }
+          if (!state.keys[k] || state.prevKeys[k]) continue;
+          if (state.mode === GameMode.OVERWORLD && MOVEMENT_KEYS.includes(k)) continue; // silent movement
+          audio.playSfx('key');
+          break;
         }
       }
 

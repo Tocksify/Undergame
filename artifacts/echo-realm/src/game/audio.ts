@@ -227,7 +227,7 @@ class AudioEngine {
       this.musicGain.connect(this.duckFilter);
 
       this.sfxGain = ctx.createGain();
-      this.sfxGain.gain.value = 0.95;
+      this.sfxGain.gain.value = 1.3;
       this.sfxGain.connect(this.masterGain);
     }
     return this.ctx;
@@ -305,10 +305,21 @@ class AudioEngine {
     this.currentKey = key;
     const ctx = this.ensureCtx();
     if (!ctx || !this.musicGain) return;
-    this.stopCurrentTrack(0.7);
     const def = TRACKS[key];
-    if (!def) return;
-    this.startTrack(def);
+    const wasPlaying = this.trackGain !== null;
+    if (!wasPlaying) {
+      // Nothing playing yet (e.g. first track) — start immediately.
+      if (def) this.startTrack(def);
+      return;
+    }
+    // A track is already playing: fade it out fully and only start the new
+    // one once it's silent, so at most one bgm track is ever audible at a
+    // time (no crossfade overlap).
+    const fadeSec = 0.35;
+    this.stopCurrentTrack(fadeSec);
+    window.setTimeout(() => {
+      if (this.currentKey === key && def) this.startTrack(def);
+    }, fadeSec * 1000 + 30);
   }
 
   private stopCurrentTrack(fadeSec: number) {
