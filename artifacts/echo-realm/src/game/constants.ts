@@ -361,7 +361,8 @@ export function recomputeMaxHp(state: GameStateData) {
   const armorSlot = armor ? state.player.inventory.indexOf(armor) : -1;
   const enchBookId = armorSlot >= 0 ? state.player.enchantedSlots[armorSlot] : null;
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.maxHp ? ITEMS[enchBookId].enchantData!.maxHp! : 0;
-  state.player.maxHp = BASE_MAX_HP + bonus + enchBonus;
+  const vitBonus = (state.player.baseStats?.vit ?? 0) * VIT_HP_PER_POINT;
+  state.player.maxHp = BASE_MAX_HP + bonus + enchBonus + vitBonus;
   state.player.hp = Math.min(state.player.hp, state.player.maxHp);
 }
 
@@ -371,7 +372,8 @@ export function getWeaponAtkBonus(state: GameStateData): number {
   const wSlot = w ? state.player.inventory.indexOf(w) : -1;
   const enchBookId = wSlot >= 0 ? state.player.enchantedSlots[wSlot] : null;
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.atk ? ITEMS[enchBookId].enchantData!.atk! : 0;
-  return base + enchBonus;
+  const strBonus = (state.player.baseStats?.str ?? 0) * STR_ATK_PER_POINT;
+  return base + enchBonus + strBonus;
 }
 
 export function getArmorDefBonus(state: GameStateData): number {
@@ -380,7 +382,37 @@ export function getArmorDefBonus(state: GameStateData): number {
   const aSlot = a ? state.player.inventory.indexOf(a) : -1;
   const enchBookId = aSlot >= 0 ? state.player.enchantedSlots[aSlot] : null;
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.def ? ITEMS[enchBookId].enchantData!.def! : 0;
-  return base + enchBonus;
+  const defBonus = (state.player.baseStats?.def ?? 0) * DEF_DEF_PER_POINT;
+  return base + enchBonus + defBonus;
+}
+
+// ── LEVELING & STAT ALLOCATION ────────────────────────────────────────
+// Each stat point spent via the STAT_ALLOCATION menu (M key) grants a
+// flat bonus layered on top of equipment/enchant bonuses.
+export const STR_ATK_PER_POINT = 1;
+export const VIT_HP_PER_POINT = 5;
+export const DEF_DEF_PER_POINT = 1;
+export const POINTS_PER_LEVEL = 2;
+export const STARTING_STAT_POINTS = 10;
+
+export function xpForLevel(level: number): number {
+  return 50 + (level - 1) * 30;
+}
+
+// Grants XP, applying every level-up it crosses (a single big reward can
+// chain multiple levels). Returns the number of levels gained, so callers
+// can surface a toast.
+export function grantXp(state: GameStateData, amount: number): number {
+  state.player.xp += amount;
+  let levelsGained = 0;
+  while (state.player.xp >= state.player.xpToNext) {
+    state.player.xp -= state.player.xpToNext;
+    state.player.level += 1;
+    state.player.statPoints += POINTS_PER_LEVEL;
+    state.player.xpToNext = xpForLevel(state.player.level);
+    levelsGained++;
+  }
+  return levelsGained;
 }
 
 // Stacks a set of short-lived toast notifications so simultaneous rewards
@@ -1501,7 +1533,12 @@ export const INITIAL_STATE: GameStateData = {
       'city_clears': 0,
     },
     flags: { 'discovered_VH': true },
-    invincibility: 0
+    invincibility: 0,
+    level: 1,
+    xp: 0,
+    xpToNext: xpForLevel(1),
+    statPoints: STARTING_STAT_POINTS,
+    baseStats: { str: 0, vit: 0, def: 0 },
   },
   camera: { x: 0, y: 0 },
   adjacentInteractable: null,
@@ -1522,4 +1559,5 @@ export const INITIAL_STATE: GameStateData = {
   tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
   teleportIndex: 0,
   questLogScroll: 0,
+  statAllocIndex: 0,
 };

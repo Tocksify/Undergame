@@ -1,5 +1,5 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS } from './constants';
+import { MAPS, ITEMS, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT } from './constants';
 import { QUESTS } from './quests';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
@@ -261,6 +261,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     renderTeleport(ctx, state); drawScanlines(ctx); return;
   }
 
+  // ── STAT ALLOCATION ───────────────────────────────────────────────
+  if (state.mode === GameMode.STAT_ALLOCATION) {
+    renderStatAllocation(ctx, state); drawScanlines(ctx); return;
+  }
+
   // ── OVERWORLD ──────────────────────────────────────────────────────
   const map = MAPS[state.mapId];
   const camX = Math.max(0, Math.min(state.player.x - W / 2 + TILE_SIZE / 2, map.width * TILE_SIZE - W));
@@ -376,6 +381,9 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.fillStyle = C.white;  ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, 14, 25);
   ctx.fillStyle = C.silver; ctx.fillText(`|`, 100, 25);
   ctx.fillStyle = C.light;  ctx.fillText(`${state.player.echoes} ECHOES`, 114, 25);
+  ctx.fillStyle = C.silver; ctx.fillText(`|`, 218, 25);
+  ctx.fillStyle = C.light;  ctx.fillText(`LV.${state.player.level}`, 230, 25);
+
   ctx.fillStyle = C.gray;   ctx.textAlign = 'right';
   ctx.fillText(map.name.toUpperCase(), W - 14, 25);
 
@@ -384,8 +392,18 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.fillStyle = hpPct > 0.5 ? C.silver : hpPct > 0.25 ? C.gray : '#666666';
   ctx.fillRect(14, 28, Math.floor(80 * hpPct), 6);
 
+  // Pulsing badge — draws the eye to unspent stat points so players discover [M].
+  if (state.player.statPoints > 0) {
+    const pulse = 0.7 + 0.3 * Math.sin(state.frameCount * 0.12);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ffcc44'; ctx.textAlign = 'left'; ctx.font = 'bold 12px monospace';
+    ctx.fillText(`+${state.player.statPoints} STAT PTS [M]`, 285, 25);
+    ctx.restore();
+  }
+
   ctx.textAlign = 'center'; ctx.font = '11px monospace'; ctx.fillStyle = C.dim;
-  ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  ESC Menu', W / 2, H - 6);
+  ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  M Stats  |  ESC Menu', W / 2, H - 6);
 
   if (state.uiMessage) {
     const tw = ctx.measureText(state.uiMessage).width + 40;
@@ -1179,6 +1197,50 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   ctx.fillStyle = '#333355'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
   ctx.fillText('[↑↓] select  |  [SPACE] travel  |  [X] cancel', W / 2, 100 + boxH - 20);
+}
+
+// ── STAT ALLOCATION (M key) ──────────────────────────────────────────
+function renderStatAllocation(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.88)'; ctx.fillRect(0, 0, W, H);
+  const boxW = 380, boxH = 300;
+  const bx = (W - boxW) / 2, by = (H - boxH) / 2;
+  pixelBox(ctx, bx, by, boxW, boxH, '#0a0a12', '#88cc99', 3);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#aaffcc'; ctx.font = 'bold 16px monospace';
+  ctx.fillText('SPEND STAT POINTS', W / 2, by + 32);
+  ctx.fillStyle = '#556655'; ctx.font = '11px monospace';
+  ctx.fillText(`Level ${state.player.level}  —  XP ${state.player.xp}/${state.player.xpToNext}`, W / 2, by + 50);
+  ctx.strokeStyle = '#334433'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bx + 20, by + 62); ctx.lineTo(bx + boxW - 20, by + 62); ctx.stroke();
+
+  ctx.fillStyle = '#ffcc44'; ctx.font = 'bold 14px monospace';
+  ctx.fillText(`${state.player.statPoints} points available`, W / 2, by + 86);
+
+  const rows: { key: 'str' | 'vit' | 'def'; label: string; effect: string }[] = [
+    { key: 'str', label: 'STR', effect: `+${STR_ATK_PER_POINT} ATK / point` },
+    { key: 'vit', label: 'VIT', effect: `+${VIT_HP_PER_POINT} Max HP / point` },
+    { key: 'def', label: 'DEF', effect: `+${DEF_DEF_PER_POINT} DEF / point` },
+  ];
+
+  ctx.textAlign = 'left';
+  rows.forEach((row, i) => {
+    const sel = state.statAllocIndex === i;
+    const ry = by + 118 + i * 46;
+    if (sel) {
+      ctx.fillStyle = '#132213'; ctx.fillRect(bx + 20, ry - 22, boxW - 40, 38);
+      ctx.strokeStyle = '#88cc99'; ctx.lineWidth = 1; ctx.strokeRect(bx + 20, ry - 22, boxW - 40, 38);
+    }
+    ctx.font = sel ? 'bold 15px monospace' : '15px monospace';
+    ctx.fillStyle = sel ? '#eeffee' : '#889988';
+    ctx.fillText((sel ? '▶ ' : '  ') + `${row.label}  ${state.player.baseStats[row.key]}`, bx + 34, ry);
+    ctx.font = '11px monospace';
+    ctx.fillStyle = sel ? '#88cc99' : '#556655';
+    ctx.fillText(row.effect, bx + 34, ry + 16);
+  });
+
+  ctx.fillStyle = '#556655'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
+  ctx.fillText('[↑↓] select  |  [SPACE] allocate point  |  [M]/[ESC] close', W / 2, by + boxH - 18);
 }
 
 function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {

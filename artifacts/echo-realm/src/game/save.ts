@@ -1,5 +1,5 @@
 import { EnemyData, GameStateData } from './types';
-import { INITIAL_STATE, MAPS } from './constants';
+import { INITIAL_STATE, MAPS, recomputeMaxHp, xpForLevel, STARTING_STAT_POINTS } from './constants';
 
 // The shape persisted to the save-slot JSON blob. Deliberately excludes
 // purely visual/transient fields (dialogue, camera, keys, projectiles,
@@ -24,6 +24,11 @@ export interface SavedGameState {
     quests: Record<string, number>;
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
+    level?: number;
+    xp?: number;
+    xpToNext?: number;
+    statPoints?: number;
+    baseStats?: { str: number; vit: number; def: number };
   };
   battle?: {
     enemy: EnemyData;
@@ -49,6 +54,11 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       quests: { ...state.player.quests },
       questProgress: { ...state.player.questProgress },
       flags: { ...state.player.flags },
+      level: state.player.level,
+      xp: state.player.xp,
+      xpToNext: state.player.xpToNext,
+      statPoints: state.player.statPoints,
+      baseStats: { ...state.player.baseStats },
     },
     battle: state.battle ? {
       enemy: JSON.parse(JSON.stringify(state.battle.enemy)),
@@ -86,6 +96,14 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.quests = { ...state.player.quests, ...saved.player.quests };
     state.player.questProgress = { ...state.player.questProgress, ...saved.player.questProgress };
     state.player.flags = { ...saved.player.flags };
+    // Backward-compat: saves from before the leveling system existed get the
+    // same 10-point starting grant a new character would have received.
+    state.player.level = saved.player.level ?? 1;
+    state.player.xp = saved.player.xp ?? 0;
+    state.player.xpToNext = saved.player.xpToNext ?? xpForLevel(state.player.level);
+    state.player.statPoints = saved.player.statPoints ?? STARTING_STAT_POINTS;
+    state.player.baseStats = saved.player.baseStats ? { ...saved.player.baseStats } : { str: 0, vit: 0, def: 0 };
+    recomputeMaxHp(state);
     // Title screen stays in GameMode.TITLE either way (see constants.ts) —
     // engine.ts reads state.battle to decide whether pressing Space/Enter
     // drops the player back into this battle instead of the overworld.

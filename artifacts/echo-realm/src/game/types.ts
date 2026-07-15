@@ -12,7 +12,8 @@ export enum GameMode {
   BOOK_READ,    // 10 - reading a collected book
   ENCHANT_SELECT, // 11 - picking an item to enchant
   TOME_CRAFT,   // 12 - Tomes Blessing: choosing an enchantment to create from an empty book
-  TELEPORT      // 13 - N key: memory transit map selection
+  TELEPORT,     // 13 - N key: memory transit map selection
+  STAT_ALLOCATION // 14 - M key: spend earned stat points into STR/VIT/DEF
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST';
@@ -124,6 +125,11 @@ export interface GameStateData {
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
     invincibility: number;
+    level: number;
+    xp: number;
+    xpToNext: number;
+    statPoints: number; // unspent points, earned on level-up (+ a 10-point starting grant)
+    baseStats: { str: number; vit: number; def: number }; // player-assigned, on top of equipment/enchants
   };
   camera: { x: number; y: number };
   adjacentInteractable: any;
@@ -169,4 +175,5 @@ export interface GameStateData {
   };
   teleportIndex: number; // selected row in the TELEPORT menu
   questLogScroll: number; // top index of the visible window in the QUEST_LOG list
+  statAllocIndex: number; // selected stat row (STR/VIT/DEF) in the STAT_ALLOCATION menu
 }

@@ -1,6 +1,6 @@
 import { GameStateData, GameMode, EnemyData, BattleState } from './types';
 import { justPressed, addInventoryItem } from './engine';
-import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, CITY_SIDE_QUESTS, pushMessages } from './constants';
+import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, CITY_SIDE_QUESTS, pushMessages, grantXp } from './constants';
 
 // Checks whether resonance has reached the threshold to "remember" the enemy.
 function tryCompleteRemember(state: GameStateData): boolean {
@@ -204,6 +204,12 @@ function endBattle(state: GameStateData) {
     const e = b.endType === 'REMEMBERED' ? Math.floor(b.enemy.echoes * 1.5) : b.enemy.echoes;
     state.player.echoes += e;
     state.player.flags['defeated_' + b.enemy.id] = true;
+
+    // XP mirrors the Echoes reward — remembering an enemy (vs. just defeating it) pays out more of both.
+    const levelsGained = grantXp(state, e);
+    if (levelsGained > 0) {
+      pushMessages(state, [`Level Up! You are now level ${state.player.level}.`, `+${levelsGained * 2} stat points — press [M] to spend them`]);
+    }
 
     if (state.player.quests['quest_main'] === 1 && Math.random() < 0.35) {
       state.player.questProgress['shards'] = (state.player.questProgress['shards'] || 0) + 1;

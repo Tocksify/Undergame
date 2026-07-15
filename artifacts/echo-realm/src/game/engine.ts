@@ -400,11 +400,27 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── STAT ALLOCATION (M key) ────────────────────────────────────────
+  if (state.mode === GameMode.STAT_ALLOCATION) {
+    const rows: ('str' | 'vit' | 'def')[] = ['str', 'vit', 'def'];
+    if (justPressed(state, 'Escape') || justPressed(state, 'm') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.statAllocIndex = Math.max(0, state.statAllocIndex - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.statAllocIndex = Math.min(rows.length - 1, state.statAllocIndex + 1);
+    if ((justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter') || justPressed(state, 'ArrowRight')) && state.player.statPoints > 0) {
+      const stat = rows[state.statAllocIndex];
+      state.player.baseStats[stat] += 1;
+      state.player.statPoints -= 1;
+      recomputeMaxHp(state);
+    }
+    return;
+  }
+
   // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; return; }
   if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; return; }
   if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
+  if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
 
   const map = MAPS[state.mapId];
 
