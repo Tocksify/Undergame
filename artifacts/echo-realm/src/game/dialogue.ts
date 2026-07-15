@@ -29,7 +29,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
           action: (s) => {
             s.player.quests['quest_main'] = 2;
             s.player.echoes += 100;
-            if (s.player.inventory.length <= 10) {
+            if (true) {
               s.player.inventory.push('tonic'); s.player.enchantedSlots.push(null);
               s.player.inventory.push('tonic'); s.player.enchantedSlots.push(null);
             }
@@ -88,7 +88,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
           speaker: 'A Hollow', color: '#eeeeee',
           action: (s) => {
             s.player.flags['hollow_reward'] = true;
-            if (s.player.inventory.length < 12) { s.player.inventory.push('ward'); s.player.enchantedSlots.push(null); }
+            s.player.inventory.push('ward'); s.player.enchantedSlots.push(null);
             s.uiMessage = "Quest: The Hollow Heart  COMPLETE! Received Void Ward."; s.uiMessageTimer = 180;
           }
         };
@@ -139,7 +139,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_archive'] = 2;
           s.player.echoes += 80;
-          if (s.player.inventory.length < 12) { s.player.inventory.push('archivist_ward'); s.player.enchantedSlots.push(null); }
+          s.player.inventory.push('archivist_ward'); s.player.enchantedSlots.push(null);
           s.uiMessage = "Quest Complete: The Waterlogged Ledger! +80 Echoes +Archivist's Ward"; s.uiMessageTimer = 180;
         }
       };
@@ -193,7 +193,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_frost'] = 2;
           s.player.echoes += 60;
-          if (s.player.inventory.length < 12) { s.player.inventory.push('frost_fang'); s.player.enchantedSlots.push(null); }
+          s.player.inventory.push('frost_fang'); s.player.enchantedSlots.push(null);
           s.uiMessage = "Quest Complete: Thaw the Watcher! +60 Echoes +Frost Fang"; s.uiMessageTimer = 180;
         }
       };
@@ -232,7 +232,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         action: (s) => {
           s.player.quests['quest_ash'] = 2;
           s.player.echoes += 100;
-          if (s.player.inventory.length < 12) { s.player.inventory.push('cinder_blade'); s.player.enchantedSlots.push(null); }
+          s.player.inventory.push('cinder_blade'); s.player.enchantedSlots.push(null);
           s.uiMessage = "Quest Complete: Embers of the Forgotten! +100 Echoes +Cinder Blade"; s.uiMessageTimer = 180;
         }
       };
@@ -267,7 +267,7 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
           action: (s) => {
             s.player.flags['city_reward'] = true;
             s.player.echoes += 150;
-            if (s.player.inventory.length < 12) { s.player.inventory.push('phoenix_ash'); s.player.enchantedSlots.push(null); }
+            s.player.inventory.push('phoenix_ash'); s.player.enchantedSlots.push(null);
             s.uiMessage = "Quest: Reclaim Crestfall COMPLETE! +150 Echoes +Phoenix Ash"; s.uiMessageTimer = 200;
           }
         };

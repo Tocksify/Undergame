@@ -267,7 +267,7 @@ export function updateGame(state: GameStateData) {
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const item = ITEMS[shopItems[state.shopIndex]];
-      if (state.player.inventory.length >= 12) { state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60; }
+      if (false) { state.uiMessage = "Inventory full!"; state.uiMessageTimer = 60; }
       else if (state.player.echoes >= item.price) {
         state.player.echoes -= item.price;
         addInventoryItem(state, shopItems[state.shopIndex]);
@@ -408,12 +408,8 @@ export function updateGame(state: GameStateData) {
         state.player.echoes += amt;
         state.uiMessage = `Found ${amt} Echoes!`; state.uiMessageTimer = 120;
       } else {
-        if (state.player.inventory.length < 12) {
-          addInventoryItem(state, intFound.chest.item);
-          state.uiMessage = `Found: ${ITEMS[intFound.chest.item]?.name ?? intFound.chest.item}!`; state.uiMessageTimer = 120;
-        } else {
-          state.uiMessage = "Inventory full — couldn't pick up item!"; state.uiMessageTimer = 120;
-        }
+        addInventoryItem(state, intFound.chest.item);
+        state.uiMessage = `Found: ${ITEMS[intFound.chest.item]?.name ?? intFound.chest.item}!`; state.uiMessageTimer = 120;
       }
     }
   }

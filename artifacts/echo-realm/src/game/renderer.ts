@@ -887,7 +887,7 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
   }
 
   ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '11px monospace';
-  ctx.fillText(`${state.player.inventory.length}/12 slots`, W / 2, H - 84);
+  ctx.fillText(`${state.player.inventory.length} items`, W / 2, H - 84);
 }
 
 // ── QUESTS ─────────────────────────────────────────────────────────
