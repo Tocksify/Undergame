@@ -34,35 +34,55 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
     };
   };
 
-  const dpadBtn = "flex items-center justify-center select-none touch-none active:bg-[#a855f7]/40 bg-[#1a0f2e] border-2 border-[#3a205e] text-[#c084fc] text-xl font-bold rounded";
-  const actionBtn = "flex items-center justify-center select-none touch-none active:bg-[#a855f7]/40 bg-[#1a0f2e] border-2 border-[#a855f7] text-[#e9d5ff] font-bold rounded-full shadow-[0_0_10px_rgba(168,85,247,0.4)]";
+  // ── Shared button styles (noir: black bg, white border/text) ──────
+  const dpad = [
+    'flex items-center justify-center select-none touch-none rounded',
+    'bg-black border border-[#3a3a3a] text-white text-lg font-bold',
+    'active:bg-white active:text-black transition-colors',
+  ].join(' ');
+
+  const util = [
+    'flex items-center justify-center select-none touch-none rounded',
+    'bg-black border border-[#2e2e2e] text-[#999] text-[10px] tracking-widest',
+    'active:bg-white active:text-black transition-colors',
+  ].join(' ');
+
+  const action = [
+    'flex items-center justify-center select-none touch-none rounded-full',
+    'bg-black border-2 border-[#555] text-white font-bold shadow-[0_0_8px_rgba(255,255,255,0.08)]',
+    'active:bg-white active:text-black transition-colors',
+  ].join(' ');
 
   return (
-    <div className="w-full max-w-[768px] mt-3 flex items-center justify-between px-2 select-none" style={{ touchAction: 'none' }}>
+    <div
+      className="w-full max-w-[768px] mt-3 flex items-center justify-between px-2 select-none"
+      style={{ touchAction: 'none' }}
+    >
       {/* D-pad */}
       <div className="grid grid-cols-3 grid-rows-3 gap-1 w-36 h-36">
         <div />
-        <button aria-label="Up" className={dpadBtn} {...bind('ArrowUp')}>▲</button>
+        <button aria-label="Up"    className={dpad} {...bind('ArrowUp')}>▲</button>
         <div />
-        <button aria-label="Left" className={dpadBtn} {...bind('ArrowLeft')}>◀</button>
+        <button aria-label="Left"  className={dpad} {...bind('ArrowLeft')}>◀</button>
         <div />
-        <button aria-label="Right" className={dpadBtn} {...bind('ArrowRight')}>▶</button>
+        <button aria-label="Right" className={dpad} {...bind('ArrowRight')}>▶</button>
         <div />
-        <button aria-label="Down" className={dpadBtn} {...bind('ArrowDown')}>▼</button>
+        <button aria-label="Down"  className={dpad} {...bind('ArrowDown')}>▼</button>
         <div />
       </div>
 
-      {/* Menu / inventory / quest log */}
+      {/* Utility buttons — menu / inventory / quest / stats */}
       <div className="flex flex-col gap-2 items-center">
-        <button aria-label="Menu" className={`${dpadBtn} w-14 h-9 text-xs`} {...bind('Escape')}>MENU</button>
-        <button aria-label="Inventory" className={`${dpadBtn} w-14 h-9 text-xs`} {...bind('i')}>ITEM</button>
-        <button aria-label="Quest Log" className={`${dpadBtn} w-14 h-9 text-xs`} {...bind('q')}>QUEST</button>
+        <button aria-label="Menu"      className={`${util} w-14 h-9`} {...bind('Escape')}>MENU</button>
+        <button aria-label="Inventory" className={`${util} w-14 h-9`} {...bind('i')}>ITEM</button>
+        <button aria-label="Quest Log" className={`${util} w-14 h-9`} {...bind('q')}>QUEST</button>
+        <button aria-label="Stats"     className={`${util} w-14 h-9`} {...bind('m')}>STATS</button>
       </div>
 
       {/* Action buttons */}
       <div className="grid grid-cols-2 gap-3 w-28">
-        <button aria-label="Cancel" className={`${actionBtn} w-14 h-14 col-start-1`} {...bind('x')}>B</button>
-        <button aria-label="Confirm" className={`${actionBtn} w-14 h-14 col-start-2 -mt-6`} {...bind([' ', 'z', 'Enter'])}>A</button>
+        <button aria-label="Cancel"  className={`${action} w-14 h-14 col-start-1`}      {...bind('x')}>B</button>
+        <button aria-label="Confirm" className={`${action} w-14 h-14 col-start-2 -mt-6`} {...bind([' ', 'z', 'Enter'])}>A</button>
       </div>
     </div>
   );
