@@ -1010,6 +1010,7 @@ function buildArenaBoss(): string[][] {
   rect(L, 2, 2, 13, 9, 'P');
   for (const [cx, cyy] of [[3, 3], [12, 3], [3, 8], [12, 8]]) poke(L, cx, cyy, 'M');
   poke(L, 7, 10, 'ST'); poke(L, 8, 10, 'ST');
+  poke(L, 7, 2, '<'); // exit back down to Ashfall Manor's ground floor — this room had no exit tile at all
   return L;
 }
 

@@ -17,7 +17,17 @@ import {
 import Game from './game/Game';
 import { GameStateData } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState, SavedGameState } from './game/save';
+import { audio } from './game/audio';
 import './index.css';
+
+// Attaches hover + click sound effects to any clickable element without
+// changing its existing handlers — spread this onto a <button>.
+function sfxProps(onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void) {
+  return {
+    onMouseEnter: () => audio.playSfx('hover'),
+    onClick: (e: React.MouseEvent<HTMLButtonElement>) => { audio.playSfx('click'); onClick?.(e); },
+  };
+}
 
 const TOKEN_KEY = 'echo-realm-token';
 const queryClient = new QueryClient();
@@ -155,20 +165,22 @@ function AppInner() {
             <button
               type="submit" disabled={loginMutation.isPending || registerMutation.isPending}
               className="w-full bg-purple-700 hover:bg-purple-600 rounded py-2 text-sm font-bold tracking-wide disabled:opacity-50"
+              onMouseEnter={() => audio.playSfx('hover')}
+              onClick={() => audio.playSfx('click')}
             >
               {authMode === 'login' ? 'Log In' : 'Create Account'}
             </button>
           </form>
           <button
             className="w-full mt-3 text-xs text-purple-400 hover:text-purple-200 underline"
-            onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(null); }}
+            {...sfxProps(() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setAuthError(null); })}
           >
             {authMode === 'login' ? "Need an account? Register" : 'Have an account? Log in'}
           </button>
           <div className="border-t border-[#3a205e] my-4" />
           <button
             className="w-full text-xs text-purple-500 hover:text-purple-300"
-            onClick={playAsGuest}
+            {...sfxProps(playAsGuest)}
           >
             Play as Guest (progress won't be saved)
           </button>
@@ -183,7 +195,7 @@ function AppInner() {
         <div className="w-full max-w-md bg-[#180a28] border-2 border-[#3a205e] rounded-lg p-8 font-mono text-purple-100">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-lg tracking-widest text-purple-200">SELECT SAVE SLOT</h1>
-            <button onClick={logout} className="text-xs text-purple-500 hover:text-purple-300">Log out ({account?.username})</button>
+            <button className="text-xs text-purple-500 hover:text-purple-300" {...sfxProps(logout)}>Log out ({account?.username})</button>
           </div>
           <div className="space-y-3">
             {[1, 2, 3].map(slot => {
@@ -196,15 +208,15 @@ function AppInner() {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => startSlot(slot, saved)}
                       className="bg-purple-700 hover:bg-purple-600 rounded px-3 py-1 text-xs font-bold"
+                      {...sfxProps(() => startSlot(slot, saved))}
                     >
                       {saved ? 'Continue' : 'New Game'}
                     </button>
                     {saved && (
                       <button
-                        onClick={() => deleteSlot(slot)}
                         className="border border-red-800 text-red-400 hover:bg-red-950 rounded px-2 py-1 text-xs"
+                        {...sfxProps(() => deleteSlot(slot))}
                       >
                         Delete
                       </button>

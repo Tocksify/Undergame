@@ -3,6 +3,7 @@ import { GameStateData } from './types';
 import { updateGame } from './engine';
 import { renderGame } from './renderer';
 import TouchControls from './TouchControls';
+import { audio } from './audio';
 
 interface GameProps {
   initialState: GameStateData;
@@ -44,6 +45,16 @@ export default function Game({ initialState, onSave, onExit }: GameProps) {
     const loop = () => {
       const state = stateRef.current;
       updateGame(state);
+
+      // Background/battle/ambient music, kept in sync with mode + map each frame
+      // (playTrack() no-ops internally if the desired track hasn't changed).
+      audio.syncMusic(state);
+
+      // Discrete "key pressed" UI sound — fires once per rising edge, not per
+      // held-key repeat, using the same keys/prevKeys pair engine.ts relies on.
+      for (const k in state.keys) {
+        if (state.keys[k] && !state.prevKeys[k]) { audio.playSfx('key'); break; }
+      }
 
       if (state.saveRequested && !savingRef.current) {
         savingRef.current = true;

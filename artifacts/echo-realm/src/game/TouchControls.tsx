@@ -1,5 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { GameStateData } from './types';
+import { audio } from './audio';
 
 interface TouchControlsProps {
   stateRef: React.MutableRefObject<GameStateData>;
@@ -24,8 +25,9 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
   const bind = (key: string | string[]) => {
     const keys = Array.isArray(key) ? key : [key];
     return {
-      onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, true); },
+      onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); audio.playSfx('click'); setKeys(keys, true); },
       onPointerUp: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
+      onPointerEnter: (e: React.PointerEvent) => { if (e.pointerType === 'mouse') audio.playSfx('hover'); },
       onPointerLeave: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
       onPointerCancel: (e: React.PointerEvent) => { e.preventDefault(); setKeys(keys, false); },
       onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
