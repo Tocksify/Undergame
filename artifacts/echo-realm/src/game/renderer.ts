@@ -1229,10 +1229,6 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
         ctx.fillText(`✦ ENCHANTED [Z] — ${enchItem?.enchantData?.atk ? `+${enchItem.enchantData.atk} ATK` : ''}${enchItem?.enchantData?.def ? `+${enchItem.enchantData.def} DEF` : ''}${enchItem?.enchantData?.maxHp ? `+${enchItem.enchantData.maxHp} HP` : ''}`, W / 2, divY + 16);
       }
 
-      // Description (wrapped)
-      ctx.fillStyle = C.silver; ctx.font = '12px monospace'; ctx.textAlign = 'center';
-      drawWrappedText(ctx, cur.desc, 166, divY + (curEnch ? 32 : 16), W - 300 - 160, 18);
-
       // Action hint
       let actionLabel = '[X] close';
       if (cur.category === 'weapon' || cur.category === 'armor') {
@@ -1308,13 +1304,13 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
     // Description (wrapped)
     ctx.strokeStyle = '#222222'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(px + 6, nameY - 2); ctx.lineTo(px + pw - 6, nameY - 2); ctx.stroke();
-    ctx.font = '9px monospace'; ctx.fillStyle = C.silver; ctx.textAlign = 'left';
+    ctx.font = '12px monospace'; ctx.fillStyle = C.silver; ctx.textAlign = 'left';
     const descWords = hoveredItem.desc.split(' ');
-    let descLine = ''; let descY = nameY + 12;
+    let descLine = ''; let descY = nameY + 14;
     for (const dw of descWords) {
       const test = descLine ? descLine + ' ' + dw : dw;
       if (ctx.measureText(test).width > pw - 10 && descLine) {
-        ctx.fillText(descLine, px + 7, descY); descY += 12; descLine = dw;
+        ctx.fillText(descLine, px + 7, descY); descY += 14; descLine = dw;
       } else { descLine = test; }
     }
     if (descLine) ctx.fillText(descLine, px + 7, descY);
