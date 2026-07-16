@@ -28,8 +28,9 @@ function App() {
     if (screen === 'game') { menuAudioRef.current?.pause(); return; }
     if (!menuAudioRef.current) {
       const el = new Audio('/MainMenu.mp3');
-      el.loop = true; el.volume = 0.55;
+      el.loop = true;
       menuAudioRef.current = el;
+      audio.setMenuAudioElement(el); // hands volume control to the audio engine
     }
     menuAudioRef.current.play().catch(() => {});
   }, [screen]);

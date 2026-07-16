@@ -204,6 +204,7 @@ class AudioEngine {
   private userMusicVol = 0.75;
   private userSfxVol  = 0.75;
   private previewKey: string | null = null;
+  private menuAudioEl: HTMLAudioElement | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -252,11 +253,19 @@ class AudioEngine {
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
   }
 
+  /** Register the menu MP3 element so its volume is controlled by the music slider. */
+  setMenuAudioElement(el: HTMLAudioElement | null) {
+    this.menuAudioEl = el;
+    if (el) el.volume = this.userMusicVol;
+  }
+
   /** Set music volume 0–100; persisted to localStorage. */
   setMusicVolume(pct: number) {
     this.userMusicVol = Math.max(0, Math.min(100, pct)) / 100;
     localStorage.setItem('er_music_vol', String(pct));
-    // musicGain is actively corrected every syncMusic frame — no need to set it here.
+    // Also update the MP3 element immediately.
+    if (this.menuAudioEl) this.menuAudioEl.volume = this.userMusicVol;
+    // musicGain for the synthesised tracks is corrected every syncMusic frame.
   }
 
   /** Set SFX volume 0–100; persisted to localStorage. */
