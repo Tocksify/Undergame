@@ -6177,6 +6177,7 @@ snapshots:
       extract-zip: 2.0.1
     transitivePeerDependencies:
       - supports-color
+    requiresBuild: true
 
   embla-carousel-react@8.6.0(react@19.1.0):
     dependencies:
@@ -6246,6 +6247,7 @@ snapshots:
     optionalDependencies:
       '@esbuild/linux-x64': 0.27.3
       '@esbuild/win32-x64': 0.27.3
+    requiresBuild: true
 
   escalade@3.2.0: {}
 
