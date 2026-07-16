@@ -861,8 +861,9 @@ function renderEnchantSelect(ctx: CanvasRenderingContext2D, state: GameStateData
 
 // ── DIALOGUE ───────────────────────────────────────────────────────
 function renderDialogue(ctx: CanvasRenderingContext2D, state: GameStateData) {
-  const BY = H - 168;
-  pixelBox(ctx, 12, BY, W - 24, 154, '#030303', C.white, 3);
+  const BOX_H = 210;
+  const BY = H - BOX_H - 14;
+  pixelBox(ctx, 12, BY, W - 24, BOX_H, '#030303', C.white, 3);
 
   const node = state.dialogue.currentNode!;
   if (node.color) {
@@ -877,9 +878,10 @@ function renderDialogue(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.beginPath(); ctx.moveTo(94, BY + 38); ctx.lineTo(W - 28, BY + 38); ctx.stroke();
   ctx.font = '14px monospace'; ctx.fillStyle = C.light;
   const visible = node.text.substring(0, state.dialogue.charIndex);
-  drawWrappedText(ctx, visible, 94, BY + 58, W - 130, 22);
+  const textEndY = drawWrappedText(ctx, visible, 94, BY + 58, W - 130, 22);
   if (state.dialogue.charIndex >= node.text.length && node.options) {
-    const optY = BY + 106;
+    // Place options at least 12px below where the text ended, never overlapping
+    const optY = Math.max(textEndY + 12, BY + 112);
     for (let i = 0; i < node.options.length; i++) {
       const sel = state.dialogue.selectedOption === i;
       ctx.fillStyle = sel ? C.white : C.gray;
@@ -890,7 +892,7 @@ function renderDialogue(ctx: CanvasRenderingContext2D, state: GameStateData) {
   if (state.dialogue.charIndex >= node.text.length && (!node.options || node.options.length === 0)) {
     if (Math.floor(state.frameCount / 20) % 2 === 0) {
       ctx.fillStyle = C.gray; ctx.font = '11px monospace'; ctx.textAlign = 'right';
-      ctx.fillText('[SPACE]', W - 28, BY + 140);
+      ctx.fillText('[SPACE]', W - 28, BY + BOX_H - 12);
     }
   }
 }
@@ -1124,7 +1126,10 @@ function renderShop(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
     ctx.fillStyle = sel ? C.silver : C.dim; ctx.font = '13px monospace';
     ctx.fillText(`${item.price} Echoes`, 94, iy + 24);
-    if (sel) { ctx.fillStyle = C.light; ctx.fillText(item.desc, 250, iy + 8); }
+    if (sel) {
+      ctx.fillStyle = C.light; ctx.font = '13px monospace'; ctx.textAlign = 'left';
+      drawWrappedText(ctx, item.desc, 250, iy + 8, W - 90 - 250, 17);
+    }
   });
   ctx.restore();
 
@@ -1224,9 +1229,9 @@ function renderInventory(ctx: CanvasRenderingContext2D, state: GameStateData) {
         ctx.fillText(`✦ ENCHANTED [Z] — ${enchItem?.enchantData?.atk ? `+${enchItem.enchantData.atk} ATK` : ''}${enchItem?.enchantData?.def ? `+${enchItem.enchantData.def} DEF` : ''}${enchItem?.enchantData?.maxHp ? `+${enchItem.enchantData.maxHp} HP` : ''}`, W / 2, divY + 16);
       }
 
-      // Description
+      // Description (wrapped)
       ctx.fillStyle = C.silver; ctx.font = '12px monospace'; ctx.textAlign = 'center';
-      ctx.fillText(cur.desc, W / 2, divY + (curEnch ? 32 : 16));
+      drawWrappedText(ctx, cur.desc, 166, divY + (curEnch ? 32 : 16), W - 300 - 160, 18);
 
       // Action hint
       let actionLabel = '[X] close';
