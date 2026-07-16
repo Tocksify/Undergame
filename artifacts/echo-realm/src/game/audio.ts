@@ -201,6 +201,19 @@ class AudioEngine {
   private stepIndex = 0;
   private nextStepTime = 0;
 
+  private userMusicVol = 0.75;
+  private userSfxVol  = 0.75;
+  private previewKey: string | null = null;
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const mv = localStorage.getItem('er_music_vol');
+      if (mv !== null) this.userMusicVol = Math.max(0, Math.min(100, Number(mv))) / 100;
+      const sv = localStorage.getItem('er_sfx_vol');
+      if (sv !== null) this.userSfxVol  = Math.max(0, Math.min(100, Number(sv))) / 100;
+    }
+  }
+
   private ensureCtx(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     const AC: typeof AudioContext | undefined = (window as any).AudioContext || (window as any).webkitAudioContext;
@@ -227,7 +240,7 @@ class AudioEngine {
       this.musicGain.connect(this.duckFilter);
 
       this.sfxGain = ctx.createGain();
-      this.sfxGain.gain.value = 1.3;
+      this.sfxGain.gain.value = 1.3 * this.userSfxVol;
       this.sfxGain.connect(this.masterGain);
     }
     return this.ctx;
@@ -237,6 +250,29 @@ class AudioEngine {
   unlock() {
     const ctx = this.ensureCtx();
     if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  }
+
+  /** Set music volume 0–100; persisted to localStorage. */
+  setMusicVolume(pct: number) {
+    this.userMusicVol = Math.max(0, Math.min(100, pct)) / 100;
+    localStorage.setItem('er_music_vol', String(pct));
+    // musicGain is actively corrected every syncMusic frame — no need to set it here.
+  }
+
+  /** Set SFX volume 0–100; persisted to localStorage. */
+  setSfxVolume(pct: number) {
+    this.userSfxVol = Math.max(0, Math.min(100, pct)) / 100;
+    localStorage.setItem('er_sfx_vol', String(pct));
+    if (this.sfxGain) this.sfxGain.gain.value = 1.3 * this.userSfxVol;
+  }
+
+  /** Sound-test: force a track by key regardless of game state. Pass null to resume normal sync. */
+  setPreviewTrack(key: string | null) {
+    this.previewKey = key;
+    if (key !== null) {
+      this.currentKey = null; // force restart so playTrack doesn't short-circuit
+      this.playTrack(key);
+    }
   }
 
   /** Muffle + quiet the music (e.g. inventory/menu/shop/dialogue open) so UI SFX stay audible. */
@@ -299,17 +335,21 @@ class AudioEngine {
   };
 
   syncMusic(state: SyncState) {
+    if (this.previewKey !== null) {
+      // Preview / sound-test mode: hold the preview track; just keep its volume live.
+      if (this.musicGain)
+        this.musicGain.gain.value = (AudioEngine.MUSIC_GAIN[this.previewKey] ?? 1.0) * this.userMusicVol;
+      return;
+    }
     let key: string;
     if (state.mode === GameMode.TITLE) key = 'title';
     else if (state.mode === GameMode.TRUE_ENDING) key = 'true_ending';
     else if (state.mode === GameMode.BATTLE && state.battle) key = BOSS_ENEMY_IDS.has(state.battle.enemy.id) ? 'battle_boss' : 'battle';
     else key = trackForMap(state.mapId);
     this.playTrack(key);
-    // Actively enforce per-track volume every frame so volume changes in code
-    // take effect immediately without needing a track restart or page reload.
-    if (this.musicGain) {
-      this.musicGain.gain.value = AudioEngine.MUSIC_GAIN[key] ?? 1.0;
-    }
+    // Actively enforce per-track volume multiplied by user's chosen level every frame.
+    if (this.musicGain)
+      this.musicGain.gain.value = (AudioEngine.MUSIC_GAIN[key] ?? 1.0) * this.userMusicVol;
   }
 
   private playTrack(key: string) {
