@@ -1408,9 +1408,9 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
 function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
   const available = TELEPORT_POINTS.filter(p => state.player.flags['discovered_' + p.id]);
   const rowH = 40;
-  const listTop = 182;
+  const listTop = 196; // enough room above first item for the 20px selection highlight
   const maxVisible = 7; // caps the box so it always fits on screen, even with every location discovered
-  const boxH = Math.min(H - 140, Math.max(240, 80 + Math.min(available.length, maxVisible) * rowH + 60));
+  const boxH = Math.min(H - 140, Math.max(260, 96 + Math.min(available.length, maxVisible) * rowH + 60));
 
   ctx.fillStyle = 'rgba(0,0,0,0.88)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 224, 100, 320, boxH, '#05050f', '#6666cc', 3);
@@ -1424,7 +1424,7 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   if (available.length === 0) {
     ctx.fillStyle = '#555577'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('No locations discovered yet.', W / 2, 200);
+    ctx.fillText('No locations discovered yet.', W / 2, 210);
   } else {
     const maxScroll = Math.max(0, available.length - maxVisible);
     const scrollOffset = Math.min(maxScroll, Math.max(0, state.teleportIndex - maxVisible + 1));
@@ -1432,7 +1432,8 @@ function renderTeleport(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
     ctx.save();
     const clipH = Math.min(available.length, maxVisible) * rowH + 8;
-    ctx.beginPath(); ctx.rect(224, listTop - 4, 320, clipH); ctx.clip();
+    // clip starts 22px above listTop so the selection highlight on the first row is never cut off
+    ctx.beginPath(); ctx.rect(224, listTop - 22, 320, clipH + 22); ctx.clip();
     ctx.textAlign = 'left';
     visible.forEach((pt, vi) => {
       const i = scrollOffset + vi;
