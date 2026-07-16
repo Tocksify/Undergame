@@ -19,4 +19,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // ── File I/O ──────────────────────────────────────────────────────
   exportErsav: (slot)         => ipcRenderer.invoke('er-export-ersav', slot),
   importErsav: ()             => ipcRenderer.invoke('er-import-ersav'),
+
+  // ── App control ───────────────────────────────────────────────────
+  quit: ()                    => ipcRenderer.send('er-quit'),
 });

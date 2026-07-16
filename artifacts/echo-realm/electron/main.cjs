@@ -90,6 +90,8 @@ async function createWindow() {
 
 app.whenReady().then(createWindow);
 
+ipcMain.on('er-quit', () => app.quit());
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });

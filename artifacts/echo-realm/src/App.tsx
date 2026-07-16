@@ -118,7 +118,10 @@ function App() {
         onPlay={() => setScreen('slots')}
         onOptions={() => setScreen('options')}
         onExtras={() => setScreen('extras')}
-        onQuit={() => { audio.playSfx('cancel'); window.location.reload(); }}
+        onQuit={() => {
+          audio.playSfx('cancel');
+          if ((window as any).electronAPI?.quit) (window as any).electronAPI.quit();
+        }}
       />
     );
   }
