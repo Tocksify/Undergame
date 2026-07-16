@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS, EQUIP_SLOTS } from './constants';
 import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
@@ -246,14 +246,128 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.INVENTORY) {
     const inv = state.player.inventory;
+
+    // ── Tab / Q: switch between equipment panel and items list ────────
+    if (justPressed(state, 'Tab') || justPressed(state, 'q')) {
+      state.inventoryPage = state.inventoryPage === 0 ? 1 : 0;
+      state.equipSlotMenu = null;
+      return;
+    }
+
+    if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'i')) {
+      if (state.equipSlotMenu !== null) { state.equipSlotMenu = null; return; }
+      state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
+      return;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PAGE 0 — Equipment Panel
+    // ══════════════════════════════════════════════════════════════════
+    if (state.inventoryPage === 0) {
+      if (state.equipSlotMenu !== null) {
+        const menu = state.equipSlotMenu;
+        const slot = EQUIP_SLOTS.find(s => s.id === menu.slotId);
+        if (!slot) { state.equipSlotMenu = null; return; }
+        const eq = state.player.equipment as Record<string, string | null>;
+        const equippedId = eq[slot.id];
+
+        if (menu.mode === 'actions') {
+          // 0 = Unequip   1 = Sell   2 = Back
+          if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   menu.menuIndex = Math.max(0, menu.menuIndex - 1);
+          if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) menu.menuIndex = Math.min(2, menu.menuIndex + 1);
+          if (justPressed(state, ' ') || justPressed(state, 'z')) {
+            if (menu.menuIndex === 0) {
+              eq[slot.id] = null;
+              recomputeMaxHp(state);
+              state.uiMessage = `Unequipped ${ITEMS[equippedId!]?.name ?? equippedId}`; state.uiMessageTimer = 90;
+              state.equipSlotMenu = null;
+            } else if (menu.menuIndex === 1) {
+              const sellItem = ITEMS[equippedId!];
+              if (!sellItem || sellItem.price === 0) {
+                state.uiMessage = 'This item is too precious to sell.'; state.uiMessageTimer = 90;
+              } else {
+                const gain = Math.max(1, Math.floor(sellItem.price / 2));
+                eq[slot.id] = null;
+                const si = inv.indexOf(equippedId!);
+                if (si >= 0) removeInventoryItem(state, si);
+                state.player.echoes += gain;
+                recomputeMaxHp(state);
+                state.uiMessage = `Sold ${sellItem.name} for ${gain} ◈.`; state.uiMessageTimer = 90;
+                state.equipSlotMenu = null;
+              }
+            } else {
+              state.equipSlotMenu = null;
+            }
+          }
+        } else {
+          // mode === 'pick' — list compatible inventory items
+          const compatible = inv.filter(iid => {
+            const it = ITEMS[iid];
+            return it && slot.categories.includes(it.category as any);
+          });
+          const hasEquipped = !!equippedId;
+          const totalOpts = compatible.length + (hasEquipped ? 1 : 0);
+          if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   menu.menuIndex = Math.max(0, menu.menuIndex - 1);
+          if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) menu.menuIndex = Math.min(totalOpts - 1, menu.menuIndex + 1);
+          if (justPressed(state, ' ') || justPressed(state, 'z')) {
+            if (hasEquipped && menu.menuIndex === 0) {
+              eq[slot.id] = null;
+              recomputeMaxHp(state);
+              state.uiMessage = `Unequipped ${ITEMS[equippedId]?.name ?? equippedId}`; state.uiMessageTimer = 90;
+              state.equipSlotMenu = null;
+            } else {
+              const pickIdx = hasEquipped ? menu.menuIndex - 1 : menu.menuIndex;
+              const chosen = compatible[pickIdx];
+              if (chosen) {
+                if (slot.id === 'ring1' && state.player.equipment.ring2 === chosen) {
+                  state.uiMessage = 'Already wearing that on the other finger.'; state.uiMessageTimer = 90;
+                } else if (slot.id === 'ring2' && state.player.equipment.ring1 === chosen) {
+                  state.uiMessage = 'Already wearing that on the other finger.'; state.uiMessageTimer = 90;
+                } else {
+                  eq[slot.id] = chosen;
+                  recomputeMaxHp(state);
+                  state.uiMessage = `Equipped ${ITEMS[chosen]?.name ?? chosen}`; state.uiMessageTimer = 90;
+                }
+                state.equipSlotMenu = null;
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      // Browsing equipment slots
+      if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))
+        state.equipPanelCursor = Math.max(0, state.equipPanelCursor - 1);
+      if (justPressed(state, 'ArrowDown') || justPressed(state, 's'))
+        state.equipPanelCursor = Math.min(EQUIP_SLOTS.length - 1, state.equipPanelCursor + 1);
+      if (justPressed(state, ' ') || justPressed(state, 'z')) {
+        const slot = EQUIP_SLOTS[state.equipPanelCursor];
+        const equippedId = (state.player.equipment as Record<string, string | null>)[slot.id];
+        if (equippedId) {
+          state.equipSlotMenu = { slotId: slot.id, menuIndex: 0, mode: 'actions' };
+        } else {
+          const compatible = inv.filter(iid => {
+            const it = ITEMS[iid];
+            return it && slot.categories.includes(it.category as any);
+          });
+          if (compatible.length === 0) {
+            state.uiMessage = `No ${slot.label.toLowerCase()} in inventory.`; state.uiMessageTimer = 90;
+          } else {
+            state.equipSlotMenu = { slotId: slot.id, menuIndex: 0, mode: 'pick' };
+          }
+        }
+      }
+      return;
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PAGE 1 — All Items list
+    // ══════════════════════════════════════════════════════════════════
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))
       state.inventoryIndex = Math.max(0, state.inventoryIndex - 1);
     if (justPressed(state, 'ArrowDown') || justPressed(state, 's'))
       state.inventoryIndex = Math.min(Math.max(0, inv.length - 1), state.inventoryIndex + 1);
-
-    if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'i')) {
-      state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
-    }
 
     if ((justPressed(state, ' ') || justPressed(state, 'z')) && inv.length > 0) {
       const idx = state.inventoryIndex;
@@ -261,7 +375,6 @@ export function updateGame(state: GameStateData) {
       const item = ITEMS[id];
       if (!item) return;
 
-      // ── BOOK: open reader ──
       if (item.category === 'book') {
         if (item.bookId && BOOKS[item.bookId]) {
           state.bookRead = { bookId: item.bookId, page: 0, fromInventoryIndex: idx };
@@ -272,85 +385,82 @@ export function updateGame(state: GameStateData) {
         return;
       }
 
-      // ── ENCHANTED BOOK: enter enchant-select ──
       if (item.category === 'enchanted_book') {
-        if (state.battle) {
-          state.uiMessage = "Can't enchant in battle."; state.uiMessageTimer = 90;
-          return;
-        }
-        // Find compatible items in inventory
+        if (state.battle) { state.uiMessage = "Can't enchant in battle."; state.uiMessageTimer = 90; return; }
         const compat = inv.filter((iid, i) => {
           const it = ITEMS[iid];
           return it && item.enchantData!.compatibleCategories.includes(it.category as any) && i !== idx && !state.player.enchantedSlots[i];
         });
-        if (compat.length === 0) {
-          state.uiMessage = "No compatible unenchanted items to enchant."; state.uiMessageTimer = 120;
-          return;
-        }
+        if (compat.length === 0) { state.uiMessage = "No compatible unenchanted items to enchant."; state.uiMessageTimer = 120; return; }
         state.enchantSelect = { enchantBookSlot: idx, cursorIndex: 0 };
         state.mode = GameMode.ENCHANT_SELECT;
         return;
       }
 
-      // ── RELIC: Tomes Blessing (craft an enchantment from scratch) ──
       if (item.category === 'relic' && id === 'tomes_blessing') {
-        if (state.battle) {
-          state.uiMessage = "Can't use that in battle."; state.uiMessageTimer = 90;
-          return;
-        }
-        if (!inv.includes('empty_book')) {
-          state.uiMessage = "The Tomes Blessing needs an Empty Book to draw from."; state.uiMessageTimer = 140;
-          return;
-        }
+        if (state.battle) { state.uiMessage = "Can't use that in battle."; state.uiMessageTimer = 90; return; }
+        if (!inv.includes('empty_book')) { state.uiMessage = "The Tomes Blessing needs an Empty Book to draw from."; state.uiMessageTimer = 140; return; }
         state.tomeCraft = { cursorIndex: 0, chosenEnchantId: null };
         state.mode = GameMode.TOME_CRAFT;
         return;
       }
 
-      // ── existing item logic ──
       let consumed = false;
       let handled = false;
+      const eq = state.player.equipment;
 
       if (item.category === 'weapon') {
-        const eq = state.player.equipment;
-        if (eq.weapon === id) {
-          // Toggle off main hand
-          eq.weapon = null;
-          state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90;
-        } else if (eq.offhand === id) {
-          // Toggle off offhand
-          eq.offhand = null;
-          state.uiMessage = `Unequipped ${item.name} (offhand)`; state.uiMessageTimer = 90;
-        } else if (eq.weapon !== null && eq.offhand === null) {
-          // Main hand occupied, offhand free → dual wield
-          eq.offhand = id;
-          state.uiMessage = `Dual-wielding ${item.name}! (75% ATK each)`; state.uiMessageTimer = 120;
-        } else {
-          // Default: equip to main hand (replacing whatever is there)
-          eq.weapon = id;
-          state.uiMessage = `Equipped ${item.name}`; state.uiMessageTimer = 90;
-        }
+        if (eq.weapon === id) { eq.weapon = null; state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90; }
+        else if (eq.offhand === id) { eq.offhand = null; state.uiMessage = `Unequipped ${item.name} (offhand)`; state.uiMessageTimer = 90; }
+        else if (eq.weapon !== null && eq.offhand === null) { eq.offhand = id; state.uiMessage = `Dual-wielding ${item.name}! (75% ATK each)`; state.uiMessageTimer = 120; }
+        else { eq.weapon = id; state.uiMessage = `Equipped ${item.name}`; state.uiMessageTimer = 90; }
         handled = true;
       } else if (item.category === 'shield') {
-        const eq = state.player.equipment;
-        if (eq.offhand === id) {
-          eq.offhand = null;
-          state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90;
-        } else {
-          if (eq.offhand !== null && ITEMS[eq.offhand]?.category === 'weapon') {
-            // Replace a dual-wield offhand weapon with a shield
-            state.uiMessage = `Dropped offhand weapon. Equipped ${item.name} (blocks ${item.block ?? 0} dmg/hit)`;
-          } else {
-            state.uiMessage = `Equipped ${item.name} — blocks ${item.block ?? 0} flat dmg/hit`;
-          }
+        if (eq.offhand === id) { eq.offhand = null; state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90; }
+        else {
+          state.uiMessage = eq.offhand && ITEMS[eq.offhand]?.category === 'weapon'
+            ? `Dropped offhand weapon. Equipped ${item.name} (blocks ${item.block ?? 0} dmg/hit)`
+            : `Equipped ${item.name} — blocks ${item.block ?? 0} flat dmg/hit`;
           eq.offhand = id; state.uiMessageTimer = 120;
         }
         handled = true;
       } else if (item.category === 'armor') {
-        state.player.equipment.armor = state.player.equipment.armor === id ? null : id;
-        recomputeMaxHp(state);
-        state.uiMessage = state.player.equipment.armor === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`;
-        state.uiMessageTimer = 90; handled = true;
+        eq.armor = eq.armor === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.armor === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'helmet') {
+        eq.helmet = eq.helmet === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.helmet === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'gloves') {
+        eq.gloves = eq.gloves === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.gloves === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'pants') {
+        eq.pants = eq.pants === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.pants === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'boots') {
+        eq.boots = eq.boots === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.boots === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'cloak') {
+        eq.cloak = eq.cloak === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.cloak === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'necklace') {
+        eq.necklace = eq.necklace === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.necklace === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'belt') {
+        eq.belt = eq.belt === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.belt === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'shoulder') {
+        eq.shoulder = eq.shoulder === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.shoulder === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'trinket') {
+        eq.trinket = eq.trinket === id ? null : id; recomputeMaxHp(state);
+        state.uiMessage = eq.trinket === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
+      } else if (item.category === 'ring') {
+        if (eq.ring1 === id)       { eq.ring1 = null; recomputeMaxHp(state); state.uiMessage = `Unequipped ${item.name} (Ring I)`;  state.uiMessageTimer = 90; }
+        else if (eq.ring2 === id)  { eq.ring2 = null; recomputeMaxHp(state); state.uiMessage = `Unequipped ${item.name} (Ring II)`; state.uiMessageTimer = 90; }
+        else if (!eq.ring1)        { eq.ring1 = id;   recomputeMaxHp(state); state.uiMessage = `Equipped ${item.name} (Ring I)`;    state.uiMessageTimer = 90; }
+        else if (!eq.ring2)        { eq.ring2 = id;   recomputeMaxHp(state); state.uiMessage = `Equipped ${item.name} (Ring II)`;   state.uiMessageTimer = 90; }
+        else { state.uiMessage = 'Both ring slots occupied. Unequip one first.'; state.uiMessageTimer = 90; }
+        handled = true;
       } else if (item.category === 'key') {
         state.uiMessage = "A keepsake. Best not discarded."; state.uiMessageTimer = 90; handled = true;
       } else if (id === 'crystal')         { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 10); consumed = true; }
@@ -369,11 +479,7 @@ export function updateGame(state: GameStateData) {
           if (id === 'blink_shard') { state.battle.flags.spark = true; state.battle.flags.confused = true; consumed = true; }
         }
 
-      if (consumed) {
-        // If the consumed item was enchanted, remove its enchantment entry too
-        removeInventoryItem(state, idx);
-        handled = true;
-      }
+      if (consumed) { removeInventoryItem(state, idx); handled = true; }
       state.inventoryIndex = Math.max(0, Math.min(state.inventoryIndex, inv.length - 1));
       if (state.battle && (consumed || handled)) {
         state.mode = GameMode.BATTLE; state.battle!.phase = 'ACTION'; state.battle!.actionMsg = "Used item!"; state.battle!.timer = 0;

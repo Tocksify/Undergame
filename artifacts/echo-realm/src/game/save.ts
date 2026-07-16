@@ -21,7 +21,13 @@ export interface SavedGameState {
     echoes: number;
     inventory: string[];
     enchantedSlots: (string | null)[];
-    equipment: { weapon: string | null; armor: string | null; offhand?: string | null };
+    equipment: {
+      weapon: string | null; armor: string | null; offhand?: string | null;
+      helmet?: string | null; gloves?: string | null; pants?: string | null;
+      boots?: string | null; cloak?: string | null; necklace?: string | null;
+      ring1?: string | null; ring2?: string | null; belt?: string | null;
+      shoulder?: string | null; trinket?: string | null;
+    };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
@@ -102,9 +108,20 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
       state.player.enchantedSlots = saved.player.inventory.map(() => null);
     }
     state.player.equipment = {
-      weapon: saved.player.equipment.weapon,
-      armor: saved.player.equipment.armor,
-      offhand: saved.player.equipment.offhand ?? null,
+      weapon:   saved.player.equipment.weapon,
+      armor:    saved.player.equipment.armor,
+      offhand:  saved.player.equipment.offhand  ?? null,
+      helmet:   saved.player.equipment.helmet   ?? null,
+      gloves:   saved.player.equipment.gloves   ?? null,
+      pants:    saved.player.equipment.pants     ?? null,
+      boots:    saved.player.equipment.boots     ?? null,
+      cloak:    saved.player.equipment.cloak     ?? null,
+      necklace: saved.player.equipment.necklace  ?? null,
+      ring1:    saved.player.equipment.ring1     ?? null,
+      ring2:    saved.player.equipment.ring2     ?? null,
+      belt:     saved.player.equipment.belt      ?? null,
+      shoulder: saved.player.equipment.shoulder  ?? null,
+      trinket:  saved.player.equipment.trinket   ?? null,
     };
     state.player.bestiary = saved.player.bestiary ? { ...saved.player.bestiary } : {};
     state.player.quests = { ...state.player.quests, ...saved.player.quests };

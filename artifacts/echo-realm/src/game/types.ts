@@ -24,7 +24,17 @@ export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST
 import type { SpriteAppearance } from './npcAppearance';
 
 export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
-export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'shield' | 'key' | 'book' | 'enchanted_book' | 'relic';
+export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'shield' | 'key' | 'book' | 'enchanted_book' | 'relic'
+  | 'helmet' | 'gloves' | 'pants' | 'boots' | 'cloak' | 'necklace' | 'ring' | 'belt' | 'shoulder' | 'trinket';
+
+export type EquipSlotId = 'weapon' | 'armor' | 'offhand' | 'helmet' | 'gloves' | 'pants' | 'boots'
+  | 'cloak' | 'necklace' | 'ring1' | 'ring2' | 'belt' | 'shoulder' | 'trinket';
+
+export interface EquipSlot {
+  id: EquipSlotId;
+  label: string;
+  categories: ItemCategory[];
+}
 export type ItemSubcategory = 'medical' | 'def' | 'utility';
 
 export interface Item {
@@ -148,7 +158,13 @@ export interface GameStateData {
     echoes: number;
     inventory: string[];
     enchantedSlots: (string | null)[]; // parallel to inventory; enchant-book-id or null
-    equipment: { weapon: string | null; armor: string | null; offhand: string | null };
+    equipment: {
+      weapon: string | null; armor: string | null; offhand: string | null;
+      helmet: string | null; gloves: string | null; pants: string | null;
+      boots: string | null; cloak: string | null; necklace: string | null;
+      ring1: string | null; ring2: string | null; belt: string | null;
+      shoulder: string | null; trinket: string | null;
+    };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
@@ -209,6 +225,9 @@ export interface GameStateData {
     cursorIndex: number;      // which craftable enchantment is highlighted
     chosenEnchantId: string | null; // enchant item id chosen, then routes into enchantSelect
   };
+  inventoryPage: number;        // 0 = equipment panel, 1 = all items
+  equipPanelCursor: number;     // selected slot index (0-13) in the equipment panel
+  equipSlotMenu: { slotId: string; menuIndex: number; mode: 'actions' | 'pick' } | null;
   teleportIndex: number; // selected row in the TELEPORT menu
   questLogScroll: number; // top index of the visible window in the QUEST_LOG list
   bestiaryScroll: number; // top index of the visible window in the BESTIARY list

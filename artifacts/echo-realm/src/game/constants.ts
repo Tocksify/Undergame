@@ -1,4 +1,4 @@
-import { BookData, EnemyData, GameMode, GameStateData, Item, ItemTier } from './types';
+import { BookData, EnemyData, EquipSlot, EquipSlotId, GameMode, GameStateData, Item, ItemCategory, ItemTier } from './types';
 
 export const TILE_SIZE = 48;
 export const BASE_MAX_HP = 20;
@@ -257,6 +257,79 @@ export const ITEMS: Record<string, Item> = {
   'voidsteel_mail':    { name: 'Voidsteel Mail',        desc: 'The armor of death himself. Heavy with the weight of endings.',                  price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
   'oblivion_mantle':   { name: 'Oblivion Mantle',       desc: 'Heavier than grief. Protects everything behind it.',                             price: 0,   tier: 'legendary', category: 'armor', maxHp: 35, def: 6 },
   'mortus_regalia':    { name: 'Mortus Regalia',        desc: 'The regalia of the first Memory Keeper. Worn once. Never returned.',             price: 0,   tier: 'mythic',    category: 'armor', maxHp: 45, def: 8 },
+
+  // ── HELMETS ──
+  'rag_headband':      { name: 'Rag Headband',        desc: 'A strip of cloth tied around the brow. Better than nothing.',                       price: 20,  tier: 'common',    category: 'helmet', maxHp: 2 },
+  'leather_cap':       { name: 'Leather Cap',          desc: 'Simple cured hide shaped into a cap. Reliable.',                                    price: 45,  tier: 'common',    category: 'helmet', def: 1 },
+  'iron_helm':         { name: 'Iron Helm',            desc: 'Standard-issue iron helm, dented but structurally whole.',                          price: 130, tier: 'uncommon',  category: 'helmet', def: 2, maxHp: 3 },
+  'void_hood':         { name: 'Void Hood',            desc: 'A hood woven from void-silk. Somehow heavier than it looks.',                       price: 160, tier: 'uncommon',  category: 'helmet', def: 1, maxHp: 5 },
+  'memory_crown':      { name: 'Memory Crown',         desc: 'Worn by those who refused to forget. The crown remembers for them.',                price: 0,   tier: 'rare',      category: 'helmet', def: 3, maxHp: 5 },
+  'archivist_visor':   { name: "Archivist's Visor",   desc: 'Protects the most important part. The rest can take its chances.',                  price: 0,   tier: 'rare',      category: 'helmet', def: 3, maxHp: 8 },
+  'echo_helm':         { name: 'Echo Helm',            desc: 'Forged in resonance. Memories leave less of a mark.',                              price: 0,   tier: 'epic',      category: 'helmet', def: 4, maxHp: 10 },
+  'voidsteel_helm':    { name: 'Voidsteel Helm',       desc: 'The helm of something that never slept.',                                          price: 0,   tier: 'legendary', category: 'helmet', def: 5, maxHp: 12 },
+
+  // ── SHOULDER ARMOR ──
+  'padded_shoulder':   { name: 'Padded Shoulder',      desc: 'Stitched cloth padding. Keeps the joint from aching on long marches.',             price: 30,  tier: 'common',    category: 'shoulder', def: 1 },
+  'leather_spaulder':  { name: 'Leather Spaulder',     desc: 'Hardened leather strapped at the shoulder. Light, purposeful.',                    price: 100, tier: 'uncommon',  category: 'shoulder', atk: 1, def: 1 },
+  'iron_pauldron':     { name: 'Iron Pauldron',        desc: 'Iron shoulder guards, notched from old battles. Comfortable in a rough way.',      price: 0,   tier: 'rare',      category: 'shoulder', atk: 1, def: 3 },
+  'void_spaulder':     { name: 'Void Spaulder',        desc: 'Void-forged shoulder armor. Heavier than regret. Faster than doubt.',              price: 0,   tier: 'epic',      category: 'shoulder', atk: 2, def: 3 },
+  'sovereign_pauldron':{ name: 'Sovereign Pauldron',   desc: 'Shoulders that once bore the weight of a city. The weight is still in the metal.', price: 0,   tier: 'legendary', category: 'shoulder', atk: 3, def: 4 },
+
+  // ── GLOVES ──
+  'worn_gloves':       { name: 'Worn Gloves',          desc: 'Old leather gloves. The grip is still good, if not the look.',                     price: 25,  tier: 'common',    category: 'gloves', atk: 1 },
+  'battle_wraps':      { name: 'Battle Wraps',         desc: 'Cloth wrapped tight around the knuckles. Every blow lands cleaner.',               price: 90,  tier: 'uncommon',  category: 'gloves', atk: 2 },
+  'iron_gauntlets':    { name: 'Iron Gauntlets',       desc: 'Heavy gauntlets that remember every blow they have ever landed.',                   price: 0,   tier: 'rare',      category: 'gloves', atk: 2, def: 1 },
+  'void_grips':        { name: 'Void Grips',           desc: 'Gloves of void-thread. Your strikes feel decisive. Final.',                        price: 0,   tier: 'epic',      category: 'gloves', atk: 3, def: 1 },
+  'obsidian_gauntlets':{ name: 'Obsidian Gauntlets',   desc: 'Cut from the same stone as the Void Nexus floor. Cold even in summer.',            price: 0,   tier: 'legendary', category: 'gloves', atk: 4, def: 2 },
+
+  // ── PANTS ──
+  'threadbare_trousers':{ name: 'Threadbare Trousers', desc: 'Worn thin but still covering. Every road leaves its mark.',                        price: 15,  tier: 'common',    category: 'pants', def: 1 },
+  'leather_leggings':  { name: 'Leather Leggings',     desc: 'Simple leather leggings. Practical, if not elegant.',                              price: 50,  tier: 'common',    category: 'pants', def: 1, maxHp: 2 },
+  'warden_greaves':    { name: 'Warden Greaves',       desc: 'Warden-issue leg armor, slightly too big. It holds anyway.',                       price: 120, tier: 'uncommon',  category: 'pants', def: 2, maxHp: 3 },
+  'void_leggings':     { name: 'Void Leggings',        desc: 'Reinforced with void-thread at the joints. The Void taught something useful.',     price: 0,   tier: 'rare',      category: 'pants', def: 3, maxHp: 5 },
+  'echo_chaps':        { name: 'Echo Chaps',           desc: 'Worn by Keepers who walked very long roads. The roads are still in the leather.',  price: 0,   tier: 'epic',      category: 'pants', def: 4, maxHp: 8 },
+
+  // ── BOOTS ──
+  'worn_boots':        { name: 'Worn Boots',           desc: 'Resoled three times. Still standing. Still walking.',                              price: 20,  tier: 'common',    category: 'boots', def: 1 },
+  'iron_boots':        { name: 'Iron Boots',           desc: 'Heavy iron-capped boots. Your footsteps announce you.',                            price: 110, tier: 'uncommon',  category: 'boots', def: 2 },
+  'void_treads':       { name: 'Void Treads',          desc: 'They move quietly. More quietly than you deserve.',                                price: 0,   tier: 'rare',      category: 'boots', def: 2, maxHp: 3 },
+  'echo_striders':     { name: 'Echo Striders',        desc: 'The road is still in the soles. Every path feels familiar.',                       price: 0,   tier: 'epic',      category: 'boots', def: 3, maxHp: 5 },
+  'nexus_boots':       { name: 'Nexus Boots',          desc: 'Forged at the Void Nexus. They have walked across the end of the world.',          price: 0,   tier: 'legendary', category: 'boots', def: 4, maxHp: 8 },
+
+  // ── CLOAKS ──
+  'drifter_cloak':     { name: "Drifter's Cloak",      desc: 'Has kept out more rain than you can remember. The lining still smells of smoke.',  price: 30,  tier: 'common',    category: 'cloak', maxHp: 4 },
+  'shadow_wrap':       { name: 'Shadow Wrap',          desc: 'Difficult to see in low light. Easier to breathe in than most armor.',             price: 100, tier: 'uncommon',  category: 'cloak', def: 1, maxHp: 6 },
+  'void_cloak':        { name: 'Void Cloak',           desc: 'Woven from void-silk, it absorbs rather than deflects. There is a difference.',   price: 0,   tier: 'rare',      category: 'cloak', def: 1, maxHp: 10 },
+  'keeper_cloak':      { name: "Keeper's Cloak",       desc: 'The cloak of those who remember the longest roads. Still clean at the hem.',       price: 0,   tier: 'epic',      category: 'cloak', def: 2, maxHp: 15 },
+  'mantle_of_echoes':  { name: 'Mantle of Echoes',     desc: 'Woven from preserved memory-thread. Heavier than it looks. Worth it.',            price: 0,   tier: 'legendary', category: 'cloak', def: 3, maxHp: 20 },
+
+  // ── NECKLACES ──
+  'bone_pendant':      { name: 'Bone Pendant',         desc: 'Carved from something that did not give it up easily.',                            price: 25,  tier: 'common',    category: 'necklace', maxHp: 3 },
+  'echo_amulet':       { name: 'Echo Amulet',          desc: 'Vibrates faintly when carried near old ruins. Useful. Unsettling.',               price: 90,  tier: 'uncommon',  category: 'necklace', atk: 1, maxHp: 4 },
+  'void_chain':        { name: 'Void Chain',           desc: 'Links of void-iron. Cold to the touch in all weather.',                           price: 0,   tier: 'rare',      category: 'necklace', atk: 1, maxHp: 7 },
+  'keeper_medallion':  { name: "Keeper's Medallion",   desc: 'Worn by Memory Keepers who survived long enough to be given one.',                price: 0,   tier: 'epic',      category: 'necklace', atk: 2, maxHp: 10 },
+  'memory_locket':     { name: 'Memory Locket',        desc: 'It holds something inside it. Something it refuses to let go of.',                price: 0,   tier: 'legendary', category: 'necklace', atk: 3, maxHp: 14 },
+
+  // ── RINGS ──
+  'iron_ring':         { name: 'Iron Ring',            desc: 'Plain iron, worn smooth. Someone wore this a long time.',                          price: 20,  tier: 'common',    category: 'ring', def: 1 },
+  'void_band':         { name: 'Void Band',            desc: 'A thin band of void-iron. Both fingers feel steadier for wearing it.',             price: 80,  tier: 'uncommon',  category: 'ring', atk: 1, def: 1 },
+  'echo_ring':         { name: 'Echo Ring',            desc: 'It resonates with strikes, amplifying the intent behind them.',                    price: 0,   tier: 'rare',      category: 'ring', atk: 2, maxHp: 3 },
+  'sovereign_ring':    { name: 'Sovereign Ring',       desc: 'The signet of whoever ruled here last. The authority remains.',                    price: 0,   tier: 'epic',      category: 'ring', atk: 3, def: 2 },
+  'oblivion_ring':     { name: 'Oblivion Ring',        desc: 'It forgets nothing. Every foe it has faced is still in there somewhere.',          price: 0,   tier: 'legendary', category: 'ring', atk: 4, def: 3 },
+
+  // ── BELTS ──
+  'rope_belt':         { name: 'Rope Belt',            desc: 'Holds things together. That is all it has ever been asked to do.',                 price: 15,  tier: 'common',    category: 'belt', maxHp: 2 },
+  'leather_belt':      { name: 'Leather Belt',         desc: 'Good leather, well-worked. The buckle has not failed yet.',                        price: 55,  tier: 'uncommon',  category: 'belt', maxHp: 4 },
+  'void_girdle':       { name: 'Void Girdle',          desc: 'A reinforced belt that carries its own weight and a little more.',                 price: 0,   tier: 'rare',      category: 'belt', def: 1, maxHp: 7 },
+  'warden_belt':       { name: 'Warden Belt',          desc: "The warden's belt still holds everything in place. Even now.",                    price: 0,   tier: 'epic',      category: 'belt', def: 1, maxHp: 10 },
+  'memory_girdle':     { name: 'Memory Girdle',        desc: 'Worn by whoever carried the most. It remembers every burden.',                     price: 0,   tier: 'legendary', category: 'belt', def: 2, maxHp: 14 },
+
+  // ── TRINKETS ──
+  'cracked_charm':     { name: 'Cracked Charm',        desc: 'Half of something that was once whole. The half that still works.',                price: 25,  tier: 'common',    category: 'trinket', atk: 1 },
+  'echo_charm':        { name: 'Echo Charm',           desc: 'Hums faintly when danger is close. Possibly useful. Definitely unnerving.',        price: 85,  tier: 'uncommon',  category: 'trinket', atk: 1, maxHp: 3 },
+  'void_token':        { name: 'Void Token',           desc: 'A small disc of void-stone. Warm in your hand despite the cold of the Void.',     price: 0,   tier: 'rare',      category: 'trinket', def: 2, maxHp: 5 },
+  'keeper_token':      { name: "Keeper's Token",       desc: 'Given to Keepers who proved themselves. Most of them are gone. You are not.',      price: 0,   tier: 'epic',      category: 'trinket', atk: 2, def: 2, maxHp: 5 },
+  'ancient_relic_charm':{ name: 'Ancient Relic Charm', desc: 'Predates the Void. Predates the Keepers. Predates nearly everything.',             price: 0,   tier: 'legendary', category: 'trinket', atk: 3, def: 3, maxHp: 8 },
 
   // ── READABLE BOOKS ──
   'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
@@ -572,17 +645,53 @@ export function pickWeightedReward(pool: { itemId: string; chance: number }[]): 
   return pool[pool.length - 1].itemId;
 }
 
+// ── EQUIPMENT SLOT DEFINITIONS ───────────────────────────────────────
+// Single source of truth for slot order, labels, and compatible item categories.
+// Used by both engine.ts (equip logic) and renderer.ts (paperdoll).
+export const EQUIP_SLOTS: EquipSlot[] = [
+  { id: 'helmet',   label: 'HELMET',   categories: ['helmet'] },
+  { id: 'necklace', label: 'NECKLACE', categories: ['necklace'] },
+  { id: 'shoulder', label: 'SHOULDER', categories: ['shoulder'] },
+  { id: 'armor',    label: 'CHEST',    categories: ['armor'] },
+  { id: 'cloak',    label: 'CLOAK',    categories: ['cloak'] },
+  { id: 'gloves',   label: 'GLOVES',   categories: ['gloves'] },
+  { id: 'belt',     label: 'BELT',     categories: ['belt'] },
+  { id: 'pants',    label: 'PANTS',    categories: ['pants'] },
+  { id: 'boots',    label: 'BOOTS',    categories: ['boots'] },
+  { id: 'weapon',   label: 'WEAPON',   categories: ['weapon'] },
+  { id: 'offhand',  label: 'OFF-HAND', categories: ['shield', 'weapon'] },
+  { id: 'ring1',    label: 'RING I',   categories: ['ring'] },
+  { id: 'ring2',    label: 'RING II',  categories: ['ring'] },
+  { id: 'trinket',  label: 'TRINKET',  categories: ['trinket'] },
+];
+
+// Helper: sum a numeric stat across all non-weapon equipment slots (armor-type gear).
+function sumEquipStat(state: GameStateData, stat: 'atk' | 'def' | 'maxHp', skipWeapons = true): number {
+  let total = 0;
+  for (const slot of EQUIP_SLOTS) {
+    if (skipWeapons && (slot.id === 'weapon' || slot.id === 'offhand')) continue;
+    const itemId = (state.player.equipment as Record<string, string | null>)[slot.id];
+    if (!itemId) continue;
+    const item = ITEMS[itemId];
+    if (!item) continue;
+    total += (item as any)[stat] ?? 0;
+    // Enchantment bonus for this slot
+    const invIdx = state.player.inventory.indexOf(itemId);
+    if (invIdx >= 0) {
+      const enchId = state.player.enchantedSlots[invIdx];
+      if (enchId && ITEMS[enchId]?.enchantData) {
+        total += (ITEMS[enchId].enchantData as any)[stat] ?? 0;
+      }
+    }
+  }
+  return total;
+}
+
 export function recomputeMaxHp(state: GameStateData) {
-  const armor = state.player.equipment.armor;
-  const bonus = armor && ITEMS[armor] ? ITEMS[armor].maxHp ?? 0 : 0;
-  // enchantment bonus on armor
-  const armorSlot = armor ? state.player.inventory.indexOf(armor) : -1;
-  const enchBookId = armorSlot >= 0 ? state.player.enchantedSlots[armorSlot] : null;
-  const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.maxHp ? ITEMS[enchBookId].enchantData!.maxHp! : 0;
+  const hpBonus = sumEquipStat(state, 'maxHp');
   const vitBonus = (state.player.baseStats?.vit ?? 0) * VIT_HP_PER_POINT;
   // ── Skill bonuses ──────────────────────────────────────────────────
   const skills = state.player.learnedSkills ?? [];
-  // ember_shell: +20 max HP. hybrid_echo_ember doubles it to +40.
   const hasEmberShell = skills.includes('ember_shell');
   const forgeEchoActive = skills.includes('ember_shell') && skills.includes('echo_nova') &&
     ['void', 'chroma', 'echo', 'ember'].filter(p => {
@@ -596,7 +705,7 @@ export function recomputeMaxHp(state: GameStateData) {
       return counts.echo >= 2 && counts.ember >= 2;
     }).length > 0;
   const emberHpBonus = hasEmberShell ? (forgeEchoActive ? 40 : 20) : 0;
-  state.player.maxHp = BASE_MAX_HP + bonus + enchBonus + vitBonus + emberHpBonus;
+  state.player.maxHp = BASE_MAX_HP + hpBonus + vitBonus + emberHpBonus;
   state.player.hp = Math.min(state.player.hp, state.player.maxHp);
 }
 
@@ -605,7 +714,6 @@ export function getWeaponAtkBonus(state: GameStateData): number {
   const oh = state.player.equipment.offhand;
   const ohItem = oh ? ITEMS[oh] : null;
   const isDualWield = ohItem?.category === 'weapon';
-  // Dual wield: each hand contributes 75% of its ATK.
   const mainMult = isDualWield ? 0.75 : 1;
 
   const base = w && ITEMS[w] ? Math.floor((ITEMS[w].atk ?? 0) * mainMult) : 0;
@@ -614,7 +722,6 @@ export function getWeaponAtkBonus(state: GameStateData): number {
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.atk
     ? Math.floor(ITEMS[enchBookId].enchantData!.atk! * mainMult) : 0;
 
-  // Offhand weapon contribution
   let ohBonus = 0; let ohEnchBonus = 0;
   if (isDualWield && oh) {
     ohBonus = Math.floor((ohItem!.atk ?? 0) * 0.75);
@@ -624,8 +731,11 @@ export function getWeaponAtkBonus(state: GameStateData): number {
       ? Math.floor(ITEMS[ohEnchId].enchantData!.atk! * 0.75) : 0;
   }
 
+  // ATK contributions from non-weapon armor slots (gloves, shoulder, necklace, rings, trinket, etc.)
+  const gearAtk = sumEquipStat(state, 'atk', true /* skipWeapons */);
+
   const strBonus = (state.player.baseStats?.str ?? 0) * STR_ATK_PER_POINT;
-  return base + enchBonus + ohBonus + ohEnchBonus + strBonus;
+  return base + enchBonus + ohBonus + ohEnchBonus + gearAtk + strBonus;
 }
 
 // Flat damage reduction per hit from an equipped shield in the offhand slot.
@@ -637,17 +747,13 @@ export function getShieldBlockBonus(state: GameStateData): number {
 }
 
 export function getArmorDefBonus(state: GameStateData): number {
-  const a = state.player.equipment.armor;
-  const base = a && ITEMS[a] ? ITEMS[a].def ?? 0 : 0;
-  const aSlot = a ? state.player.inventory.indexOf(a) : -1;
-  const enchBookId = aSlot >= 0 ? state.player.enchantedSlots[aSlot] : null;
-  const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.def ? ITEMS[enchBookId].enchantData!.def! : 0;
+  // Sum DEF from all non-weapon equipped items (including enchantment bonuses)
+  const gearDef = sumEquipStat(state, 'def', true /* skipWeapons */);
   const defBonus = (state.player.baseStats?.def ?? 0) * DEF_DEF_PER_POINT;
-  // ── Skill bonuses ──────────────────────────────────────────────────
   const skills = state.player.learnedSkills ?? [];
   const forgeBonus = skills.includes('ember_forge') ? 2 : 0;
   const willBonus = skills.includes('ember_will') && state.player.hp <= state.player.maxHp * 0.25 ? 4 : 0;
-  return base + enchBonus + defBonus + forgeBonus + willBonus;
+  return gearDef + defBonus + forgeBonus + willBonus;
 }
 
 // ── LEVELING & STAT ALLOCATION ────────────────────────────────────────
@@ -2407,7 +2513,12 @@ export const INITIAL_STATE: GameStateData = {
     echoes: 0,
     inventory: [],
     enchantedSlots: [],
-    equipment: { weapon: null, armor: null, offhand: null },
+    equipment: {
+      weapon: null, armor: null, offhand: null,
+      helmet: null, gloves: null, pants: null, boots: null,
+      cloak: null, necklace: null, ring1: null, ring2: null,
+      belt: null, shoulder: null, trinket: null,
+    },
     bestiary: {},
     learnedSkills: [],
     skillPoints: 0,
@@ -2446,6 +2557,9 @@ export const INITIAL_STATE: GameStateData = {
   bookRead: { bookId: null, page: 0, fromInventoryIndex: 0 },
   enchantSelect: { enchantBookSlot: 0, cursorIndex: 0 },
   tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
+  inventoryPage: 0,
+  equipPanelCursor: 0,
+  equipSlotMenu: null,
   teleportIndex: 0,
   questLogScroll: 0,
   bestiaryScroll: 0,
