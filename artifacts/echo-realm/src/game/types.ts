@@ -41,6 +41,12 @@ export interface Item {
     atk?: number;
     def?: number;
     maxHp?: number;
+    // ── Proc effects ──────────────────────────────────────────────────
+    confuse?: boolean;   // weapon: confuses enemy on a PERFECT or GOOD hit
+    weaken?: number;     // weapon: reduces enemy ATK by this amount on a PERFECT or GOOD hit
+    drain?: number;      // weapon: restores this many HP to the player on a PERFECT or GOOD hit
+    autoWard?: boolean;  // armor: auto-applies void ward once per dodge phase (once per battle)
+    thornDmg?: number;   // armor: deals this damage back to the enemy whenever the player is hit
   };
 }
 

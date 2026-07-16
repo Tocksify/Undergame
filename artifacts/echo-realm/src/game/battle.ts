@@ -2,6 +2,17 @@ import { GameStateData, GameMode, EnemyData, BattleState } from './types';
 import { justPressed, addInventoryItem } from './engine';
 import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, CITY_SIDE_QUESTS, pushMessages, grantXp } from './constants';
 
+// Returns the enchantData of the enchanted book applied to the player's equipped weapon or armor.
+function getEquippedEnchantData(state: GameStateData, slot: 'weapon' | 'armor') {
+  const itemId = state.player.equipment[slot];
+  if (!itemId) return null;
+  const idx = state.player.inventory.indexOf(itemId);
+  if (idx < 0) return null;
+  const enchBookId = state.player.enchantedSlots[idx];
+  if (!enchBookId) return null;
+  return ITEMS[enchBookId]?.enchantData ?? null;
+}
+
 // Checks whether resonance has reached the threshold to "remember" the enemy.
 function tryCompleteRemember(state: GameStateData): boolean {
   const b = state.battle!;
@@ -62,6 +73,27 @@ export function handleBattleInput(state: GameStateData) {
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
+        // ── Weapon enchant procs (PERFECT or GOOD hits only) ──────────
+        if (hitType !== 'MISS') {
+          const wEnch = getEquippedEnchantData(state, 'weapon');
+          if (wEnch) {
+            const procMsgs: string[] = [];
+            if (wEnch.confuse) {
+              b.flags.confused = true;
+              procMsgs.push('Enemy confused!');
+            }
+            if (wEnch.weaken) {
+              b.enemy.atk = Math.max(1, b.enemy.atk - wEnch.weaken);
+              procMsgs.push(`ATK −${wEnch.weaken}.`);
+            }
+            if (wEnch.drain) {
+              const healed = Math.min(wEnch.drain, state.player.maxHp - state.player.hp);
+              state.player.hp += healed;
+              if (healed > 0) procMsgs.push(`Drained +${healed} HP.`);
+            }
+            if (procMsgs.length) b.actionMsg += ' ' + procMsgs.join(' ');
+          }
+        }
       }
       b.phase = 'ACTION'; b.timer = 0;
     }
@@ -92,6 +124,11 @@ export function updateBattlePhase(state: GameStateData) {
         b.timer = -60;
       } else {
         b.phase = 'DODGE'; b.timer = 300; b.projectiles = [];
+        // ── Armor enchant: autoWard — once per battle ─────────────────
+        if (!b.flags.autoWardUsed) {
+          const aEnch = getEquippedEnchantData(state, 'armor');
+          if (aEnch?.autoWard) { b.voidWard = true; b.flags.autoWardUsed = true; }
+        }
       }
     }
     if (b.timer === 0 && b.phase === 'ACTION') {
@@ -110,6 +147,12 @@ export function updateBattlePhase(state: GameStateData) {
           state.player.hp -= dmg;
           state.player.invincibility = 30;
           b.voidWard = false;
+          // ── Armor enchant: thorn damage ────────────────────────────
+          const aEnch = getEquippedEnchantData(state, 'armor');
+          if (aEnch?.thornDmg && dmg > 0) {
+            b.enemy.hp = Math.max(0, b.enemy.hp - aEnch.thornDmg);
+            if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; }
+          }
         }
       }
     }

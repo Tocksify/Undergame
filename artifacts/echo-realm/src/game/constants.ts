@@ -213,25 +213,44 @@ export const ITEMS: Record<string, Item> = {
   'echo':   { name: 'Ancient Echo',  desc: 'A memory from the beginning.',         price: 0,  tier: 'legendary', category: 'key' },
 
   // ── WEAPONS ──
-  'rusty_shard':      { name: 'Rusty Shard',         desc: 'A chipped blade with no memory of its owner. It is simply sharp.',     price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
-  'iron_fragment':    { name: 'Iron Fragment',        desc: 'Scavenged from collapsed walls. Still sharp enough to mean something.',  price: 80,  tier: 'common',    category: 'weapon', atk: 2 },
-  'bone_edge':        { name: 'Bone Edge',            desc: "The creature this came from didn't let go easily. Neither will you.",    price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
-  'etched_spike':     { name: 'Etched Spike',         desc: 'Warded iron that remembers violence. The wards only make it meaner.',   price: 200, tier: 'uncommon',  category: 'weapon', atk: 4 },
-  'frost_fang':       { name: 'Frost Fang',           desc: 'It has never been warm. Not once. It reaches out for heat wherever it goes.', price: 0, tier: 'rare', category: 'weapon', atk: 5 },
-  'memory_edge':      { name: 'Memory Edge',          desc: 'Forged from solidified recollection. It cuts through what was as easily as what is.', price: 0, tier: 'rare', category: 'weapon', atk: 7 },
-  'cinder_blade':     { name: 'Cinder Blade',         desc: 'Forged in the last true fire. The flames are still in there, waiting.',  price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
-  'voidtouched_blade':{ name: 'Voidtouched Blade',    desc: 'Reality flinches where this blade passes through it. So do most enemies.', price: 0, tier: 'epic',     category: 'weapon', atk: 10 },
-  'voidglass_dagger': { name: 'Voidglass Dagger',     desc: 'Cut from the Nexus itself. It remembers every wound it has ever made.',  price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
+  'rusty_shard':       { name: 'Rusty Shard',          desc: 'A chipped blade with no memory of its owner. It is simply sharp.',              price: 40,  tier: 'common',    category: 'weapon', atk: 1 },
+  'shattered_lens':    { name: 'Shattered Lens',       desc: 'A fragment of something that once showed truth. Sharp on every edge.',           price: 35,  tier: 'common',    category: 'weapon', atk: 1 },
+  'iron_fragment':     { name: 'Iron Fragment',         desc: 'Scavenged from collapsed walls. Still sharp enough to mean something.',          price: 80,  tier: 'common',    category: 'weapon', atk: 2 },
+  'carved_stake':      { name: 'Carved Stake',          desc: 'Cut from a tree that fell before its time. Still remembers growing.',            price: 75,  tier: 'common',    category: 'weapon', atk: 2 },
+  'bone_edge':         { name: 'Bone Edge',             desc: "The creature this came from didn't let go easily. Neither will you.",            price: 150, tier: 'uncommon',  category: 'weapon', atk: 3 },
+  'void_needle':       { name: 'Void Needle',           desc: 'Thin enough to slip through memory itself.',                                     price: 130, tier: 'uncommon',  category: 'weapon', atk: 3 },
+  'etched_spike':      { name: 'Etched Spike',          desc: 'Warded iron that remembers violence. The wards only make it meaner.',            price: 200, tier: 'uncommon',  category: 'weapon', atk: 4 },
+  'resonance_blade':   { name: 'Resonance Blade',       desc: 'It hums at the frequency of things half-remembered.',                           price: 185, tier: 'uncommon',  category: 'weapon', atk: 4 },
+  'frost_fang':        { name: 'Frost Fang',            desc: 'It has never been warm. Not once. It reaches out for heat wherever it goes.',    price: 0,   tier: 'rare',      category: 'weapon', atk: 5 },
+  'ash_spear':         { name: 'Ash Spear',             desc: 'Forged from ash that still wanted to burn.',                                     price: 0,   tier: 'rare',      category: 'weapon', atk: 6 },
+  'glacial_shard':     { name: 'Glacial Shard',         desc: 'Broken off from something vast and cold and patient.',                           price: 0,   tier: 'rare',      category: 'weapon', atk: 6 },
+  'memory_edge':       { name: 'Memory Edge',           desc: 'Forged from solidified recollection. It cuts through what was as easily as what is.', price: 0, tier: 'rare', category: 'weapon', atk: 7 },
+  'cinder_blade':      { name: 'Cinder Blade',          desc: 'Forged in the last true fire. The flames are still in there, waiting.',          price: 0,   tier: 'epic',      category: 'weapon', atk: 8 },
+  'twin_fangs':        { name: 'Twin Fangs',            desc: 'Two blades that refuse to work separately. They are more honest as one.',        price: 0,   tier: 'epic',      category: 'weapon', atk: 9 },
+  'voidtouched_blade': { name: 'Voidtouched Blade',    desc: 'Reality flinches where this blade passes through it. So do most enemies.',       price: 0,   tier: 'epic',      category: 'weapon', atk: 10 },
+  'night_cleaver':     { name: 'Night Cleaver',         desc: 'It cuts through shadows. The shadows still remember.',                           price: 0,   tier: 'epic',      category: 'weapon', atk: 11 },
+  'voidglass_dagger':  { name: 'Voidglass Dagger',     desc: 'Cut from the Nexus itself. It remembers every wound it has ever made.',          price: 0,   tier: 'legendary', category: 'weapon', atk: 12 },
+  'sovereign_edge':    { name: 'Sovereign Edge',        desc: 'Carried by whoever the Void feared most. It has been carried often.',            price: 0,   tier: 'legendary', category: 'weapon', atk: 14 },
+  'oblivion_lance':    { name: 'Oblivion Lance',        desc: 'The weapon that ended the first war. It has no memory of mercy.',                price: 0,   tier: 'mythic',    category: 'weapon', atk: 20 },
 
   // ── ARMOR ──
-  'cloth_wrap':       { name: 'Cloth Wrap',           desc: 'It will not stop much. But it is better than hope alone.',               price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
-  'hide_wrap':        { name: 'Hide Wrap',             desc: 'Toughened by something that survived worse than this.',                  price: 100, tier: 'common',    category: 'armor', maxHp: 8 },
-  'traveler_cloak':   { name: "Traveler's Cloak",     desc: 'It has walked very far. The roads are in the threads.',                  price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
-  'runed_cloak':      { name: 'Runed Cloak',           desc: 'Old wards stitched into the hem by someone who did not want to be forgotten.', price: 220, tier: 'uncommon', category: 'armor', maxHp: 12, def: 1 },
-  'archivist_ward':   { name: "Archivist's Ward",     desc: 'Made by someone who needed to survive long enough to write one more page.', price: 0, tier: 'rare',    category: 'armor', maxHp: 15, def: 2 },
-  'ember_plate':      { name: 'Ember Plate',           desc: 'Still smells like smoke. Whatever wore it before walked out of fire.',   price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
-  'shadow_carapace':  { name: 'Shadow Carapace',       desc: 'Worn by something that stopped needing light to see its prey.',          price: 0,   tier: 'epic',      category: 'armor', maxHp: 25, def: 4 },
-  'voidsteel_mail':   { name: 'Voidsteel Mail',        desc: 'The armor of death himself. Heavy with the weight of endings.',          price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
+  'tattered_rags':     { name: 'Tattered Rags',        desc: 'Better than skin alone. Not by much, but enough to matter.',                     price: 25,  tier: 'common',    category: 'armor', maxHp: 3 },
+  'cloth_wrap':        { name: 'Cloth Wrap',            desc: 'It will not stop much. But it is better than hope alone.',                       price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
+  'woven_leather':     { name: 'Woven Leather',         desc: 'Someone cured this hide carefully. It repays the care.',                         price: 90,  tier: 'common',    category: 'armor', maxHp: 6 },
+  'hide_wrap':         { name: 'Hide Wrap',             desc: 'Toughened by something that survived worse than this.',                          price: 100, tier: 'common',    category: 'armor', maxHp: 8 },
+  'traveler_cloak':    { name: "Traveler's Cloak",     desc: 'It has walked very far. The roads are in the threads.',                          price: 140, tier: 'uncommon',  category: 'armor', maxHp: 10, def: 1 },
+  'runed_cloak':       { name: 'Runed Cloak',           desc: 'Old wards stitched into the hem by someone who did not want to be forgotten.',   price: 220, tier: 'uncommon',  category: 'armor', maxHp: 12, def: 1 },
+  'keeper_vestments':  { name: "Keeper's Vestments",   desc: 'Worn by those who remembered the old roads. Every thread holds a path.',         price: 175, tier: 'uncommon',  category: 'armor', maxHp: 14, def: 1 },
+  'archivist_ward':    { name: "Archivist's Ward",     desc: 'Made by someone who needed to survive long enough to write one more page.',       price: 0,   tier: 'rare',      category: 'armor', maxHp: 15, def: 2 },
+  'void_mail':         { name: 'Void Mail',             desc: 'Forged in the Nexus outer ring. It resists what it was born in.',                price: 0,   tier: 'rare',      category: 'armor', maxHp: 18, def: 2 },
+  'resonant_plate':    { name: 'Resonant Plate',        desc: 'Each strike against it is absorbed into something deeper. Used wisely.',         price: 0,   tier: 'rare',      category: 'armor', maxHp: 18, def: 3 },
+  'ember_plate':       { name: 'Ember Plate',           desc: 'Still smells like smoke. Whatever wore it before walked out of fire.',           price: 0,   tier: 'epic',      category: 'armor', maxHp: 20, def: 3 },
+  'nexus_shroud':      { name: 'Nexus Shroud',          desc: 'Woven from Nexus-thread. What passes through it tends to get lost.',             price: 0,   tier: 'epic',      category: 'armor', maxHp: 22, def: 3 },
+  'shadow_carapace':   { name: 'Shadow Carapace',       desc: 'Worn by something that stopped needing light to see its prey.',                  price: 0,   tier: 'epic',      category: 'armor', maxHp: 25, def: 4 },
+  'warden_aegis':      { name: 'Warden Aegis',          desc: "The last warden's armor. It held the city long after the warden fell.",          price: 0,   tier: 'epic',      category: 'armor', maxHp: 28, def: 4 },
+  'voidsteel_mail':    { name: 'Voidsteel Mail',        desc: 'The armor of death himself. Heavy with the weight of endings.',                  price: 0,   tier: 'legendary', category: 'armor', maxHp: 30, def: 5 },
+  'oblivion_mantle':   { name: 'Oblivion Mantle',       desc: 'Heavier than grief. Protects everything behind it.',                             price: 0,   tier: 'legendary', category: 'armor', maxHp: 35, def: 6 },
+  'mortus_regalia':    { name: 'Mortus Regalia',        desc: 'The regalia of the first Memory Keeper. Worn once. Never returned.',             price: 0,   tier: 'mythic',    category: 'armor', maxHp: 45, def: 8 },
 
   // ── READABLE BOOKS ──
   'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
@@ -351,16 +370,115 @@ export const ITEMS: Record<string, Item> = {
     price: 0, tier: 'mythic', category: 'enchanted_book',
     enchantData: { compatibleCategories: ['armor'], def: 18, maxHp: 20 },
   },
+
+  // ── PROC ENCHANTMENTS — weapon ──────────────────────────────────────
+  // Common
+  'ench_confusion_brand': {
+    name: 'Confusion Brand',
+    desc: 'Enchants a weapon. +1 ATK. On a solid hit, confuses the enemy — it skips its next turn.',
+    price: 0, tier: 'common', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 1, confuse: true },
+  },
+  // Uncommon
+  'ench_wither_mark': {
+    name: 'Wither Mark',
+    desc: 'Enchants a weapon. +2 ATK. On a solid hit, saps the enemy — reduces its ATK by 1.',
+    price: 0, tier: 'uncommon', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2, weaken: 1 },
+  },
+  // Rare
+  'ench_soul_rend': {
+    name: 'Soul Rend',
+    desc: 'Enchants a weapon. +3 ATK. On a solid hit, drains 3 HP from the enemy back to you.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 3, drain: 3 },
+  },
+  'ench_hollow_confusion': {
+    name: 'Hollow Confusion',
+    desc: 'Enchants a weapon. +2 ATK. On a solid hit, fractures the enemy\'s mind — it skips its next turn.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2, confuse: true },
+  },
+  // Epic
+  'ench_void_scream': {
+    name: 'Void Scream',
+    desc: 'Enchants a weapon. +5 ATK. On a solid hit, confuses and weakens the enemy by 2 ATK.',
+    price: 0, tier: 'epic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 5, confuse: true, weaken: 2 },
+  },
+  'ench_lifestealer': {
+    name: 'Lifestealer',
+    desc: 'Enchants a weapon. +4 ATK. On a solid hit, steals 6 HP from the wound.',
+    price: 0, tier: 'epic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 4, drain: 6 },
+  },
+  // Legendary
+  'ench_oblivion_strike': {
+    name: 'Oblivion Strike',
+    desc: 'Enchants a weapon. +8 ATK. On a solid hit, makes the enemy forget what it was doing.',
+    price: 0, tier: 'legendary', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 8, confuse: true },
+  },
+  // Mythic
+  'ench_mortus_chaos': {
+    name: 'Grimoire of Chaos',
+    desc: 'An enchantment written at the end of everything. +12 ATK. On a solid hit: confuses, weakens by 3, and drains 5 HP.',
+    price: 0, tier: 'mythic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 12, confuse: true, weaken: 3, drain: 5 },
+  },
+
+  // ── PROC ENCHANTMENTS — armor ───────────────────────────────────────
+  // Uncommon
+  'ench_thorn_weave': {
+    name: 'Thorn Weave',
+    desc: 'Enchants armor. +1 DEF. When struck, thorns deal 2 damage back to the attacker.',
+    price: 0, tier: 'uncommon', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 1, thornDmg: 2 },
+  },
+  // Rare
+  'ench_void_shroud': {
+    name: 'Void Shroud',
+    desc: 'Enchants armor. +2 DEF. Once per battle, automatically reduces an incoming attack by 50%.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 2, autoWard: true },
+  },
+  // Epic
+  'ench_iron_thorn': {
+    name: 'Iron Thorn',
+    desc: 'Enchants armor. +3 DEF. When struck, iron thorns deal 4 damage back to the attacker.',
+    price: 0, tier: 'epic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 3, thornDmg: 4 },
+  },
+  // Mythic
+  'ench_mortus_aegis': {
+    name: 'Aegis of Mortus',
+    desc: 'The apex of armor enchantment. +10 DEF, +15 Max HP. Auto-wards once per battle AND deals 6 thorn damage on every hit.',
+    price: 0, tier: 'mythic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['armor'], def: 10, maxHp: 15, autoWard: true, thornDmg: 6 },
+  },
 };
 
 // Enchantments craftable from scratch via the Tomes Blessing — spans every tier.
 export const CRAFTABLE_ENCHANTS: string[] = [
-  'ench_memory_mark', 'ench_stone_ward',           // common
-  'ench_hollow_edge', 'ench_woven_ward',            // uncommon
-  'ench_shard_frostbite', 'ench_veil_dust',         // rare
-  'ench_grimoire_striking', 'ench_tome_iron_veil',  // epic
-  'ench_relic_ashbound', 'ench_codex_living_flame', // legendary
-  'ench_grimoire_mortus', 'ench_veil_mortus',       // mythic (Mortus)
+  // ── Stat enchants ──
+  'ench_memory_mark', 'ench_stone_ward',            // common
+  'ench_hollow_edge', 'ench_woven_ward',             // uncommon
+  'ench_shard_frostbite', 'ench_veil_dust',          // rare
+  'ench_grimoire_striking', 'ench_tome_iron_veil',   // epic
+  'ench_relic_ashbound', 'ench_codex_living_flame',  // legendary
+  'ench_grimoire_mortus', 'ench_veil_mortus',        // mythic (Mortus)
+  // ── Proc enchants — weapon ──
+  'ench_confusion_brand',                            // common  — confuse on hit
+  'ench_wither_mark',                                // uncommon — weaken on hit
+  'ench_soul_rend', 'ench_hollow_confusion',         // rare     — drain / confuse
+  'ench_void_scream', 'ench_lifestealer',            // epic     — confuse+weaken / drain
+  'ench_oblivion_strike',                            // legendary — confuse on hit
+  'ench_mortus_chaos',                               // mythic   — confuse+weaken+drain
+  // ── Proc enchants — armor ──
+  'ench_thorn_weave',                                // uncommon — thorn dmg
+  'ench_void_shroud',                                // rare     — auto ward
+  'ench_iron_thorn',                                 // epic     — thorn dmg
+  'ench_mortus_aegis',                               // mythic   — auto ward + thorn
 ];
 
 export const TIER_COLOR: Record<string, string> = {
