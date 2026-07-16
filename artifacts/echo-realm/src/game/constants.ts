@@ -1007,108 +1007,119 @@ function buildVN(): string[][] {
   return L;
 }
 
-// ── THORNWOOD FOREST (200 × 200) — the sprawling forest west of Verdant Hollow ──
-// Non-linear, branching paths, dead ends, an abandoned cottage, and several
-// named clearings. No enemies yet — just the geography.
+// ── THORNWOOD FOREST (80 × 80) — the branching forest west of Verdant Hollow ──
+// Six named fork points, nine dead-end clearings, an abandoned cottage, and
+// an ancient Deep Grove. No enemies yet — pure geography.
 function buildTF(): string[][] {
-  const W = 200, H = 200;
-  const L = buildMap(W, H, 'T'); // dense trees everywhere by default
+  const W = 80, H = 80;
+  const L = buildMap(W, H, 'T');
 
   // ── East exit tile (back to Verdant Hollow) ─────────────────────────
-  poke(L, 199, 100, '<');
+  poke(L, 79, 40, '<');
 
-  // ── Entry corridor from VH — 3 tiles wide, opens into first glade ──
-  hline(L, 99,  165, 198, 'P');
-  hline(L, 100, 165, 198, 'P');
-  hline(L, 101, 165, 198, 'P');
+  // ── Main east-west spine (y = 39-41) ────────────────────────────────
+  hline(L, 39, 5, 79, 'P');
+  hline(L, 40, 5, 79, 'P');
+  hline(L, 41, 5, 79, 'P');
 
-  // ── Crossroads Glade — first major junction ─────────────────────────
-  rect(L, 143, 88, 168, 112, 'P');
+  // ────────────────────────────────────────────────────────────────────
+  // FORK A — Bramble Crossroads glade at x≈65 (first fork from east)
+  // ────────────────────────────────────────────────────────────────────
+  rect(L, 57, 34, 73, 46, 'P');
 
-  // ── North Spur (dead end — Watchtower Clearing) ─────────────────────
-  vline(L, 155, 52, 88, 'P');
-  vline(L, 156, 52, 88, 'P');
-  rect(L, 140, 36, 172, 55, 'P');
-  // Stone watchtower remnants
-  poke(L, 147, 42, 'M'); poke(L, 164, 42, 'M');
-  poke(L, 147, 50, 'M'); poke(L, 164, 50, 'M');
-  poke(L, 155, 40, 'M');
+  // Fork A / North arm → Sentinel Clearing (dead end)
+  vline(L, 63, 10, 34, 'P'); vline(L, 64, 10, 34, 'P');
+  rect(L, 54, 4, 73, 13, 'P');
+  poke(L, 58, 8, 'M'); poke(L, 69, 8, 'M'); // standing stones
 
-  // ── South Spur (dead end — Foggy Bog) ──────────────────────────────
-  vline(L, 155, 112, 163, 'P');
-  vline(L, 156, 112, 163, 'P');
-  rect(L, 136, 162, 175, 182, 'P');
-  poke(L, 143, 172, 'M'); poke(L, 168, 172, 'M');
+  // Fork A / South arm → Foggy Bog (dead end)
+  vline(L, 63, 46, 65, 'P'); vline(L, 64, 46, 65, 'P');
+  rect(L, 53, 64, 73, 72, 'P');
+  poke(L, 60, 68, 'M'); poke(L, 67, 68, 'M');
 
-  // ── West trunk (Crossroads → West Junction) ─────────────────────────
-  hline(L, 99,  100, 143, 'P');
-  hline(L, 100, 100, 143, 'P');
-  hline(L, 101, 100, 143, 'P');
+  // ────────────────────────────────────────────────────────────────────
+  // FORK B — Thornwood Junction glade at x≈48 (second fork)
+  // ────────────────────────────────────────────────────────────────────
+  rect(L, 43, 36, 53, 44, 'P');
 
-  // ── West Junction — second major branch point ──────────────────────
-  rect(L, 76, 86, 102, 114, 'P');
+  // Fork B / North arm → Overgrown Shrine (dead end)
+  vline(L, 47, 16, 36, 'P'); vline(L, 48, 16, 36, 'P');
+  rect(L, 38, 6, 57, 18, 'P');
+  poke(L, 43, 12, 'M'); poke(L, 51, 12, 'M'); poke(L, 47, 8, 'M');
 
-  // ── NW Branch (West Junction → Abandoned Cottage Glade) ────────────
-  vline(L, 88, 40, 86, 'P');
-  vline(L, 89, 40, 86, 'P');
-  // NW Glade — a wider clearing around the cottage
-  rect(L, 65, 20, 112, 50, 'P');
-  // Abandoned Cottage — outer stone walls
-  rect(L, 72, 24, 94, 46, 'H');
-  // Interior — ruined but passable
-  rect(L, 73, 25, 93, 45, 'P');
+  // Fork B / South arm → Briar Clearing (dead end)
+  vline(L, 47, 44, 61, 'P'); vline(L, 48, 44, 61, 'P');
+  rect(L, 37, 60, 58, 71, 'P');
+  poke(L, 42, 66, 'M'); poke(L, 53, 66, 'M');
+
+  // ────────────────────────────────────────────────────────────────────
+  // FORK C — Deep Fork glade at x≈30 (third fork — two major arms)
+  // ────────────────────────────────────────────────────────────────────
+  rect(L, 24, 34, 38, 46, 'P');
+
+  // Fork C / NW arm → path goes north then bends west to Cottage Glade
+  vline(L, 27, 18, 34, 'P'); vline(L, 28, 18, 34, 'P');
+  hline(L, 18, 5, 28, 'P'); hline(L, 19, 5, 28, 'P');
+  // Cottage Glade clearing
+  rect(L, 2, 10, 20, 24, 'P');
+  // Abandoned Cottage outer stone walls
+  rect(L, 3, 11, 17, 22, 'H');
+  // Cottage interior (ruined floor)
+  rect(L, 4, 12, 16, 21, 'P');
   // South door opening (main entrance)
-  poke(L, 81, 46, 'P'); poke(L, 82, 46, 'P'); poke(L, 83, 46, 'P');
-  // North wall crack
-  poke(L, 81, 24, 'P'); poke(L, 82, 24, 'P');
-  // Interior ruins marker (fallen shelf / overgrown hearth)
-  poke(L, 87, 35, 'M');
-  // Dead-end path north from glade
-  vline(L, 83, 5, 20, 'P');
-  vline(L, 84, 5, 20, 'P');
-  rect(L, 65, 3, 102, 12, 'P');
-  poke(L, 72, 7, 'M'); poke(L, 95, 7, 'M');
+  poke(L, 9, 22, 'P'); poke(L, 10, 22, 'P'); poke(L, 11, 22, 'P');
+  // North wall breach
+  poke(L, 9, 11, 'P'); poke(L, 10, 11, 'P');
+  // Interior overgrown hearth marker
+  poke(L, 13, 16, 'M');
+  // Short dead-end path north from glade → Mossy Nook
+  vline(L, 8, 3, 10, 'P'); vline(L, 9, 3, 10, 'P');
+  rect(L, 3, 2, 16, 6, 'P');
+  poke(L, 5, 4, 'M'); poke(L, 14, 4, 'M');
 
-  // ── SW Branch (West Junction → Briar Clearing, dead end) ───────────
-  vline(L, 88, 114, 170, 'P');
-  vline(L, 89, 114, 170, 'P');
-  rect(L, 65, 168, 110, 186, 'P');
-  poke(L, 73, 178, 'M'); poke(L, 102, 178, 'M');
-  // East stub from Briar Clearing (dead-end nook)
-  hline(L, 178, 110, 140, 'P');
-  rect(L, 138, 170, 158, 186, 'P');
-  poke(L, 148, 178, 'M');
+  // Short dead-end path east from Cottage Glade → Boulder Alcove
+  hline(L, 17, 20, 28, 'P');
+  rect(L, 18, 14, 26, 20, 'P');
+  poke(L, 21, 17, 'M'); poke(L, 25, 17, 'M');
 
-  // ── Far west trunk (West Junction → Deep Grove) ─────────────────────
-  hline(L, 99,  30, 76, 'P');
-  hline(L, 100, 30, 76, 'P');
-  hline(L, 101, 30, 76, 'P');
+  // Fork C / SW arm → path goes south then bends west to Sunken Hollow
+  vline(L, 27, 46, 58, 'P'); vline(L, 28, 46, 58, 'P');
+  hline(L, 58, 5, 27, 'P'); hline(L, 59, 5, 27, 'P');
+  rect(L, 2, 60, 20, 70, 'P');
+  poke(L, 6, 65, 'M'); poke(L, 16, 65, 'M');
 
-  // ── Deep Grove — large ancient clearing at the forest's heart ───────
-  rect(L, 15, 78, 52, 122, 'P');
-  // Scattered old-growth trees for atmosphere (impassable but decorative)
-  poke(L, 20, 83, 'T'); poke(L, 35, 83, 'T'); poke(L, 48, 83, 'T');
-  poke(L, 20, 117,'T'); poke(L, 35, 117,'T'); poke(L, 48, 117,'T');
-  poke(L, 20, 100,'T'); poke(L, 48, 100,'T');
-  // Ancient grove shrine
-  poke(L, 32, 100, 'M');
+  // Short dead-end spur east from Sunken Hollow → Ash Dell
+  hline(L, 65, 20, 27, 'P');
+  rect(L, 18, 62, 27, 68, 'P');
+  poke(L, 22, 65, 'M');
 
-  // NW path from Deep Grove (dead end — Overgrown Dell)
-  vline(L, 28, 40, 78, 'P');
-  vline(L, 29, 40, 78, 'P');
-  rect(L, 12, 26, 48, 45, 'P');
-  poke(L, 18, 34, 'M'); poke(L, 42, 34, 'M');
+  // ────────────────────────────────────────────────────────────────────
+  // FORK D — Deep Grove glade at far west (x≈6-18, y≈33-47)
+  // Connected to the spine and to Fork C via an extra spur
+  // ────────────────────────────────────────────────────────────────────
+  rect(L, 5, 33, 20, 47, 'P');
+  // Ancient standing stones and shrine
+  poke(L, 8, 36, 'M'); poke(L, 16, 36, 'M');
+  poke(L, 8, 44, 'M'); poke(L, 16, 44, 'M');
+  poke(L, 12, 40, 'M');
 
-  // SW path from Deep Grove (dead end — Sunken Hollow)
-  vline(L, 28, 122, 162, 'P');
-  vline(L, 29, 122, 162, 'P');
-  rect(L, 10, 160, 50, 178, 'P');
-  poke(L, 16, 170, 'M'); poke(L, 44, 170, 'M');
+  // Deep Grove / NW sub-branch → Overgrown Dell (dead end)
+  vline(L, 11, 22, 33, 'P'); vline(L, 12, 22, 33, 'P');
+  rect(L, 4, 14, 19, 24, 'P');
+  poke(L, 7, 19, 'M'); poke(L, 16, 19, 'M');
+  // Extra spur from Dell heading east (dead end)
+  hline(L, 19, 18, 23, 'P');
+  rect(L, 22, 16, 28, 22, 'P');
+  poke(L, 25, 19, 'M');
 
-  // Far west dead-end meadow (the forest's westernmost reach)
-  hline(L, 100, 5, 15, 'P');
-  rect(L, 2, 92, 12, 108, 'P');
-  poke(L, 7, 100, 'M');
+  // Deep Grove / SW sub-branch → Sunken Garden (dead end)
+  vline(L, 11, 47, 56, 'P'); vline(L, 12, 47, 56, 'P');
+  rect(L, 3, 57, 19, 65, 'P');
+  poke(L, 7, 61, 'M'); poke(L, 14, 61, 'M');
+
+  // ── Far-west lone meadow (westernmost reach of the forest) ──────────
+  rect(L, 2, 37, 6, 43, 'P');
+  poke(L, 4, 40, 'M');
 
   return L;
 }
@@ -1668,27 +1679,27 @@ export const CITY_SIDE_QUESTS: CitySideQuest[] = [
     giverIntro: "Every lock in this quarter still works. Trouble is, half the shades wandering out there don't remember which door is theirs. Thin them out, would you?",
     progressText: 'Still a few shades pacing the block out there.', completeText: "You've quieted the block. Here — I never use this anymore.",
     afterText: 'Quiet enough now. Thank you.', requiredKills: 2, enemyPool: ['city_shade'],
-    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.6 }, { itemId: 'ench_grimoire_striking', chance: 0.3 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 40 },
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.6 }, { itemId: 'ench_grimoire_striking', chance: 0.3 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }, { itemId: 'ench_wither_mark', chance: 0.4 }], echoes: 40 },
   { id: 'sq2', npcId: 'npc_sq2', npcName: 'A Boarded-Up Baker', title: "Flour and Silence",
     giverIntro: "I used to hear the street wraiths pacing at night through these boards. Can't sleep. If you'd silence a few, I'd sleep, and I'd pay you for the privilege.",
     progressText: 'Still pacing out there, some nights.', completeText: "Silence, finally. Take this — payment, and thanks.",
     afterText: 'I slept last night. First time in weeks.', requiredKills: 3, enemyPool: ['street_wraith'],
-    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.6 }, { itemId: 'ench_tome_iron_veil', chance: 0.3 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 50 },
+    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.6 }, { itemId: 'ench_tome_iron_veil', chance: 0.3 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }, { itemId: 'ench_wither_mark', chance: 0.35 }], echoes: 50 },
   { id: 'sq3', npcId: 'npc_sq3', npcName: "A Retired Guard", title: 'One Last Post',
     giverIntro: "I used to stand post two streets from here. A Hollow Guard's still standing mine, I think — never relieved. Relieve him, one way or another.",
     progressText: "He's still standing his post, poor thing.", completeText: "Relieved at last. Take my old kit — I've no more use for it.",
     afterText: 'Post is empty now. As it should be.', requiredKills: 1, enemyPool: ['hollow_guard'],
-    rewardPool: [{ itemId: 'ench_grimoire_striking', chance: 0.5 }, { itemId: 'ench_tome_iron_veil', chance: 0.4 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 60 },
+    rewardPool: [{ itemId: 'ench_grimoire_striking', chance: 0.5 }, { itemId: 'ench_tome_iron_veil', chance: 0.4 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }, { itemId: 'ench_soul_rend', chance: 0.25 }], echoes: 60 },
   { id: 'sq4', npcId: 'npc_sq4', npcName: 'A Nervous Clerk', title: 'The Ledger Alley',
     giverIntro: "The alley behind the old records office is thick with shades. I need to get back in there for the deeds. Clear a path?",
     progressText: 'Still too many out there for me.', completeText: "Path's clear. Here, take this — found it while filing.",
     afterText: "I got my deeds back, thanks to you.", requiredKills: 3, enemyPool: ['city_shade', 'street_wraith'],
-    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.5 }, { itemId: 'ench_veil_dust', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 45 },
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.5 }, { itemId: 'ench_veil_dust', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }, { itemId: 'ench_soul_rend', chance: 0.2 }], echoes: 45 },
   { id: 'sq5', npcId: 'npc_sq5', npcName: 'An Old Gardener', title: "Weeds and Wraiths",
     giverIntro: "My garden's overgrown with more than weeds these days. A couple of wraiths took root by the fence. Dig them out?",
     progressText: 'Still rooted by the fence, last I checked.', completeText: "Cleared! Here — this has been in my shed for years, might as well be useful.",
     afterText: 'The garden feels like mine again.', requiredKills: 2, enemyPool: ['street_wraith'],
-    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.55 }, { itemId: 'ench_grimoire_striking', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 45 },
+    rewardPool: [{ itemId: 'ench_veil_dust', chance: 0.55 }, { itemId: 'ench_grimoire_striking', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }, { itemId: 'ench_hollow_confusion', chance: 0.2 }], echoes: 45 },
   { id: 'sq6', npcId: 'npc_sq6', npcName: 'A Shaken Courier', title: "Undeliverable Mail",
     giverIntro: "I've got letters three years undelivered because the route's crawling with shades. If you cleared it, I could finally close out my route.",
     progressText: 'Route is still too dangerous.', completeText: "Route's clear — finally. Take this, it's the least I owe you.",
@@ -1698,7 +1709,7 @@ export const CITY_SIDE_QUESTS: CitySideQuest[] = [
     giverIntro: "A Hollow Guard patrols right past my window every night, same time, like clockwork. It's not him I'm afraid of. It's the memory of who used to walk that route. End his round, gently.",
     progressText: 'Still walking his round, same as ever.', completeText: "Thank you for ending it kindly. Take this, for your trouble.",
     afterText: 'The street is finally still at night.', requiredKills: 1, enemyPool: ['hollow_guard'],
-    rewardPool: [{ itemId: 'ench_tome_iron_veil', chance: 0.5 }, { itemId: 'ench_grimoire_striking', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }], echoes: 55 },
+    rewardPool: [{ itemId: 'ench_tome_iron_veil', chance: 0.5 }, { itemId: 'ench_grimoire_striking', chance: 0.4 }, { itemId: 'ench_codex_living_flame', chance: 0.1 }, { itemId: 'ench_hollow_confusion', chance: 0.18 }], echoes: 55 },
   { id: 'sq8', npcId: 'npc_sq8', npcName: 'A Restless Apprentice', title: "Unfinished Errand",
     giverIntro: "My master sent me on an errand the day the Void came through. I never finished it — too many shades between here and the market square. Would you clear the way?",
     progressText: 'Still too many shades on the route.', completeText: "Errand complete, three years late. Here, take this for helping me finish it.",
@@ -1708,12 +1719,12 @@ export const CITY_SIDE_QUESTS: CitySideQuest[] = [
     giverIntro: "The old canal draws wraiths like fish to a net. I can't check my traps without one snapping at me. Clear a few and I'll pay you in whatever I've got left.",
     progressText: 'Still too many wraiths by the water.', completeText: "Nets are clear. Here — my last good hook, and this.",
     afterText: "Caught something good today. First time in a while.", requiredKills: 2, enemyPool: ['street_wraith'],
-    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.55 }, { itemId: 'ench_veil_dust', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }], echoes: 40 },
+    rewardPool: [{ itemId: 'ench_shard_frostbite', chance: 0.55 }, { itemId: 'ench_veil_dust', chance: 0.35 }, { itemId: 'ench_relic_ashbound', chance: 0.1 }, { itemId: 'ench_grimoire_mortus', chance: 0.08 }, { itemId: 'ench_mortus_chaos', chance: 0.06 }], echoes: 40 },
   { id: 'sq10', npcId: 'npc_sq10', npcName: 'The Last Lamplighter', title: "Keep the Lanterns Lit",
     giverIntro: "I still light the lanterns every night, even with no one left to see them. The Guards keep knocking them over on their rounds. End a couple of their rounds for me?",
     progressText: 'The lanterns keep getting knocked over.', completeText: "The lanterns stayed lit tonight. First time in ages. Take this — you earned it.",
     afterText: 'The streets glow again, at least a little.', requiredKills: 2, enemyPool: ['hollow_guard', 'street_wraith'],
-    rewardPool: [{ itemId: 'ench_relic_ashbound', chance: 0.45 }, { itemId: 'ench_codex_living_flame', chance: 0.45 }, { itemId: 'ench_grimoire_striking', chance: 0.1 }], echoes: 70 },
+    rewardPool: [{ itemId: 'ench_relic_ashbound', chance: 0.45 }, { itemId: 'ench_codex_living_flame', chance: 0.45 }, { itemId: 'ench_grimoire_striking', chance: 0.1 }, { itemId: 'ench_veil_mortus', chance: 0.08 }, { itemId: 'ench_mortus_aegis', chance: 0.06 }], echoes: 70 },
 ];
 
 // ── MAPS ───────────────────────────────────────────────────────────
@@ -1742,7 +1753,7 @@ export const MAPS: Record<string, any> = {
       '>': { mapId: 'WW', x: 11, y: 13 },
       '!': { mapId: 'CT', x: 1, y: 50 },
       '<': { mapId: 'SR', x: 8, y: 1, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." },
-      '@': { mapId: 'TF', x: 198, y: 100 }
+      '@': { mapId: 'TF', x: 78, y: 40 }
     }
   },
 
@@ -1795,8 +1806,9 @@ export const MAPS: Record<string, any> = {
     layout: wwLayout,
     npcs: [],
     chests: [
-      { id: 'ch_ww1', flag: 'ch_ww1', x: 4,  y: 4, item: 'spark' },
-      { id: 'ch_ww2', flag: 'ch_ww2', x: 17, y: 3, item: 'echoes_60' },
+      { id: 'ch_ww1', flag: 'ch_ww1', x: 4,  y: 4,  item: 'spark' },
+      { id: 'ch_ww2', flag: 'ch_ww2', x: 17, y: 3,  item: 'echoes_60' },
+      { id: 'ch_ww3', flag: 'ch_ww3', x: 13, y: 10, item: 'resonance_blade' },
     ],
     doors: [],
     books: [],
@@ -1837,6 +1849,8 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_sa1', flag: 'ch_sa1', x: 1,  y: 8, item: 'bone_edge' },
       { id: 'ch_sa2', flag: 'ch_sa2', x: 15, y: 2, item: 'book_sa_marginalia' },
+      { id: 'ch_sa3', flag: 'ch_sa3', x: 17, y: 8, item: 'keeper_vestments' },
+      { id: 'ch_sa4', flag: 'ch_sa4', x: 8,  y: 5, item: 'ench_wither_mark' },
     ],
     doors: [],
     books: [],
@@ -1859,6 +1873,9 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_fr1', flag: 'ch_fr1', x: 4  + FR_OX, y: 12 + FR_OY, item: 'traveler_cloak' },
       { id: 'ch_fr2', flag: 'ch_fr2', x: 16 + FR_OX, y: 12 + FR_OY, item: 'book_fr_frostnote' },
+      { id: 'ch_fr3', flag: 'ch_fr3', x: 2  + FR_OX, y: 4  + FR_OY, item: 'frost_fang' },
+      { id: 'ch_fr4', flag: 'ch_fr4', x: 18 + FR_OX, y: 4  + FR_OY, item: 'glacial_shard' },
+      { id: 'ch_fr5', flag: 'ch_fr5', x: 10 + FR_OX, y: 7  + FR_OY, item: 'resonant_plate' },
     ],
     doors: [],
     books: [],
@@ -1879,7 +1896,10 @@ export const MAPS: Record<string, any> = {
       { id: 'burned_scholar', x: 16, y: 7, color: '#d98c6b', name: 'A Burned Scholar', type: 'TALK' },
     ],
     chests: [
-      { id: 'ch_ad1', flag: 'ch_ad1', x: 8, y: 12, item: 'ember_plate' }
+      { id: 'ch_ad1', flag: 'ch_ad1', x: 8,  y: 12, item: 'ember_plate' },
+      { id: 'ch_ad2', flag: 'ch_ad2', x: 2,  y: 4,  item: 'ash_spear' },
+      { id: 'ch_ad3', flag: 'ch_ad3', x: 18, y: 4,  item: 'cinder_blade' },
+      { id: 'ch_ad4', flag: 'ch_ad4', x: 2,  y: 10, item: 'ench_soul_rend' },
     ],
     doors: [],
     books: [],
@@ -1900,6 +1920,9 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_vn1', flag: 'ch_vn1', x: 2,  y: 4,  item: 'voidglass_dagger' },
       { id: 'ch_vn2', flag: 'ch_vn2', x: 17, y: 13, item: 'voidsteel_mail' },
+      { id: 'ch_vn3', flag: 'ch_vn3', x: 17, y: 4,  item: 'voidtouched_blade' },
+      { id: 'ch_vn4', flag: 'ch_vn4', x: 2,  y: 13, item: 'void_mail' },
+      { id: 'ch_vn5', flag: 'ch_vn5', x: 9,  y: 8,  item: 'ench_hollow_confusion' },
     ],
     doors: [],
     books: [],
@@ -1909,14 +1932,38 @@ export const MAPS: Record<string, any> = {
     }
   },
 
-  // ── THORNWOOD FOREST (200 × 200) — west of Verdant Hollow ──────────
-  // Branching paths, multiple dead ends, and an Abandoned Cottage.
-  // No enemies or quests yet — just the geography.
+  // ── THORNWOOD FOREST (80 × 80) — west of Verdant Hollow ─────────────
+  // Six fork points, nine dead-end clearings, abandoned cottage, Deep Grove.
   'TF': {
-    id: 'TF', name: 'Thornwood Forest', width: 200, height: 200,
+    id: 'TF', name: 'Thornwood Forest', width: 80, height: 80,
     layout: tfLayout,
     npcs: [],
-    chests: [],
+    chests: [
+      // Sentinel Clearing (Fork A north dead end)
+      { id: 'ch_tf_01', flag: 'ch_tf_01', x: 62, y: 7,  item: 'ench_memory_mark' },
+      // Foggy Bog (Fork A south dead end)
+      { id: 'ch_tf_02', flag: 'ch_tf_02', x: 61, y: 69, item: 'ench_stone_ward' },
+      // Overgrown Shrine (Fork B north dead end)
+      { id: 'ch_tf_03', flag: 'ch_tf_03', x: 45, y: 9,  item: 'ench_confusion_brand' },
+      // Briar Clearing (Fork B south dead end)
+      { id: 'ch_tf_04', flag: 'ch_tf_04', x: 41, y: 67, item: 'ench_hollow_edge' },
+      // Mossy Nook above cottage glade
+      { id: 'ch_tf_05', flag: 'ch_tf_05', x: 6,  y: 3,  item: 'carved_stake' },
+      // Cottage interior (collapsed shelf)
+      { id: 'ch_tf_06', flag: 'ch_tf_06', x: 7,  y: 17, item: 'book_house_note_5' },
+      // Boulder Alcove east of Cottage Glade
+      { id: 'ch_tf_07', flag: 'ch_tf_07', x: 23, y: 16, item: 'ench_woven_ward' },
+      // Sunken Hollow (Fork C south dead end)
+      { id: 'ch_tf_08', flag: 'ch_tf_08', x: 4,  y: 66, item: 'shattered_lens' },
+      // Overgrown Dell (Deep Grove NW sub-branch)
+      { id: 'ch_tf_09', flag: 'ch_tf_09', x: 6,  y: 18, item: 'tattered_rags' },
+      // Sunken Garden (Deep Grove SW sub-branch)
+      { id: 'ch_tf_10', flag: 'ch_tf_10', x: 5,  y: 62, item: 'woven_leather' },
+      // Deep Grove shrine
+      { id: 'ch_tf_11', flag: 'ch_tf_11', x: 12, y: 35, item: 'ench_thorn_weave' },
+      // Far-west lone meadow
+      { id: 'ch_tf_12', flag: 'ch_tf_12', x: 3,  y: 40, item: 'void_needle' },
+    ],
     doors: [],
     books: [],
     encounterPool: [],
@@ -1966,6 +2013,7 @@ export const MAPS: Record<string, any> = {
     npcs: [],
     chests: [
       { id: 'ch_h1_book', flag: 'ch_h1_book', x: 3,  y: 2, item: 'book_keepers_codex' },
+      { id: 'ch_hn_1',     flag: 'ch_hn_1',     x: 14, y: 2, item: 'book_house_note_1' },
     ],
     doors: [ { id: 'stairs_h1', x: 4, y: 10, targetMapId: 'CT_H1_F2', targetX: 7, targetY: 7, label: 'Stairs Up' } ],
     books: [],
@@ -1976,7 +2024,10 @@ export const MAPS: Record<string, any> = {
     id: 'CT_H1_F2', name: "Scholar's Refuge — Upper Floor", width: 14, height: 9,
     layout: ctH1F2Layout,
     npcs: [],
-    chests: [ { id: 'ch_h1_f2', flag: 'ch_h1_f2', x: 10, y: 1, item: 'book_forgotten_verse' } ],
+    chests: [
+      { id: 'ch_h1_f2', flag: 'ch_h1_f2', x: 10, y: 1, item: 'book_forgotten_verse' },
+      { id: 'ch_hn_2',   flag: 'ch_hn_2',   x: 3,  y: 7, item: 'book_house_note_2' },
+    ],
     doors: [ { id: 'stairs_h1_down', x: 7, y: 8, targetMapId: 'CT_H1', targetX: 4, targetY: 9, label: 'Stairs Down' } ],
     books: [],
     encounterPool: [],
@@ -1990,6 +2041,7 @@ export const MAPS: Record<string, any> = {
     npcs: [],
     chests: [
       { id: 'ch_h2_letter', flag: 'ch_h2_letter', x: 3,  y: 2, item: 'book_childs_letter' },
+      { id: 'ch_hn_3',      flag: 'ch_hn_3',      x: 14, y: 2, item: 'book_house_note_3' },
     ],
     doors: [ { id: 'stairs_h2', x: 4, y: 10, targetMapId: 'CT_H2_F2', targetX: 7, targetY: 7, label: 'Stairs Up' } ],
     books: [],
@@ -2000,7 +2052,10 @@ export const MAPS: Record<string, any> = {
     id: 'CT_H2_F2', name: 'Abandoned Home — Upper Floor', width: 14, height: 9,
     layout: ctH2F2Layout,
     npcs: [],
-    chests: [ { id: 'ch_h2_f2', flag: 'ch_h2_f2', x: 10, y: 1, item: 'echoes_50' } ],
+    chests: [
+      { id: 'ch_h2_f2', flag: 'ch_h2_f2', x: 10, y: 1, item: 'echoes_50' },
+      { id: 'ch_hn_4',   flag: 'ch_hn_4',   x: 3,  y: 7, item: 'book_house_note_4' },
+    ],
     doors: [ { id: 'stairs_h2_down', x: 7, y: 8, targetMapId: 'CT_H2', targetX: 4, targetY: 9, label: 'Stairs Down' } ],
     books: [],
     encounterPool: [],
@@ -2015,6 +2070,7 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_h3_cipher', flag: 'ch_h3_cipher', x: 3,  y: 1, item: 'book_cipher_note' },
       { id: 'ch_h3_ledger', flag: 'ch_h3_ledger', x: 10, y: 1, item: 'book_merchants_ledger' },
+      { id: 'ch_hn_6',      flag: 'ch_hn_6',      x: 3,  y: 6, item: 'book_house_note_6' },
     ],
     doors: [],
     books: [],
@@ -2030,6 +2086,7 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_h4_report', flag: 'ch_h4_report', x: 3,  y: 1, item: 'book_wardens_report' },
       { id: 'ch_h4_tonic',  flag: 'ch_h4_tonic',  x: 10, y: 1, item: 'tonic' },
+      { id: 'ch_hn_8',      flag: 'ch_hn_8',      x: 10, y: 6, item: 'book_house_note_8' },
     ],
     doors: [],
     books: [],
@@ -2045,6 +2102,7 @@ export const MAPS: Record<string, any> = {
     chests: [
       { id: 'ch_h5_diary',   flag: 'ch_h5_diary',   x: 3,  y: 1, item: 'book_survivors_diary' },
       { id: 'ch_h5_crystal', flag: 'ch_h5_crystal', x: 10, y: 1, item: 'crystal' },
+      { id: 'ch_hn_7',       flag: 'ch_hn_7',       x: 10, y: 6, item: 'book_house_note_7' },
     ],
     doors: [],
     books: [],
@@ -2057,7 +2115,9 @@ export const MAPS: Record<string, any> = {
     id: 'CT_SECRET', name: 'A Quiet House', width: 14, height: 9,
     layout: ctSecretLayout,
     npcs: [],
-    chests: [],
+    chests: [
+      { id: 'ch_hn_5', flag: 'ch_hn_5', x: 5, y: 2, item: 'book_house_note_5' },
+    ],
     doors: [],
     books: [],
     encounterPool: [],
@@ -2078,7 +2138,8 @@ export const MAPS: Record<string, any> = {
       { id: 'echo_warden', x: 7, y: 5, color: '#6d28d9', name: 'The Echo Warden', type: 'BOSS', hideFlag: 'defeated_echo_warden' },
     ],
     chests: [
-      { id: 'ch_echo_note', flag: 'ch_echo_note', x: 2, y: 3, item: 'book_mysterious_note' },
+      { id: 'ch_echo_note', flag: 'ch_echo_note', x: 2,  y: 3, item: 'book_mysterious_note' },
+      { id: 'ch_echo_2',    flag: 'ch_echo_2',    x: 13, y: 3, item: 'ench_void_shroud' },
     ],
     doors: [],
     books: [],
@@ -2124,7 +2185,12 @@ export const MAPS: Record<string, any> = {
     id: 'AR', name: 'Ashfall Ring', width: 50, height: 50,
     layout: arLayout,
     npcs: [],
-    chests: [],
+    chests: [
+      { id: 'ch_ar1', flag: 'ch_ar1', x: 5,  y: 5,  item: 'oblivion_lance' },
+      { id: 'ch_ar2', flag: 'ch_ar2', x: 44, y: 5,  item: 'oblivion_mantle' },
+      { id: 'ch_ar3', flag: 'ch_ar3', x: 5,  y: 44, item: 'mortus_regalia' },
+      { id: 'ch_ar4', flag: 'ch_ar4', x: 44, y: 44, item: 'ench_oblivion_strike' },
+    ],
     doors: [
       { id: 'door_arena', x: arP.arena.doorX, y: arP.arena.doorY, targetMapId: 'AR_ARENA', targetX: 7, targetY: 7, label: 'Ashfall Manor' },
       ...Array.from({ length: 10 }, (_, i) => ({ id: `door_ar_misc${i + 1}`, x: arP[`misc${i + 1}`].doorX, y: arP[`misc${i + 1}`].doorY, targetMapId: `AR_MISC${i + 1}`, targetX: 7, targetY: 6, label: arMiscHouseContent[`misc${i + 1}`].name })),
@@ -2209,7 +2275,7 @@ export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: numb
   { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
   { id: 'AR', name: 'Ashfall Ring',     mapId: 'AR', x: 1,  y: 20 },
   { id: 'CO', name: 'Color',            mapId: 'CO', x: 22, y: 5  },
-  { id: 'TF', name: 'Thornwood Forest', mapId: 'TF', x: 185, y: 100 },
+  { id: 'TF', name: 'Thornwood Forest', mapId: 'TF', x: 70, y: 40 },
 ];
 
 export const INITIAL_STATE: GameStateData = {

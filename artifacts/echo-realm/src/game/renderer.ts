@@ -327,9 +327,14 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   const endX   = Math.min(map.width,  Math.ceil((camX + W) / TILE_SIZE));
   const startY = Math.max(0, Math.floor(camY / TILE_SIZE));
   const endY   = Math.min(map.height, Math.ceil((camY + H) / TILE_SIZE));
+  // Safety clamp — guards against saved player positions that exceed a resized map
+  const layoutRows = map.layout.length;
+  const layoutCols = map.layout[0]?.length ?? 0;
 
   for (let gy = startY; gy < endY; gy++) {
+    if (gy >= layoutRows) continue;
     for (let gx = startX; gx < endX; gx++) {
+      if (gx >= layoutCols) continue;
       drawTile(ctx, gx, gy, map.layout[gy][gx], state.frameCount);
     }
   }

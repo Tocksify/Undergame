@@ -378,7 +378,34 @@ function endBattle(state: GameStateData) {
     if (b.enemy.id === 'boss' && b.endType === 'DEFEATED' && !state.player.inventory.includes('voidglass_dagger')) {
       addInventoryItem(state, 'voidglass_dagger');
       addInventoryItem(state, 'voidsteel_mail');
-      pushMessages(state, ['The Memory Wraith collapses. Its power crystallizes.', '+Voidglass Dagger', '+Voidsteel Mail'], ITEMS['voidglass_dagger']?.tier);
+      addInventoryItem(state, 'sovereign_edge');
+      addInventoryItem(state, 'ench_iron_thorn');
+      pushMessages(state, ['The Memory Wraith collapses. Its power crystallizes.', '+Voidglass Dagger', '+Voidsteel Mail', '+Sovereign Edge', '+Iron Thorn'], ITEMS['voidglass_dagger']?.tier);
+    }
+    // Named boss drops on defeat
+    if (b.enemy.id === 'archivist' && b.endType === 'DEFEATED' && !state.player.inventory.includes('archivist_ward')) {
+      addInventoryItem(state, 'archivist_ward');
+      pushMessages(state, ['The Archivist dissolves into scattered pages.', "+Archivist's Ward"], ITEMS['archivist_ward']?.tier);
+    }
+    if (b.enemy.id === 'void_sentinel' && b.endType === 'DEFEATED' && !state.player.inventory.includes('twin_fangs')) {
+      addInventoryItem(state, 'twin_fangs');
+      addInventoryItem(state, 'nexus_shroud');
+      pushMessages(state, ['The Void Sentinel shatters into dark glass.', '+Twin Fangs', '+Nexus Shroud'], ITEMS['twin_fangs']?.tier);
+    }
+    if (b.enemy.id === 'echo_warden' && b.endType === 'DEFEATED' && !state.player.inventory.includes('night_cleaver')) {
+      addInventoryItem(state, 'night_cleaver');
+      addInventoryItem(state, 'warden_aegis');
+      pushMessages(state, ['The Echo Warden falls silent for good.', '+Night Cleaver', '+Warden Aegis'], ITEMS['night_cleaver']?.tier);
+    }
+    if (b.enemy.id === 'ring_boss' && b.endType === 'DEFEATED' && !state.player.inventory.includes('shadow_carapace')) {
+      addInventoryItem(state, 'shadow_carapace');
+      addInventoryItem(state, 'ench_void_scream');
+      pushMessages(state, ['The Ringkeeper dissolves into ash rings.', '+Shadow Carapace', '+Void Scream'], ITEMS['shadow_carapace']?.tier);
+    }
+    if (b.enemy.id === 'child_void_kid' && b.endType === 'DEFEATED' && !state.player.inventory.includes('memory_edge')) {
+      addInventoryItem(state, 'memory_edge');
+      addInventoryItem(state, 'ench_lifestealer');
+      pushMessages(state, ['The Kid fades like a half-remembered dream.', '+Memory Edge', '+Lifestealer'], ITEMS['memory_edge']?.tier);
     }
     if (b.enemy.id === 'boss' && b.endType === 'REMEMBERED') {
       state.player.quests['quest_main'] = 7;
