@@ -930,10 +930,11 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
     opts.forEach((opt, i) => {
       const sel = b.menuIndex === i;
+      const greyed = opt === 'FLEE' && !!b.flags.fleeAttempted;
       const bx = 20 + i * 148; const by = H - 42;
-      if (sel) { ctx.fillStyle = '#111111'; ctx.fillRect(bx - 4, by - 18, ctx.measureText('  ' + opt).width + 10, 24); }
-      ctx.fillStyle = sel ? C.white : C.dim;
-      ctx.fillText((sel ? '> ' : '  ') + opt, bx, by);
+      if (sel && !greyed) { ctx.fillStyle = '#111111'; ctx.fillRect(bx - 4, by - 18, ctx.measureText('  ' + opt).width + 10, 24); }
+      ctx.fillStyle = greyed ? '#2d2d2d' : (sel ? C.white : C.dim);
+      ctx.fillText((sel && !greyed ? '> ' : '  ') + opt, bx, by);
     });
     ctx.textAlign = 'left'; ctx.fillStyle = C.light; ctx.font = '13px monospace';
     ctx.fillText(`HP  ${state.player.hp} / ${state.player.maxHp}`, 14, H - 14);

@@ -635,7 +635,7 @@ export const ENEMIES: Record<string, EnemyData> = {
     ]
   },
   'archivist': {
-    id: 'archivist', name: 'The Archivist', hp: 45, maxHp: 45, atk: 9, color: '#bbbbbb',
+    id: 'archivist', name: 'The Archivist', hp: 200, maxHp: 200, atk: 9, color: '#bbbbbb',
     flavor: 'It catalogs every memory it consumes, filing them away from the world forever.',
     rememberText: 'You show it the memory it was guarding — its own name. It exhales, and files itself away, at peace.',
     echoes: 80, acts: [
@@ -698,7 +698,7 @@ export const ENEMIES: Record<string, EnemyData> = {
     ]
   },
   'void_sentinel': {
-    id: 'void_sentinel', name: 'Void Sentinel', hp: 50, maxHp: 50, atk: 12, color: '#4b4b4b',
+    id: 'void_sentinel', name: 'Void Sentinel', hp: 350, maxHp: 350, atk: 12, color: '#4b4b4b',
     flavor: 'It was built to guard nothing, and it has done its job perfectly.',
     rememberText: 'It stands down. Whatever it was guarding was never really lost.',
     echoes: 80, acts: [
@@ -735,14 +735,14 @@ export const ENEMIES: Record<string, EnemyData> = {
     ]
   },
   'boss': {
-    id: 'boss', name: 'Memory Wraith', hp: 100, maxHp: 100, atk: 14, color: '#ffffff',
+    id: 'boss', name: 'Memory Wraith', hp: 1000, maxHp: 1000, atk: 14, color: '#ffffff',
     flavor: 'The source of all forgetting. It was once the first Memory Keeper.',
     rememberText: 'You show it its own memories. Its form shudders. Then... silence. Then light.',
     echoes: 0, acts: [{ id: 'present_echo', name: 'Present Echo', effect: 'flavor', requiresItem: 'echo' }]
   },
   // ── Easter-egg dungeon boss (secret building beneath Crestfall) ──
   'echo_warden': {
-    id: 'echo_warden', name: 'The Echo Warden', hp: 55, maxHp: 55, atk: 11, color: '#6d28d9',
+    id: 'echo_warden', name: 'The Echo Warden', hp: 300, maxHp: 300, atk: 11, color: '#6d28d9',
     flavor: 'It has guarded this hollow since before the city had a name.',
     rememberText: 'It lowers its guard. "...you may have it, then. Few come looking."',
     echoes: 90, acts: [
@@ -752,7 +752,7 @@ export const ENEMIES: Record<string, EnemyData> = {
   },
   // ── Ring boss (Ashfall Ring, second city) ──
   'ring_boss': {
-    id: 'ring_boss', name: 'The Ringkeeper', hp: 85, maxHp: 85, atk: 16, color: '#0ea5e9',
+    id: 'ring_boss', name: 'The Ringkeeper', hp: 500, maxHp: 500, atk: 16, color: '#0ea5e9',
     flavor: 'It circles the ring endlessly, bound to a blessing it can no longer use.',
     rememberText: 'It stops circling for the first time in memory. "...take it. I was only ever waiting for someone."',
     echoes: 160, acts: [
@@ -763,7 +763,7 @@ export const ENEMIES: Record<string, EnemyData> = {
   },
   // ── The Kid — appears in Crestfall after reading the child's letter ──
   'child_void_kid': {
-    id: 'child_void_kid', name: 'The Kid', hp: 58, maxHp: 58, atk: 9, color: '#b8d4e8',
+    id: 'child_void_kid', name: 'The Kid', hp: 300, maxHp: 300, atk: 9, color: '#b8d4e8',
     flavor: 'The void took the child before the letter could reach his father.\nWhat remains knows your name, but not its own.',
     rememberText: 'The void loosens. The child looks at his hands — they are warm again.\nHe smiles, and the smile holds until he is gone.',
     echoes: 130, acts: [
@@ -832,6 +832,7 @@ function buildVH(): string[][] {
   poke(L, 12, 0, '>');      // north -> Whispering Wastes
   poke(L, W - 1, 8, '!');   // east -> Crestfall City
   poke(L, 12, H - 1, '<');  // south (locked, flavor)
+  poke(L, 0, 8, '@');        // west -> Thornwood Forest
   return L;
 }
 
@@ -1003,6 +1004,112 @@ function buildVN(): string[][] {
   for (const [cx, cy] of [[2, 3], [2, 12], [17, 3], [17, 12]]) poke(L, cx, cy, 'M');
   poke(L, 9, 1, 'M'); poke(L, 10, 1, 'M');
   poke(L, 9, H - 1, '<');
+  return L;
+}
+
+// ── THORNWOOD FOREST (200 × 200) — the sprawling forest west of Verdant Hollow ──
+// Non-linear, branching paths, dead ends, an abandoned cottage, and several
+// named clearings. No enemies yet — just the geography.
+function buildTF(): string[][] {
+  const W = 200, H = 200;
+  const L = buildMap(W, H, 'T'); // dense trees everywhere by default
+
+  // ── East exit tile (back to Verdant Hollow) ─────────────────────────
+  poke(L, 199, 100, '<');
+
+  // ── Entry corridor from VH — 3 tiles wide, opens into first glade ──
+  hline(L, 99,  165, 198, 'P');
+  hline(L, 100, 165, 198, 'P');
+  hline(L, 101, 165, 198, 'P');
+
+  // ── Crossroads Glade — first major junction ─────────────────────────
+  rect(L, 143, 88, 168, 112, 'P');
+
+  // ── North Spur (dead end — Watchtower Clearing) ─────────────────────
+  vline(L, 155, 52, 88, 'P');
+  vline(L, 156, 52, 88, 'P');
+  rect(L, 140, 36, 172, 55, 'P');
+  // Stone watchtower remnants
+  poke(L, 147, 42, 'M'); poke(L, 164, 42, 'M');
+  poke(L, 147, 50, 'M'); poke(L, 164, 50, 'M');
+  poke(L, 155, 40, 'M');
+
+  // ── South Spur (dead end — Foggy Bog) ──────────────────────────────
+  vline(L, 155, 112, 163, 'P');
+  vline(L, 156, 112, 163, 'P');
+  rect(L, 136, 162, 175, 182, 'P');
+  poke(L, 143, 172, 'M'); poke(L, 168, 172, 'M');
+
+  // ── West trunk (Crossroads → West Junction) ─────────────────────────
+  hline(L, 99,  100, 143, 'P');
+  hline(L, 100, 100, 143, 'P');
+  hline(L, 101, 100, 143, 'P');
+
+  // ── West Junction — second major branch point ──────────────────────
+  rect(L, 76, 86, 102, 114, 'P');
+
+  // ── NW Branch (West Junction → Abandoned Cottage Glade) ────────────
+  vline(L, 88, 40, 86, 'P');
+  vline(L, 89, 40, 86, 'P');
+  // NW Glade — a wider clearing around the cottage
+  rect(L, 65, 20, 112, 50, 'P');
+  // Abandoned Cottage — outer stone walls
+  rect(L, 72, 24, 94, 46, 'H');
+  // Interior — ruined but passable
+  rect(L, 73, 25, 93, 45, 'P');
+  // South door opening (main entrance)
+  poke(L, 81, 46, 'P'); poke(L, 82, 46, 'P'); poke(L, 83, 46, 'P');
+  // North wall crack
+  poke(L, 81, 24, 'P'); poke(L, 82, 24, 'P');
+  // Interior ruins marker (fallen shelf / overgrown hearth)
+  poke(L, 87, 35, 'M');
+  // Dead-end path north from glade
+  vline(L, 83, 5, 20, 'P');
+  vline(L, 84, 5, 20, 'P');
+  rect(L, 65, 3, 102, 12, 'P');
+  poke(L, 72, 7, 'M'); poke(L, 95, 7, 'M');
+
+  // ── SW Branch (West Junction → Briar Clearing, dead end) ───────────
+  vline(L, 88, 114, 170, 'P');
+  vline(L, 89, 114, 170, 'P');
+  rect(L, 65, 168, 110, 186, 'P');
+  poke(L, 73, 178, 'M'); poke(L, 102, 178, 'M');
+  // East stub from Briar Clearing (dead-end nook)
+  hline(L, 178, 110, 140, 'P');
+  rect(L, 138, 170, 158, 186, 'P');
+  poke(L, 148, 178, 'M');
+
+  // ── Far west trunk (West Junction → Deep Grove) ─────────────────────
+  hline(L, 99,  30, 76, 'P');
+  hline(L, 100, 30, 76, 'P');
+  hline(L, 101, 30, 76, 'P');
+
+  // ── Deep Grove — large ancient clearing at the forest's heart ───────
+  rect(L, 15, 78, 52, 122, 'P');
+  // Scattered old-growth trees for atmosphere (impassable but decorative)
+  poke(L, 20, 83, 'T'); poke(L, 35, 83, 'T'); poke(L, 48, 83, 'T');
+  poke(L, 20, 117,'T'); poke(L, 35, 117,'T'); poke(L, 48, 117,'T');
+  poke(L, 20, 100,'T'); poke(L, 48, 100,'T');
+  // Ancient grove shrine
+  poke(L, 32, 100, 'M');
+
+  // NW path from Deep Grove (dead end — Overgrown Dell)
+  vline(L, 28, 40, 78, 'P');
+  vline(L, 29, 40, 78, 'P');
+  rect(L, 12, 26, 48, 45, 'P');
+  poke(L, 18, 34, 'M'); poke(L, 42, 34, 'M');
+
+  // SW path from Deep Grove (dead end — Sunken Hollow)
+  vline(L, 28, 122, 162, 'P');
+  vline(L, 29, 122, 162, 'P');
+  rect(L, 10, 160, 50, 178, 'P');
+  poke(L, 16, 170, 'M'); poke(L, 44, 170, 'M');
+
+  // Far west dead-end meadow (the forest's westernmost reach)
+  hline(L, 100, 5, 15, 'P');
+  rect(L, 2, 92, 12, 108, 'P');
+  poke(L, 7, 100, 'M');
+
   return L;
 }
 
@@ -1401,6 +1508,7 @@ const saLayout = buildSA();
 const frLayout = buildFR();
 const adLayout = buildAD();
 const vnLayout = buildVN();
+const tfLayout = buildTF();
 const ctBuild = buildCTFull();
 const ctLayout = ctBuild.layout;
 const ctP = ctBuild.placements;
@@ -1633,7 +1741,8 @@ export const MAPS: Record<string, any> = {
     exits: {
       '>': { mapId: 'WW', x: 11, y: 13 },
       '!': { mapId: 'CT', x: 1, y: 50 },
-      '<': { mapId: 'SR', x: 8, y: 1, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." }
+      '<': { mapId: 'SR', x: 8, y: 1, reqQuest: 'quest_main', reqState: 7, lockMsg: "The south road is sealed until the Void is defeated." },
+      '@': { mapId: 'TF', x: 198, y: 100 }
     }
   },
 
@@ -1797,6 +1906,22 @@ export const MAPS: Record<string, any> = {
     encounterPool: ['void_sentinel'],
     exits: {
       '<': { mapId: 'AD', x: 10, y: 1 }
+    }
+  },
+
+  // ── THORNWOOD FOREST (200 × 200) — west of Verdant Hollow ──────────
+  // Branching paths, multiple dead ends, and an Abandoned Cottage.
+  // No enemies or quests yet — just the geography.
+  'TF': {
+    id: 'TF', name: 'Thornwood Forest', width: 200, height: 200,
+    layout: tfLayout,
+    npcs: [],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: {
+      '<': { mapId: 'VH', x: 1, y: 8 }
     }
   },
 
@@ -2084,6 +2209,7 @@ export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: numb
   { id: 'CT', name: 'Crestfall City',   mapId: 'CT', x: 2,  y: 50 },
   { id: 'AR', name: 'Ashfall Ring',     mapId: 'AR', x: 1,  y: 20 },
   { id: 'CO', name: 'Color',            mapId: 'CO', x: 22, y: 5  },
+  { id: 'TF', name: 'Thornwood Forest', mapId: 'TF', x: 185, y: 100 },
 ];
 
 export const INITIAL_STATE: GameStateData = {

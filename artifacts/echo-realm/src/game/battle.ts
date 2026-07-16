@@ -27,6 +27,30 @@ function tryCompleteRemember(state: GameStateData): boolean {
   return true;
 }
 
+function getFleeFailMessage(enemy: EnemyData): string {
+  const msgs: Record<string, string> = {
+    wisp:           "The Shade Wisp darts around you, disorienting your senses. Flee failed.",
+    crawler:        "The Void Crawler lunges at you as you turn to run! Flee failed.",
+    specter:        "The Echo Specter screams — the sound roots you in place. Flee failed.",
+    archivist:      "The Archivist files your escape route under 'Impossible'. Flee failed.",
+    archive_wisp:   "The Archive Wisp wraps pages around your feet. Flee failed.",
+    ink_wraith:     "Ink floods across the floor, slicking your escape. Flee failed.",
+    frost_walker:   "The Frost Walker shoots a shard of ice at your legs. They freeze solid. Flee failed.",
+    rime_hound:     "The Rime Hound bites at your heels and drags you back. Flee failed.",
+    ash_hound:      "The Ash Hound cuts off your path with a wall of cinders. Flee failed.",
+    cinder_wraith:  "The Cinder Wraith ignites the path behind you. Flee failed.",
+    void_sentinel:  "The Void Sentinel steps into your path. There is no way around it. Flee failed.",
+    city_shade:     "The City Shade slips ahead of you, blocking every turn. Flee failed.",
+    street_wraith:  "The Street Wraith cuts off the alley. You can't get through. Flee failed.",
+    hollow_guard:   "The Hollow Guard grabs your shoulder and hauls you back. Flee failed.",
+    boss:           "The Memory Wraith tears through your thoughts. Your legs won't move. Flee failed.",
+    echo_warden:    "The Echo Warden raises a wall of sound. You can't push through. Flee failed.",
+    ring_boss:      "The Ringkeeper circles faster, boxing you in on all sides. Flee failed.",
+    child_void_kid: "The Kid looks at you with hollow eyes — and somehow, you stay. Flee failed.",
+  };
+  return msgs[enemy.id] ?? `The ${enemy.name} cuts off your escape. Flee failed.`;
+}
+
 export function handleBattleInput(state: GameStateData) {
   const b = state.battle!;
   if (b.phase === 'MENU') {
@@ -42,7 +66,15 @@ export function handleBattleInput(state: GameStateData) {
       } else if (b.menuIndex === 3) {
         state.mode = GameMode.INVENTORY;
       } else if (b.menuIndex === 4) {
-        b.actionMsg = "You fled the battle."; b.phase = 'END'; b.endType = 'FLED';
+        if (b.flags.fleeAttempted) return; // greyed out — only one flee attempt per battle
+        const fleeSuccess = Math.random() < 0.55;
+        if (fleeSuccess) {
+          b.actionMsg = "You fled the battle."; b.phase = 'END'; b.endType = 'FLED';
+        } else {
+          b.flags.fleeAttempted = true;
+          b.actionMsg = getFleeFailMessage(b.enemy);
+          b.phase = 'ACTION'; b.timer = 0;
+        }
       }
     }
   } else if (b.phase === 'ACT_MENU') {
@@ -146,6 +178,10 @@ export function updateBattlePhase(state: GameStateData) {
           const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - getArmorDefBonus(state));
           state.player.hp -= dmg;
           state.player.invincibility = 30;
+          // ── Enemy status proc on hit ──────────────────────────────
+          if (p.proc === 'stun' && !b.flags.playerStunned && Math.random() < 0.40) {
+            b.flags.playerStunned = true;
+          }
           b.voidWard = false;
           // ── Armor enchant: thorn damage ────────────────────────────
           const aEnch = getEquippedEnchantData(state, 'armor');
@@ -157,7 +193,15 @@ export function updateBattlePhase(state: GameStateData) {
       }
     }
     if (state.player.hp <= 0) { state.battle = null; state.mode = GameMode.GAME_OVER; }
-    if (b.timer <= 0) { b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null; }
+    if (b.timer <= 0) {
+      if (b.flags.playerStunned) {
+        b.flags.playerStunned = false;
+        b.actionMsg = "You are stunned! The enemy seizes the moment!";
+        b.phase = 'ACTION'; b.timer = 0;
+      } else {
+        b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null;
+      }
+    }
   }
 }
 
@@ -232,7 +276,7 @@ function spawnProjectiles(b: BattleState) {
       b.projectiles.push({ x: boxX + Math.cos(angle) * 150, y: boxY + Math.sin(angle) * 150, vx: -Math.cos(angle) * 5.5, vy: -Math.sin(angle) * 5.5, w: 14, h: 14, color: '#ef4444' });
     }
     // Fast soul-tracking beam — fires more often
-    if (t % 38 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 10, vy: 0, w: 22, h: 22, color: '#8b5cf6' });
+    if (t % 38 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 10, vy: 0, w: 22, h: 22, color: '#8b5cf6', proc: 'stun' });
     // Rotating 4-arm spiral burst
     if (t % 18 === 0) {
       for (let i = 0; i < 4; i++) {
@@ -246,7 +290,7 @@ function spawnProjectiles(b: BattleState) {
       b.projectiles.push({ x: 234, y: boxY - 90 + Math.random() * 180, vx: 5.5, vy: 0, w: 13, h: 13, color: '#1e40af' });
     }
     // Aimed shot locked to soul position
-    if (t % 28 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 20, h: 20, color: '#7c3aed' });
+    if (t % 28 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 20, h: 20, color: '#7c3aed', proc: 'stun' });
     // Pages falling from above
     if (t % 16 === 0) {
       b.projectiles.push({ x: boxX - 100 + Math.random() * 200, y: 310, vx: 0, vy: 5, w: 16, h: 10, color: '#93c5fd' });
@@ -261,7 +305,7 @@ function spawnProjectiles(b: BattleState) {
       }
     }
     // Fast soul-tracking side shot
-    if (t % 32 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 18, h: 18, color: '#34d399' });
+    if (t % 32 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 9, vy: 0, w: 18, h: 18, color: '#34d399', proc: 'stun' });
   } else if (b.enemy.id === 'ring_boss') {
     // Fast wave volleys — lots of them
     if (t % 14 === 0) {
@@ -274,7 +318,7 @@ function spawnProjectiles(b: BattleState) {
       b.projectiles.push({ x: boxX + Math.cos(angle) * 130, y: boxY + Math.sin(angle) * 100, vx: -Math.cos(angle) * 5.5, vy: -Math.sin(angle) * 5.5, w: 15, h: 15, color: '#ef4444' });
     }
     // Slow massive soul-seeker
-    if (t % 42 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 8, vy: 0, w: 24, h: 24, color: '#dc2626' });
+    if (t % 42 === 0) b.projectiles.push({ x: 234, y: b.soulY, vx: 8, vy: 0, w: 24, h: 24, color: '#dc2626', proc: 'stun' });
   } else if (b.enemy.id === 'hollow_guard') {
     // Faster falling columns, wider spread
     if (t % 10 === 0) {
@@ -329,6 +373,12 @@ function endBattle(state: GameStateData) {
     if (b.enemy.id === 'archivist' && (state.player.quests['quest_main'] || 0) < 3) {
       state.player.quests['quest_main'] = 3;
       state.uiMessage = "The way north has opened."; state.uiMessageTimer = 160;
+    }
+    // Void Nexus boss — legendary weapon drops on defeat
+    if (b.enemy.id === 'boss' && b.endType === 'DEFEATED' && !state.player.inventory.includes('voidglass_dagger')) {
+      addInventoryItem(state, 'voidglass_dagger');
+      addInventoryItem(state, 'voidsteel_mail');
+      pushMessages(state, ['The Memory Wraith collapses. Its power crystallizes.', '+Voidglass Dagger', '+Voidsteel Mail'], ITEMS['voidglass_dagger']?.tier);
     }
     if (b.enemy.id === 'boss' && b.endType === 'REMEMBERED') {
       state.player.quests['quest_main'] = 7;

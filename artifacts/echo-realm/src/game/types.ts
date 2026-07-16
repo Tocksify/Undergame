@@ -98,6 +98,7 @@ export interface Projectile {
   type?: string;
   wave?: boolean;
   waveStartY?: number;
+  proc?: string; // 'stun' — applied to player on hit with a random chance
 }
 
 export interface BattleState {
