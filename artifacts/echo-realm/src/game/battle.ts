@@ -1,12 +1,24 @@
 import { GameStateData, GameMode, EnemyData, BattleState } from './types';
 import { justPressed, addInventoryItem } from './engine';
-import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, CITY_SIDE_QUESTS, pushMessages, grantXp } from './constants';
+import { ITEMS, getWeaponAtkBonus, getArmorDefBonus, getShieldBlockBonus, CITY_SIDE_QUESTS, pushMessages, grantXp } from './constants';
 
 // Returns the enchantData of the enchanted book applied to the player's equipped weapon or armor.
 function getEquippedEnchantData(state: GameStateData, slot: 'weapon' | 'armor') {
   const itemId = state.player.equipment[slot];
   if (!itemId) return null;
   const idx = state.player.inventory.indexOf(itemId);
+  if (idx < 0) return null;
+  const enchBookId = state.player.enchantedSlots[idx];
+  if (!enchBookId) return null;
+  return ITEMS[enchBookId]?.enchantData ?? null;
+}
+
+// Returns enchantData for the offhand weapon (dual-wield only; null if offhand is a shield or empty).
+function getOffhandWeaponEnchantData(state: GameStateData) {
+  const oh = state.player.equipment.offhand;
+  if (!oh) return null;
+  if (ITEMS[oh]?.category !== 'weapon') return null;
+  const idx = state.player.inventory.indexOf(oh);
   if (idx < 0) return null;
   const enchBookId = state.player.enchantedSlots[idx];
   if (!enchBookId) return null;
@@ -51,6 +63,76 @@ function getFleeFailMessage(enemy: EnemyData): string {
   return msgs[enemy.id] ?? `The ${enemy.name} cuts off your escape. Flee failed.`;
 }
 
+// Returns the resistance multiplier for an effect type against the current enemy.
+// 0 = immune, 0.5 = resistant, 1 = normal, 2 = weak.
+function getResistance(b: BattleState, effectType: string): number {
+  return b.enemy.resistances?.[effectType] ?? 1;
+}
+
+// Apply all weapon enchant procs from a given enchantData to the enemy/battle state.
+// Returns an array of proc message strings.
+function applyWeaponProcs(
+  state: GameStateData,
+  enchData: NonNullable<ReturnType<typeof getEquippedEnchantData>>
+): string[] {
+  const b = state.battle!;
+  const msgs: string[] = [];
+
+  if (enchData.confuse) {
+    const res = getResistance(b, 'confuse');
+    if (res > 0) { b.flags.confused = true; msgs.push('Enemy confused!'); }
+    else msgs.push('Enemy shrugged off confusion.');
+  }
+  if (enchData.weaken) {
+    const res = getResistance(b, 'weaken');
+    if (res > 0) {
+      const amt = Math.max(1, Math.round(enchData.weaken * res));
+      b.enemy.atk = Math.max(1, b.enemy.atk - amt);
+      msgs.push(`ATK −${amt}.`);
+    } else msgs.push('Enemy resisted weaken.');
+  }
+  if (enchData.drain) {
+    const res = getResistance(b, 'drain');
+    if (res > 0) {
+      const rawDrain = Math.round(enchData.drain * res);
+      const healed = Math.min(rawDrain, state.player.maxHp - state.player.hp);
+      state.player.hp += healed;
+      if (healed > 0) msgs.push(`Drained +${healed} HP.`);
+    }
+  }
+  if (enchData.poison) {
+    const res = getResistance(b, 'poison');
+    if (res > 0) {
+      const dmg = Math.max(1, Math.round(enchData.poison * res));
+      b.poisonDmg = dmg; b.poisonTurns = 3;
+      msgs.push(`Poisoned! (${dmg}/turn × 3)`);
+    } else msgs.push('Enemy is immune to poison.');
+  }
+  if (enchData.burn) {
+    const res = getResistance(b, 'burn');
+    if (res > 0) {
+      b.burnDmg = res >= 2 ? 4 : 2; // weakness starts burn higher
+      msgs.push('Enemy ignites!');
+    } else msgs.push('Enemy is immune to burn.');
+  }
+  if (enchData.freeze) {
+    const res = getResistance(b, 'freeze');
+    if (res > 0 && !b.flags.frozen) {
+      b.flags.frozen = true;
+      msgs.push('Enemy frozen!');
+    } else if (res === 0) msgs.push('Enemy is immune to freeze.');
+  }
+  if (enchData.silence) {
+    const res = getResistance(b, 'silence');
+    if (res > 0 && !b.flags.silenced) {
+      b.flags.silenced = true;
+      msgs.push('Enemy silenced!');
+    } else if (res === 0) msgs.push('Enemy resisted silence.');
+  }
+
+  return msgs;
+}
+
 export function handleBattleInput(state: GameStateData) {
   const b = state.battle!;
   if (b.phase === 'MENU') {
@@ -82,7 +164,14 @@ export function handleBattleInput(state: GameStateData) {
     if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) b.menuIndex = Math.min(b.enemy.acts.length - 1, b.menuIndex + 1);
     if (justPressed(state, 'x') || justPressed(state, 'Escape')) { b.phase = 'MENU'; b.menuIndex = 2; }
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
-      handleAct(state, b.enemy.acts[b.menuIndex].id);
+      const act = b.enemy.acts[b.menuIndex];
+      if (act.magic && b.flags.silenced) {
+        b.actionMsg = `The enemy is silenced — ${act.name} fails!`;
+        b.flags.silenced = false;
+        b.phase = 'ACTION'; b.timer = 0;
+        return;
+      }
+      handleAct(state, act.id);
     }
   } else if (b.phase === 'MINIGAME') {
     b.timer++;
@@ -107,24 +196,14 @@ export function handleBattleInput(state: GameStateData) {
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
         // ── Weapon enchant procs (PERFECT or GOOD hits only) ──────────
         if (hitType !== 'MISS') {
+          const procMsgs: string[] = [];
+          // Main hand
           const wEnch = getEquippedEnchantData(state, 'weapon');
-          if (wEnch) {
-            const procMsgs: string[] = [];
-            if (wEnch.confuse) {
-              b.flags.confused = true;
-              procMsgs.push('Enemy confused!');
-            }
-            if (wEnch.weaken) {
-              b.enemy.atk = Math.max(1, b.enemy.atk - wEnch.weaken);
-              procMsgs.push(`ATK −${wEnch.weaken}.`);
-            }
-            if (wEnch.drain) {
-              const healed = Math.min(wEnch.drain, state.player.maxHp - state.player.hp);
-              state.player.hp += healed;
-              if (healed > 0) procMsgs.push(`Drained +${healed} HP.`);
-            }
-            if (procMsgs.length) b.actionMsg += ' ' + procMsgs.join(' ');
-          }
+          if (wEnch) procMsgs.push(...applyWeaponProcs(state, wEnch));
+          // Offhand weapon (dual wield)
+          const ohEnch = getOffhandWeaponEnchantData(state);
+          if (ohEnch) procMsgs.push(...applyWeaponProcs(state, ohEnch));
+          if (procMsgs.length) b.actionMsg += ' ' + procMsgs.join(' ');
         }
       }
       b.phase = 'ACTION'; b.timer = 0;
@@ -150,10 +229,36 @@ export function updateBattlePhase(state: GameStateData) {
   if (b.phase === 'ACTION') {
     b.timer++;
     if (b.timer > 60) {
+      // ── Tick poison ───────────────────────────────────────────────
+      if (b.poisonDmg > 0 && b.poisonTurns > 0) {
+        b.enemy.hp = Math.max(0, b.enemy.hp - b.poisonDmg);
+        b.poisonTurns--;
+        const poisonNote = b.poisonTurns > 0
+          ? `Poison deals ${b.poisonDmg} damage! (${b.poisonTurns} turns left)`
+          : `Poison deals ${b.poisonDmg} damage! Poison fades.`;
+        if (b.poisonTurns === 0) b.poisonDmg = 0;
+        if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; b.actionMsg = poisonNote; return; }
+        b.actionMsg = poisonNote;
+        b.timer = -60; return;
+      }
+      // ── Tick burn ─────────────────────────────────────────────────
+      if (b.burnDmg > 0) {
+        b.enemy.hp = Math.max(0, b.enemy.hp - b.burnDmg);
+        const burnNote = `Burning for ${b.burnDmg} damage!`;
+        b.burnDmg = b.burnDmg >= 32 ? 0 : b.burnDmg * 2; // double each turn, cap then clear
+        if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; b.actionMsg = burnNote; return; }
+        b.actionMsg = burnNote;
+        b.timer = -60; return;
+      }
+      // ── Status-based turn skips ───────────────────────────────────
       if (b.flags.confused) {
         b.actionMsg = "The enemy is confused and skips its turn!";
         b.flags.confused = false;
         b.timer = -60;
+      } else if (b.flags.frozen) {
+        b.actionMsg = "The enemy is frozen solid — it can't move!";
+        b.flags.frozen = false;
+        b.timer = -60; // skip directly back to MENU without a DODGE phase
       } else {
         b.phase = 'DODGE'; b.timer = 300; b.projectiles = [];
         // ── Armor enchant: autoWard — once per battle ─────────────────
@@ -175,7 +280,9 @@ export function updateBattlePhase(state: GameStateData) {
       const dx = p.x - b.soulX; const dy = p.y - b.soulY;
       if (dx * dx + dy * dy < 100) {
         if (state.player.invincibility <= 0) {
-          const dmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - getArmorDefBonus(state));
+          const shieldBlock = getShieldBlockBonus(state);
+          const rawDmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - getArmorDefBonus(state));
+          const dmg = Math.max(0, rawDmg - shieldBlock);
           state.player.hp -= dmg;
           state.player.invincibility = 30;
           // ── Enemy status proc on hit ──────────────────────────────
@@ -342,6 +449,9 @@ function endBattle(state: GameStateData) {
     const e = b.endType === 'REMEMBERED' ? Math.floor(b.enemy.echoes * 1.5) : b.enemy.echoes;
     state.player.echoes += e;
     state.player.flags['defeated_' + b.enemy.id] = true;
+
+    // ── Bestiary: track encounter count ────────────────────────────
+    state.player.bestiary[b.enemy.id] = (state.player.bestiary[b.enemy.id] ?? 0) + 1;
 
     // XP mirrors the Echoes reward — remembering an enemy (vs. just defeating it) pays out more of both.
     const levelsGained = grantXp(state, e);

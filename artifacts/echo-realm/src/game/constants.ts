@@ -233,6 +233,12 @@ export const ITEMS: Record<string, Item> = {
   'sovereign_edge':    { name: 'Sovereign Edge',        desc: 'Carried by whoever the Void feared most. It has been carried often.',            price: 0,   tier: 'legendary', category: 'weapon', atk: 14 },
   'oblivion_lance':    { name: 'Oblivion Lance',        desc: 'The weapon that ended the first war. It has no memory of mercy.',                price: 0,   tier: 'mythic',    category: 'weapon', atk: 20 },
 
+  // ── SHIELDS ── (equip to offhand; provide flat damage reduction per hit)
+  'buckler':           { name: 'Buckler',               desc: 'A small round shield. Blocks 2 flat damage per hit. Pairs well with a weapon.',  price: 60,  tier: 'common',    category: 'shield', block: 2 },
+  'iron_shield':       { name: 'Iron Shield',           desc: 'Heavier than a buckler. Blocks 4 flat damage per hit.',                          price: 180, tier: 'uncommon',  category: 'shield', block: 4 },
+  'void_bulwark':      { name: 'Void Bulwark',          desc: 'A slab of void-forged metal. Blocks 6 flat damage per hit.',                     price: 0,   tier: 'rare',      category: 'shield', block: 6 },
+  'memory_aegis':      { name: 'Memory Aegis',          desc: 'Remembers every blow that has been landed against it. Blocks 8 flat damage.',    price: 0,   tier: 'epic',      category: 'shield', block: 8 },
+
   // ── ARMOR ──
   'tattered_rags':     { name: 'Tattered Rags',        desc: 'Better than skin alone. Not by much, but enough to matter.',                     price: 25,  tier: 'common',    category: 'armor', maxHp: 3 },
   'cloth_wrap':        { name: 'Cloth Wrap',            desc: 'It will not stop much. But it is better than hope alone.',                       price: 40,  tier: 'common',    category: 'armor', maxHp: 5 },
@@ -427,6 +433,43 @@ export const ITEMS: Record<string, Item> = {
     enchantData: { compatibleCategories: ['weapon'], atk: 12, confuse: true, weaken: 3, drain: 5 },
   },
 
+  // ── NEW PROC ENCHANTMENTS — weapon (Poison / Burn / Freeze / Silence) ──
+  // Common
+  'ench_venom_brand': {
+    name: 'Venom Brand',
+    desc: 'Enchants a weapon. +1 ATK. On a solid hit, poisons the enemy — deals 3 damage each turn for 3 turns.',
+    price: 0, tier: 'common', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 1, poison: 3 },
+  },
+  // Uncommon
+  'ench_pyro_brand': {
+    name: 'Pyro Brand',
+    desc: 'Enchants a weapon. +2 ATK. On a solid hit, ignites the enemy — escalating burn damage (2, 4, 8, 16, 32).',
+    price: 0, tier: 'uncommon', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2, burn: true },
+  },
+  // Rare
+  'ench_frost_brand': {
+    name: 'Frost Brand',
+    desc: 'Enchants a weapon. +2 ATK. On a solid hit, freezes the enemy — skips its turn AND its next projectile wave.',
+    price: 0, tier: 'rare', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 2, freeze: true },
+  },
+  // Epic
+  'ench_silence_mark': {
+    name: 'Silence Mark',
+    desc: 'Enchants a weapon. +3 ATK. On a solid hit, silences the enemy — blocks its magic acts for one round.',
+    price: 0, tier: 'epic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 3, silence: true },
+  },
+  // Legendary — combined effect
+  'ench_cursed_brand': {
+    name: 'Cursed Brand',
+    desc: 'Enchants a weapon. +6 ATK. On a solid hit: poisons (5/turn × 3), burns, and silences the enemy.',
+    price: 0, tier: 'legendary', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 6, poison: 5, burn: true, silence: true },
+  },
+
   // ── PROC ENCHANTMENTS — armor ───────────────────────────────────────
   // Uncommon
   'ench_thorn_weave': {
@@ -479,6 +522,12 @@ export const CRAFTABLE_ENCHANTS: string[] = [
   'ench_void_shroud',                                // rare     — auto ward
   'ench_iron_thorn',                                 // epic     — thorn dmg
   'ench_mortus_aegis',                               // mythic   — auto ward + thorn
+  // ── New proc enchants — weapon (status effects) ──
+  'ench_venom_brand',                                // common   — poison on hit
+  'ench_pyro_brand',                                 // uncommon — burn on hit
+  'ench_frost_brand',                                // rare     — freeze on hit
+  'ench_silence_mark',                               // epic     — silence on hit
+  'ench_cursed_brand',                               // legendary — poison + burn + silence
 ];
 
 export const TIER_COLOR: Record<string, string> = {
@@ -537,12 +586,38 @@ export function recomputeMaxHp(state: GameStateData) {
 
 export function getWeaponAtkBonus(state: GameStateData): number {
   const w = state.player.equipment.weapon;
-  const base = w && ITEMS[w] ? ITEMS[w].atk ?? 0 : 0;
+  const oh = state.player.equipment.offhand;
+  const ohItem = oh ? ITEMS[oh] : null;
+  const isDualWield = ohItem?.category === 'weapon';
+  // Dual wield: each hand contributes 75% of its ATK.
+  const mainMult = isDualWield ? 0.75 : 1;
+
+  const base = w && ITEMS[w] ? Math.floor((ITEMS[w].atk ?? 0) * mainMult) : 0;
   const wSlot = w ? state.player.inventory.indexOf(w) : -1;
   const enchBookId = wSlot >= 0 ? state.player.enchantedSlots[wSlot] : null;
-  const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.atk ? ITEMS[enchBookId].enchantData!.atk! : 0;
+  const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.atk
+    ? Math.floor(ITEMS[enchBookId].enchantData!.atk! * mainMult) : 0;
+
+  // Offhand weapon contribution
+  let ohBonus = 0; let ohEnchBonus = 0;
+  if (isDualWield && oh) {
+    ohBonus = Math.floor((ohItem!.atk ?? 0) * 0.75);
+    const ohSlot = state.player.inventory.indexOf(oh);
+    const ohEnchId = ohSlot >= 0 ? state.player.enchantedSlots[ohSlot] : null;
+    ohEnchBonus = ohEnchId && ITEMS[ohEnchId]?.enchantData?.atk
+      ? Math.floor(ITEMS[ohEnchId].enchantData!.atk! * 0.75) : 0;
+  }
+
   const strBonus = (state.player.baseStats?.str ?? 0) * STR_ATK_PER_POINT;
-  return base + enchBonus + strBonus;
+  return base + enchBonus + ohBonus + ohEnchBonus + strBonus;
+}
+
+// Flat damage reduction per hit from an equipped shield in the offhand slot.
+export function getShieldBlockBonus(state: GameStateData): number {
+  const oh = state.player.equipment.offhand;
+  if (!oh) return 0;
+  const ohItem = ITEMS[oh];
+  return (ohItem?.category === 'shield') ? (ohItem.block ?? 0) : 0;
 }
 
 export function getArmorDefBonus(state: GameStateData): number {
@@ -597,8 +672,8 @@ export function pushMessages(state: GameStateData, texts: string[], tier?: ItemT
 
 // ── SHOPS ──────────────────────────────────────────────────────────
 export const SHOPS: Record<string, { title: string; items: string[] }> = {
-  'zara':         { title: "Zara's Memory Emporium",    items: ['crystal', 'elixir', 'ward', 'spark', 'stone', 'dust', 'rusty_shard', 'iron_fragment', 'cloth_wrap', 'hide_wrap'] },
-  'old_thom':     { title: "Old Thom's Sunken Wares",   items: ['elixir', 'greater_crystal', 'ward', 'dust', 'bone_edge', 'etched_spike', 'traveler_cloak', 'runed_cloak'] },
+  'zara':         { title: "Zara's Memory Emporium",    items: ['crystal', 'elixir', 'ward', 'spark', 'stone', 'dust', 'rusty_shard', 'iron_fragment', 'buckler', 'cloth_wrap', 'hide_wrap'] },
+  'old_thom':     { title: "Old Thom's Sunken Wares",   items: ['elixir', 'greater_crystal', 'ward', 'dust', 'bone_edge', 'etched_spike', 'iron_shield', 'traveler_cloak', 'runed_cloak'] },
   'peddler_oren': { title: "Oren's Frostbound Pack",    items: ['greater_crystal', 'memory_salve', 'phoenix_ash', 'spark', 'blink_shard', 'etched_spike', 'runed_cloak'] },
   'ashen_trader': { title: 'The Ashen Trader',          items: ['greater_crystal', 'memory_salve', 'phoenix_ash', 'iron_ward', 'spark', 'blink_shard', 'traveler_cloak'] },
   // Enchanted tomes are no longer for sale — they're earned through side quests now.
@@ -613,7 +688,7 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'The Shade dissolves into pale light. Its memory: a child laughing.',
     echoes: 20, acts: [
       { id: 'hum', name: 'Hum', effect: 'weaken', power: 1 },
-      { id: 'listen', name: 'Listen', effect: 'confuse' },
+      { id: 'listen', name: 'Listen', effect: 'confuse', magic: true },
     ]
   },
   'crawler': {
@@ -640,8 +715,9 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'You show it the memory it was guarding — its own name. It exhales, and files itself away, at peace.',
     echoes: 80, acts: [
       { id: 'analyze', name: 'Analyze', effect: 'weaken', power: 2 },
-      { id: 'plead', name: 'Plead', effect: 'resonance', power: 1 },
-    ]
+      { id: 'plead', name: 'Plead', effect: 'resonance', power: 1, magic: true },
+    ],
+    resistances: { silence: 2 }, // silence blocks its resonance act — silencing it interrupts the remember path
   },
   'archive_wisp': {
     id: 'archive_wisp', name: 'Archive Wisp', hp: 16, maxHp: 16, atk: 4, color: '#9fb8c8',
@@ -658,7 +734,7 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'The ink runs clear. Whatever it was trying to say, it finally said it.',
     echoes: 40, acts: [
       { id: 'read', name: 'Read', effect: 'damage', power: 4 },
-      { id: 'blot', name: 'Blot', effect: 'confuse' },
+      { id: 'blot', name: 'Blot', effect: 'confuse', magic: true },
     ]
   },
   'frost_walker': {
@@ -668,16 +744,18 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 45, acts: [
       { id: 'thaw', name: 'Thaw', effect: 'weaken', power: 2 },
       { id: 'warm', name: 'Warm', effect: 'resonance', power: 1 },
-    ]
+    ],
+    resistances: { burn: 2, freeze: 0 }, // ice enemy: melts fast under fire, immune to being frozen
   },
   'rime_hound': {
     id: 'rime_hound', name: 'Rime Hound', hp: 22, maxHp: 22, atk: 8, color: '#89c2d9',
     flavor: 'It hunts by the echo of a bark it can no longer make.',
     rememberText: 'It remembers its own name. It sits, finally still.',
     echoes: 40, acts: [
-      { id: 'call', name: 'Call', effect: 'confuse' },
+      { id: 'call', name: 'Call', effect: 'confuse', magic: true },
       { id: 'pet', name: 'Pet', effect: 'resonance', power: 1 },
-    ]
+    ],
+    resistances: { burn: 2, freeze: 0.5 }, // ice hound: vulnerable to fire, naturally cold-resistant
   },
   'ash_hound': {
     id: 'ash_hound', name: 'Ash Hound', hp: 34, maxHp: 34, atk: 9, color: '#7a5c58',
@@ -686,7 +764,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 55, acts: [
       { id: 'douse', name: 'Douse', effect: 'weaken', power: 2 },
       { id: 'calm', name: 'Calm', effect: 'resonance', power: 1 },
-    ]
+    ],
+    resistances: { freeze: 2, burn: 0 }, // fire enemy: freeze hits it hard, can't burn what's already ash
   },
   'cinder_wraith': {
     id: 'cinder_wraith', name: 'Cinder Wraith', hp: 38, maxHp: 38, atk: 10, color: '#c1440e',
@@ -695,16 +774,18 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 60, acts: [
       { id: 'quench', name: 'Quench', effect: 'damage', power: 6 },
       { id: 'ember_talk', name: 'Speak to the Ember', effect: 'resonance', power: 1 },
-    ]
+    ],
+    resistances: { freeze: 2, burn: 0 }, // fire entity: flash-frozen effectively, immune to its own element
   },
   'void_sentinel': {
     id: 'void_sentinel', name: 'Void Sentinel', hp: 350, maxHp: 350, atk: 12, color: '#4b4b4b',
     flavor: 'It was built to guard nothing, and it has done its job perfectly.',
     rememberText: 'It stands down. Whatever it was guarding was never really lost.',
     echoes: 80, acts: [
-      { id: 'override', name: 'Override', effect: 'confuse' },
+      { id: 'override', name: 'Override', effect: 'confuse', magic: true },
       { id: 'reason', name: 'Reason', effect: 'resonance', power: 1 },
-    ]
+    ],
+    resistances: { silence: 0 }, // machine mind: cannot be silenced; magic finds no foothold
   },
   // City enemies
   'city_shade': {
@@ -722,8 +803,9 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'You give it the reason. It was love. It had always been love.',
     echoes: 45, acts: [
       { id: 'pace', name: 'Pace', effect: 'weaken', power: 1 },
-      { id: 'linger', name: 'Linger', effect: 'confuse' },
-    ]
+      { id: 'linger', name: 'Linger', effect: 'confuse', magic: true },
+    ],
+    resistances: { poison: 2 }, // already half-dead; poison sinks in fast
   },
   'hollow_guard': {
     id: 'hollow_guard', name: 'Hollow Guard', hp: 32, maxHp: 32, atk: 8, color: '#9ca3af',
@@ -738,7 +820,9 @@ export const ENEMIES: Record<string, EnemyData> = {
     id: 'boss', name: 'Memory Wraith', hp: 1000, maxHp: 1000, atk: 14, color: '#ffffff',
     flavor: 'The source of all forgetting. It was once the first Memory Keeper.',
     rememberText: 'You show it its own memories. Its form shudders. Then... silence. Then light.',
-    echoes: 0, acts: [{ id: 'present_echo', name: 'Present Echo', effect: 'flavor', requiresItem: 'echo' }]
+    echoes: 0, acts: [{ id: 'present_echo', name: 'Present Echo', effect: 'flavor', requiresItem: 'echo' }],
+    resistances: { poison: 0.5, burn: 0.5, freeze: 0.5, silence: 0.5, confuse: 0.5, weaken: 0.5 },
+    // The Memory Wraith is ancient — all proc effects are half as effective
   },
   // ── Easter-egg dungeon boss (secret building beneath Crestfall) ──
   'echo_warden': {
@@ -747,8 +831,9 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'It lowers its guard. "...you may have it, then. Few come looking."',
     echoes: 90, acts: [
       { id: 'guard', name: 'Guard', effect: 'weaken', power: 2 },
-      { id: 'reckon', name: 'Reckon', effect: 'resonance', power: 1 },
-    ]
+      { id: 'reckon', name: 'Reckon', effect: 'resonance', power: 1, magic: true },
+    ],
+    resistances: { silence: 2, freeze: 0.5 }, // its voice IS its power — silence cripples it; cold barely slows it
   },
   // ── Ring boss (Ashfall Ring, second city) ──
   'ring_boss': {
@@ -757,9 +842,10 @@ export const ENEMIES: Record<string, EnemyData> = {
     rememberText: 'It stops circling for the first time in memory. "...take it. I was only ever waiting for someone."',
     echoes: 160, acts: [
       { id: 'circle', name: 'Circle', effect: 'damage', power: 7 },
-      { id: 'bind', name: 'Bind', effect: 'confuse' },
-      { id: 'entreat', name: 'Entreat', effect: 'resonance', power: 1 },
-    ]
+      { id: 'bind', name: 'Bind', effect: 'confuse', magic: true },
+      { id: 'entreat', name: 'Entreat', effect: 'resonance', power: 1, magic: true },
+    ],
+    resistances: { freeze: 2, silence: 0.5 }, // kinetic entity: freezing stops its endless rotation cold
   },
   // ── The Kid — appears in Crestfall after reading the child's letter ──
   'child_void_kid': {
@@ -770,7 +856,8 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'show_letter', name: 'Show the Letter', effect: 'resonance', power: 3, requiresItem: 'book_childs_letter' },
       { id: 'speak_name',  name: 'Speak His Name',  effect: 'resonance', power: 1 },
       { id: 'remember',    name: 'Remember Him',    effect: 'flavor' },
-    ]
+    ],
+    resistances: { poison: 0, burn: 0 }, // a child — fire and poison deal no damage here
   },
 };
 
@@ -2290,7 +2377,8 @@ export const INITIAL_STATE: GameStateData = {
     echoes: 0,
     inventory: [],
     enchantedSlots: [],
-    equipment: { weapon: null, armor: null },
+    equipment: { weapon: null, armor: null, offhand: null },
+    bestiary: {},
     quests: {
       'quest_main': 0, 'quest_name': 0, 'quest_hollow': 0,
       'quest_archive': 0, 'quest_frost': 0, 'quest_ash': 0,
@@ -2328,6 +2416,7 @@ export const INITIAL_STATE: GameStateData = {
   tomeCraft: { cursorIndex: 0, chosenEnchantId: null },
   teleportIndex: 0,
   questLogScroll: 0,
+  bestiaryScroll: 0,
   statAllocIndex: 0,
   notifications: { itemsBaseline: 0, questsBaseline: {} },
   trueEndingMenuIndex: 0,

@@ -21,7 +21,7 @@ export interface SavedGameState {
     echoes: number;
     inventory: string[];
     enchantedSlots: (string | null)[];
-    equipment: { weapon: string | null; armor: string | null };
+    equipment: { weapon: string | null; armor: string | null; offhand?: string | null };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
     flags: Record<string, boolean>;
@@ -31,6 +31,7 @@ export interface SavedGameState {
     statPoints?: number;
     baseStats?: { str: number; vit: number; def: number };
     appearance?: SpriteAppearance;
+    bestiary?: Record<string, number>;
   };
   battle?: {
     enemy: EnemyData;
@@ -53,6 +54,7 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       inventory: [...state.player.inventory],
       enchantedSlots: [...state.player.enchantedSlots],
       equipment: { ...state.player.equipment },
+      bestiary: { ...state.player.bestiary },
       quests: { ...state.player.quests },
       questProgress: { ...state.player.questProgress },
       flags: { ...state.player.flags },
@@ -95,7 +97,12 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     } else {
       state.player.enchantedSlots = saved.player.inventory.map(() => null);
     }
-    state.player.equipment = { ...saved.player.equipment };
+    state.player.equipment = {
+      weapon: saved.player.equipment.weapon,
+      armor: saved.player.equipment.armor,
+      offhand: saved.player.equipment.offhand ?? null,
+    };
+    state.player.bestiary = saved.player.bestiary ? { ...saved.player.bestiary } : {};
     state.player.quests = { ...state.player.quests, ...saved.player.quests };
     state.player.questProgress = { ...state.player.questProgress, ...saved.player.questProgress };
     state.player.flags = { ...saved.player.flags };
@@ -125,6 +132,7 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
         actionMsg: null, minigame: null,
         voidWard: false,
         flags: { ...saved.battle.flags },
+        poisonDmg: 0, poisonTurns: 0, burnDmg: 0,
       };
     }
   }

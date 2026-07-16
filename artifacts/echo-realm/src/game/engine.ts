@@ -223,7 +223,7 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.MENU) {
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
-    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(5, state.menuIndex + 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(6, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
@@ -238,6 +238,7 @@ export function updateGame(state: GameStateData) {
         else { state.saveRequested = true; state.quitAfterSave = true; }
       }
       if (state.menuIndex === 5) state.exitRequested = true;
+      if (state.menuIndex === 6) { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; }
     }
     return;
   }
@@ -310,9 +311,40 @@ export function updateGame(state: GameStateData) {
       let handled = false;
 
       if (item.category === 'weapon') {
-        state.player.equipment.weapon = state.player.equipment.weapon === id ? null : id;
-        state.uiMessage = state.player.equipment.weapon === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`;
-        state.uiMessageTimer = 90; handled = true;
+        const eq = state.player.equipment;
+        if (eq.weapon === id) {
+          // Toggle off main hand
+          eq.weapon = null;
+          state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90;
+        } else if (eq.offhand === id) {
+          // Toggle off offhand
+          eq.offhand = null;
+          state.uiMessage = `Unequipped ${item.name} (offhand)`; state.uiMessageTimer = 90;
+        } else if (eq.weapon !== null && eq.offhand === null) {
+          // Main hand occupied, offhand free → dual wield
+          eq.offhand = id;
+          state.uiMessage = `Dual-wielding ${item.name}! (75% ATK each)`; state.uiMessageTimer = 120;
+        } else {
+          // Default: equip to main hand (replacing whatever is there)
+          eq.weapon = id;
+          state.uiMessage = `Equipped ${item.name}`; state.uiMessageTimer = 90;
+        }
+        handled = true;
+      } else if (item.category === 'shield') {
+        const eq = state.player.equipment;
+        if (eq.offhand === id) {
+          eq.offhand = null;
+          state.uiMessage = `Unequipped ${item.name}`; state.uiMessageTimer = 90;
+        } else {
+          if (eq.offhand !== null && ITEMS[eq.offhand]?.category === 'weapon') {
+            // Replace a dual-wield offhand weapon with a shield
+            state.uiMessage = `Dropped offhand weapon. Equipped ${item.name} (blocks ${item.block ?? 0} dmg/hit)`;
+          } else {
+            state.uiMessage = `Equipped ${item.name} — blocks ${item.block ?? 0} flat dmg/hit`;
+          }
+          eq.offhand = id; state.uiMessageTimer = 120;
+        }
+        handled = true;
       } else if (item.category === 'armor') {
         state.player.equipment.armor = state.player.equipment.armor === id ? null : id;
         recomputeMaxHp(state);
@@ -439,6 +471,14 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── BESTIARY (B key) ──────────────────────────────────────────────
+  if (state.mode === GameMode.BESTIARY) {
+    if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'b')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'ArrowUp')   || justPressed(state, 'w')) state.bestiaryScroll = Math.max(0, state.bestiaryScroll - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.bestiaryScroll++;
+    return;
+  }
+
   // ── STAT ALLOCATION (M key) ────────────────────────────────────────
   if (state.mode === GameMode.STAT_ALLOCATION) {
     const rows: ('str' | 'vit' | 'def')[] = ['str', 'vit', 'def'];
@@ -460,6 +500,7 @@ export function updateGame(state: GameStateData) {
   if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; markQuestsSeen(state); return; }
   if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
+  if (justPressed(state, 'b'))      { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; return; }
 
   const map = MAPS[state.mapId];
 
@@ -605,6 +646,7 @@ function startBattle(state: GameStateData, enemy: EnemyData) {
     soulX: 384, soulY: 420,
     projectiles: [], timer: 0, resonance: 0,
     actionMsg: null, minigame: null,
-    voidWard: false, flags: {}
+    voidWard: false, flags: {},
+    poisonDmg: 0, poisonTurns: 0, burnDmg: 0,
   };
 }
