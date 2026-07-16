@@ -1,6 +1,8 @@
 {
   "name": "@workspace/echo-realm",
   "version": "0.0.0",
+  "description": "A Memory Keeper's Tale — explore a dying world, recover lost echoes, and battle the creatures of the Void in this retro terminal-style RPG.",
+  "author": "Rocco F. Alban",
   "private": true,
   "type": "module",
   "main": "electron/main.cjs",
