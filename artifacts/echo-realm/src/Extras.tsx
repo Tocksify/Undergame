@@ -6,18 +6,20 @@ interface Props { onBack: () => void; }
 type Tab = 'credits' | 'sound' | 'lore';
 
 const SOUND_TRACKS: { key: string; label: string }[] = [
-  { key: 'title',       label: 'Title Theme'       },
-  { key: 'overworld',   label: 'Whispering Woods'   },
-  { key: 'south_road',  label: 'South Road'         },
-  { key: 'town_vh',     label: 'Vale Hollow'        },
-  { key: 'town_ct',     label: 'Crestfall City'     },
-  { key: 'town_ar',     label: 'Ashfall Ring'       },
-  { key: 'interior',    label: 'Interior'           },
-  { key: 'dungeon',     label: 'Dungeon'            },
-  { key: 'dungeon_deep',label: 'Deep Dungeon'       },
-  { key: 'battle',      label: 'Battle'             },
-  { key: 'battle_boss', label: 'Boss Battle'        },
-  { key: 'true_ending', label: 'True Ending'        },
+  { key: 'title',        label: 'Title Theme'        },
+  { key: 'overworld',    label: 'Whispering Woods'    },
+  { key: 'south_road',   label: 'South Road'          },
+  { key: 'town_vh',      label: 'Vale Hollow'         },
+  { key: 'town_ct',      label: 'Crestfall City'      },
+  { key: 'town_ar',      label: 'Ashfall Ring'        },
+  { key: 'interior',     label: 'Interior'            },
+  { key: 'dungeon',      label: 'Dungeon'             },
+  { key: 'dungeon_deep', label: 'Deep Dungeon'        },
+  { key: 'battle',       label: 'Battle (Vol. 1)'     },
+  { key: 'battle2',      label: 'Battle (Vol. 2)'     },
+  { key: 'battle3',      label: 'Boss Battle'         },
+  { key: 'child_void',   label: 'The Kid'             },
+  { key: 'true_ending',  label: 'True Ending'         },
 ];
 
 const LORE: { title: string; body: string }[] = [

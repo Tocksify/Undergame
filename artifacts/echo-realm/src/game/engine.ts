@@ -105,6 +105,7 @@ export function updateGame(state: GameStateData) {
         state.bookRead.page++;
       } else {
         // Last page — close book, return to inventory
+        if (state.bookRead.bookId === 'book_childs_letter') state.player.flags['read_childs_letter'] = true;
         state.mode = GameMode.INVENTORY;
         state.inventoryIndex = state.bookRead.fromInventoryIndex;
         state.bookRead.bookId = null;
@@ -114,6 +115,7 @@ export function updateGame(state: GameStateData) {
       if (state.bookRead.page > 0) state.bookRead.page--;
     }
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      if (state.bookRead.bookId === 'book_childs_letter') state.player.flags['read_childs_letter'] = true;
       state.mode = GameMode.INVENTORY;
       state.inventoryIndex = state.bookRead.fromInventoryIndex;
       state.bookRead.bookId = null;
@@ -575,9 +577,19 @@ export function updateGame(state: GameStateData) {
         if (!impassable) {
           state.player.targetX = ntx * TILE_SIZE;
           state.player.targetY = nty * TILE_SIZE;
-          if (tile === 'V' && Math.random() < 0.15) {
-            const pool = (map.encounterPool && map.encounterPool.length) ? map.encounterPool : ['wisp'];
-            state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[pool[Math.floor(Math.random() * pool.length)]]));
+          if (tile === 'V') {
+            // If the player has read the child's letter and the kid hasn't appeared yet,
+            // force 100% encounter with The Kid on the very next Crestfall void tile.
+            const kidPending = state.mapId === 'CT'
+              && state.player.flags['read_childs_letter']
+              && !state.player.flags['child_void_appeared'];
+            if (kidPending) {
+              state.player.flags['child_void_appeared'] = true;
+              state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['child_void_kid']));
+            } else if (Math.random() < 0.15) {
+              const pool = (map.encounterPool && map.encounterPool.length) ? map.encounterPool : ['wisp'];
+              state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[pool[Math.floor(Math.random() * pool.length)]]));
+            }
           }
         }
       }

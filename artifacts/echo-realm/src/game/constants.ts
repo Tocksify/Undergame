@@ -633,6 +633,17 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'entreat', name: 'Entreat', effect: 'resonance', power: 1 },
     ]
   },
+  // ── The Kid — appears in Crestfall after reading the child's letter ──
+  'child_void_kid': {
+    id: 'child_void_kid', name: 'The Kid', hp: 58, maxHp: 58, atk: 9, color: '#b8d4e8',
+    flavor: 'The void took the child before the letter could reach his father.\nWhat remains knows your name, but not its own.',
+    rememberText: 'The void loosens. The child looks at his hands — they are warm again.\nHe smiles, and the smile holds until he is gone.',
+    echoes: 130, acts: [
+      { id: 'show_letter', name: 'Show the Letter', effect: 'resonance', power: 3, requiresItem: 'book_childs_letter' },
+      { id: 'speak_name',  name: 'Speak His Name',  effect: 'resonance', power: 1 },
+      { id: 'remember',    name: 'Remember Him',    effect: 'flavor' },
+    ]
+  },
 };
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────

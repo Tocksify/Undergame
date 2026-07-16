@@ -123,6 +123,7 @@ const TRACKS: Record<string, TrackDef> = {
     chord: [f('A3'), f('E4')],
     chordAlt: [f('F3'), f('C4')],
   },
+  // ── Battle music 1 (original) ──
   battle: {
     bpm: 140, chordWave: 'sawtooth', filterFreq: 900, volume: 0.4,
     chord: [f('A3'), f('C4'), f('E4')],
@@ -132,6 +133,27 @@ const TRACKS: Record<string, TrackDef> = {
     lead: [f('A4'), f('C5'), f('E5'), f('C5'), f('A4'), f('C5'), f('E5'), f('C5'), f('F4'), f('A4'), f('D5'), f('A4'), f('E4'), f('A4'), f('C5'), f('E4')],
     leadWave: 'square',
   },
+  // ── Battle music 2 (E-minor, alternate random pick for regular fights) ──
+  battle2: {
+    bpm: 146, chordWave: 'sawtooth', filterFreq: 950, volume: 0.38,
+    chord: [f('E3'), f('G3'), f('B3')],
+    chordAlt: [f('C3'), f('G3'), f('E4')],
+    bass: [f('E2'), null, f('E2'), f('E2'), null, f('G2'), null, null, f('B1'), null, f('B1'), f('B1'), null, f('A2'), null, null],
+    bassWave: 'triangle',
+    lead: [f('E4'), f('G4'), f('B4'), f('G4'), f('E4'), f('G4'), f('B4'), f('G4'), f('C4'), f('E4'), f('G4'), f('E4'), f('C4'), f('E4'), f('G4'), f('C4')],
+    leadWave: 'square',
+  },
+  // ── Battle music 3 (boss — diminished, fast, dissonant) ──
+  battle3: {
+    bpm: 162, chordWave: 'sawtooth', filterFreq: 1200, volume: 0.48,
+    chord: [f('D3'), f('F3'), f('G#3')],
+    chordAlt: [f('A#2'), f('D3'), f('F3')],
+    bass: [f('D2'), f('D2'), null, f('D2'), f('G#2'), f('G#2'), null, f('G#2'), f('F2'), f('F2'), null, f('F2'), f('A#2'), f('A#2'), null, f('G#2')],
+    bassWave: 'sawtooth',
+    lead: [f('D5'), f('G#4'), f('D5'), f('F5'), f('G#4'), f('D5'), f('F5'), f('D5'), f('F5'), f('G#4'), f('D#5'), f('G#4'), f('F5'), f('D5'), f('G#4'), f('F4')],
+    leadWave: 'square',
+  },
+  // ── Battle music 3 (original boss — kept for sound-test archive) ──
   battle_boss: {
     bpm: 152, chordWave: 'sawtooth', filterFreq: 1100, volume: 0.46,
     chord: [f('A3'), f('D#4'), f('E4')],
@@ -140,6 +162,16 @@ const TRACKS: Record<string, TrackDef> = {
     bassWave: 'sawtooth',
     lead: [f('E5'), f('A4'), f('D#5'), f('A4'), f('E5'), f('A4'), f('D#5'), f('E5'), f('F5'), f('A4'), f('C5'), f('A4'), f('F5'), f('A4'), f('C5'), f('F5')],
     leadWave: 'square',
+  },
+  // ── Child void — melancholy A-minor, slow, for the kid fight ──
+  child_void: {
+    bpm: 72, chordWave: 'sine', filterFreq: 800, volume: 0.32,
+    chord: [f('A3'), f('C4'), f('E4')],
+    chordAlt: [f('D3'), f('F3'), f('A3')],
+    bass: [f('A2'), null, null, null, null, null, null, null, f('G2'), null, null, null, null, null, null, null],
+    bassWave: 'triangle',
+    lead: [null, null, f('C5'), null, null, null, f('E5'), null, null, null, f('A4'), null, null, null, f('G4'), null],
+    leadWave: 'sine',
   },
   true_ending: {
     bpm: 66, chordWave: 'sine', filterFreq: 1800, volume: 0.44,
@@ -150,7 +182,7 @@ const TRACKS: Record<string, TrackDef> = {
   },
 };
 
-const BOSS_ENEMY_IDS = new Set(['boss', 'echo_warden', 'ring_boss']);
+const BOSS_ENEMY_IDS = new Set(['boss', 'echo_warden', 'ring_boss', 'archivist', 'hollow_guard']);
 const TOWN_TRACKS: Record<string, string> = { VH: 'town_vh', CT: 'town_ct', AR: 'town_ar', CO: 'town_co' };
 const DUNGEON_MAPS = new Set(['MS', 'SA', 'FR', 'AD', 'SECRET_DUNGEON', 'CT_ASHDOOR', 'ASHFALL_STAIRS']);
 const DEEP_DUNGEON_MAPS = new Set(['VN', 'AR_ARENA_BOSS']);
@@ -205,6 +237,8 @@ class AudioEngine {
   private userSfxVol  = 0.75;
   private previewKey: string | null = null;
   private menuAudioEl: HTMLAudioElement | null = null;
+  /** Stable random variant chosen at the start of each regular battle (battle or battle2). */
+  private battleVariant: 'battle' | 'battle2' = 'battle';
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -367,10 +401,25 @@ class AudioEngine {
       return;
     }
     let key: string;
-    if (state.mode === GameMode.TITLE) key = 'title';
-    else if (state.mode === GameMode.TRUE_ENDING) key = 'true_ending';
-    else if (state.mode === GameMode.BATTLE && state.battle) key = BOSS_ENEMY_IDS.has(state.battle.enemy.id) ? 'battle_boss' : 'battle';
-    else key = trackForMap(state.mapId);
+    if (state.mode === GameMode.TITLE) {
+      key = 'title';
+    } else if (state.mode === GameMode.TRUE_ENDING) {
+      key = 'true_ending';
+    } else if (state.mode === GameMode.BATTLE && state.battle) {
+      const enemyId = state.battle.enemy.id;
+      if (enemyId === 'child_void_kid') {
+        key = 'child_void';
+      } else if (BOSS_ENEMY_IDS.has(enemyId)) {
+        key = 'battle3';
+      } else {
+        // Regular battle: pick variant once per new encounter, then hold it.
+        const alreadyInBattle = this.currentKey === 'battle' || this.currentKey === 'battle2';
+        if (!alreadyInBattle) this.battleVariant = Math.random() < 0.5 ? 'battle' : 'battle2';
+        key = this.battleVariant;
+      }
+    } else {
+      key = trackForMap(state.mapId);
+    }
     this.playTrack(key);
     // Actively enforce per-track volume multiplied by user's chosen level every frame.
     if (this.musicGain)
