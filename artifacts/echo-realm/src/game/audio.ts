@@ -275,7 +275,7 @@ class AudioEngine {
       this.duckGain.connect(this.masterGain);
 
       this.musicGain = ctx.createGain();
-      this.musicGain.gain.value = 1;
+      this.musicGain.gain.value = this.userMusicVol; // respect saved slider level from the start
       this.musicGain.connect(this.duckFilter);
 
       this.sfxGain = ctx.createGain();
@@ -317,7 +317,13 @@ class AudioEngine {
     for (const el of Object.values(this.mp3Tracks)) {
       if (el) el.volume = this.userMusicVol;
     }
-    // musicGain for the synthesised tracks is corrected every syncMusic frame.
+    // Also push directly into the Web Audio node so synth tracks respect the
+    // slider immediately — important in the sound-test screen where syncMusic
+    // never runs.
+    if (this.musicGain) {
+      const key = this.currentKey ?? '';
+      this.musicGain.gain.value = (AudioEngine.MUSIC_GAIN[key] ?? 1.0) * this.userMusicVol;
+    }
   }
 
   /** Set SFX volume 0–100; persisted to localStorage. */
@@ -362,6 +368,10 @@ class AudioEngine {
         if (this.previewKey !== key) return;
         this.currentKey = key;
         this.startTrack(def);
+        // syncMusic doesn't run in the Extras screen, so enforce the user's
+        // volume on musicGain right here so the preview obeys the slider.
+        if (this.musicGain)
+          this.musicGain.gain.value = (AudioEngine.MUSIC_GAIN[key] ?? 1.0) * this.userMusicVol;
       }, 60);
     } else {
       // Preview stopped — halt any preview MP3, restore the menu MP3.
