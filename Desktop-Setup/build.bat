@@ -24,12 +24,24 @@ for /f "tokens=*" %%v in ('node --version') do set NODE_VER=%%v
 echo [OK] Node.js %NODE_VER% found.
 echo.
 
+:: ── Ensure pnpm is available ────────────────────────────────────────
+where pnpm >nul 2>&1
+if errorlevel 1 (
+    echo [INFO] pnpm not found. Installing via npm...
+    call npm install -g pnpm
+    if errorlevel 1 (
+        echo [ERROR] Could not install pnpm.
+        pause
+        exit /b 1
+    )
+)
+
 :: ── Install workspace dependencies ─────────────────────────────────
 echo [1/3] Installing dependencies...
 cd /d "%REPO%"
-call npm install --legacy-peer-deps
+call pnpm install
 if errorlevel 1 (
-    echo [ERROR] npm install failed.
+    echo [ERROR] pnpm install failed.
     pause
     exit /b 1
 )
