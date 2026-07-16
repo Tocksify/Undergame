@@ -71,8 +71,8 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
         <div />
       </div>
 
-      {/* Utility buttons — menu / inventory / quest / stats / transit */}
-      <div className="flex flex-col gap-2 items-center">
+      {/* Utility buttons — 2 rows of 3 / 2 */}
+      <div className="grid grid-cols-3 gap-1">
         <button aria-label="Menu"      className={`${util} w-14 h-9`} {...bind('Escape')}>MENU</button>
         <button aria-label="Inventory" className={`${util} w-14 h-9`} {...bind('i')}>ITEM</button>
         <button aria-label="Quest Log" className={`${util} w-14 h-9`} {...bind('q')}>QUEST</button>
