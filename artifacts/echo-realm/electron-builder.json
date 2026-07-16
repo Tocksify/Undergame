@@ -12,7 +12,11 @@
   ],
   "asar": true,
   "asarUnpack": [
-    "dist/public/MainMenu.mp3"
+    "dist/public/MainMenu.mp3",
+    "dist/public/BattleMusic1.mp3",
+    "dist/public/BattleMusic2.mp3",
+    "dist/public/BattleMusic3.mp3",
+    "dist/public/ChildVoidEnemy.mp3"
   ],
   "win": {
     "icon": "public/icon.ico",
