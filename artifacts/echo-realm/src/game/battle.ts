@@ -28,7 +28,9 @@ function getOffhandWeaponEnchantData(state: GameStateData) {
 // Checks whether resonance has reached the threshold to "remember" the enemy.
 function tryCompleteRemember(state: GameStateData): boolean {
   const b = state.battle!;
-  if (b.resonance < 3) return false;
+  // chroma_veil: only 2 resonance needed
+  const threshold = (state.player.learnedSkills ?? []).includes('chroma_veil') ? 2 : 3;
+  if (b.resonance < threshold) return false;
   if (b.enemy.id === 'boss' && !state.player.flags['used_ancient_echo']) {
     b.actionMsg = "It rejects the resonance. You need a deeper memory.";
     b.resonance = 0;
@@ -149,7 +151,8 @@ export function handleBattleInput(state: GameStateData) {
         state.mode = GameMode.INVENTORY;
       } else if (b.menuIndex === 4) {
         if (b.flags.fleeAttempted) return; // greyed out — only one flee attempt per battle
-        const fleeSuccess = Math.random() < 0.55;
+        // echo_surge: flee always succeeds
+        const fleeSuccess = (state.player.learnedSkills ?? []).includes('echo_surge') ? true : Math.random() < 0.55;
         if (fleeSuccess) {
           b.actionMsg = "You fled the battle."; b.phase = 'END'; b.endType = 'FLED';
         } else {
@@ -175,7 +178,16 @@ export function handleBattleInput(state: GameStateData) {
     }
   } else if (b.phase === 'MINIGAME') {
     b.timer++;
-    b.minigame!.cursorX = (Math.sin(b.timer * 0.1) + 1) / 2;
+    // ── Cursor speed: chroma_touch (−25%), Resonant Prism hybrid (−50% further) ──
+    const _skills = state.player.learnedSkills ?? [];
+    let cursorSpeed = 0.1;
+    if (b.minigame!.type === 'REMEMBER') {
+      if (_skills.includes('chroma_touch')) cursorSpeed *= 0.75;
+      const _cCount = _skills.filter(s => s.startsWith('chroma_')).length;
+      const _eCount = _skills.filter(s => s.startsWith('echo_')).length;
+      if (_cCount >= 2 && _eCount >= 2) cursorSpeed *= 0.5; // Resonant Prism
+    }
+    b.minigame!.cursorX = (Math.sin(b.timer * cursorSpeed) + 1) / 2;
 
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       const dist = Math.abs(b.minigame!.cursorX - 0.5);
@@ -185,22 +197,101 @@ export function handleBattleInput(state: GameStateData) {
 
       const mult = b.minigame!.mult;
       if (b.minigame!.type === 'REMEMBER') {
-        if (hitType === 'PERFECT') { b.resonance += 1; b.actionMsg = "Perfect Resonance!"; }
-        else if (hitType === 'GOOD') { b.actionMsg = "Good connection."; }
-        else { b.actionMsg = "The memory slips away..."; }
+        if (hitType === 'PERFECT') {
+          // chroma_morthus: PERFECT builds +2 resonance
+          const resGain = _skills.includes('chroma_morthus') ? 2 : 1;
+          b.resonance += resGain;
+          b.actionMsg = resGain === 2 ? "Perfect Resonance! +2 (Morthus's Gift)" : "Perfect Resonance!";
+          // Resonant Prism hybrid: PERFECT REMEMBER heals 3 HP
+          const _cC2 = _skills.filter(s => s.startsWith('chroma_')).length;
+          const _eC2 = _skills.filter(s => s.startsWith('echo_')).length;
+          if (_cC2 >= 2 && _eC2 >= 2) {
+            state.player.hp = Math.min(state.player.maxHp, state.player.hp + 3);
+            b.actionMsg += ' +3 HP (Resonant Prism)';
+          }
+        } else if (hitType === 'GOOD') {
+          // chroma_touch: GOOD hits also build resonance
+          if (_skills.includes('chroma_touch')) {
+            b.resonance += 1;
+            b.actionMsg = "Good connection. +1 Resonance (Prismatic Touch)";
+          } else {
+            b.actionMsg = "Good connection.";
+          }
+        } else { b.actionMsg = "The memory slips away..."; }
         if (tryCompleteRemember(state)) return;
       } else {
+        // ── FORGET: base power ───────────────────────────────────────
         let dmg = ((hitType === 'PERFECT' ? 10 : hitType === 'GOOD' ? 5 : 2) * mult) + getWeaponAtkBonus(state);
+        // void_strike: +3 base power
+        if (_skills.includes('void_strike')) dmg += 3;
+        // void_rift: PERFECT hits ×1.5
+        if (hitType === 'PERFECT' && _skills.includes('void_rift')) dmg = Math.floor(dmg * 1.5);
+        // void_rift: +8 dmg vs enemies below 30% HP
+        if (_skills.includes('void_rift') && b.enemy.hp < b.enemy.maxHp * 0.3) dmg += 8;
+        // echo_nova: PERFECT bonus = resonance × 3 (doubled by Forge of Echoes hybrid)
+        if (hitType === 'PERFECT' && _skills.includes('echo_nova')) {
+          const _ecCount = _skills.filter(s => s.startsWith('echo_')).length;
+          const _emCount = _skills.filter(s => s.startsWith('ember_')).length;
+          const novaMult = (_ecCount >= 2 && _emCount >= 2) ? 2 : 1; // Forge of Echoes
+          dmg += b.resonance * 3 * novaMult;
+        }
+
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
-        // ── Weapon enchant procs (PERFECT or GOOD hits only) ──────────
+
+        // ── Post-hit skill procs (PERFECT or GOOD only) ───────────────
         if (hitType !== 'MISS') {
           const procMsgs: string[] = [];
-          // Main hand
+          // void_drain: PERFECT hits heal 4 HP
+          if (hitType === 'PERFECT' && _skills.includes('void_drain')) {
+            const healed = Math.min(4, state.player.maxHp - state.player.hp);
+            if (healed > 0) { state.player.hp += healed; procMsgs.push(`Void Drain +${healed} HP.`); }
+          }
+          // void_strike: 20% silence on PERFECT
+          if (hitType === 'PERFECT' && _skills.includes('void_strike') && !b.flags.silenced && Math.random() < 0.20) {
+            b.flags.silenced = true; procMsgs.push('Void silences enemy!');
+          }
+          // Null Memory hybrid: PERFECT FORGET always silences (void ≥2 + echo ≥2)
+          if (hitType === 'PERFECT' && !b.flags.silenced) {
+            const _vC = _skills.filter(s => s.startsWith('void_')).length;
+            const _eC = _skills.filter(s => s.startsWith('echo_')).length;
+            if (_vC >= 2 && _eC >= 2) { b.flags.silenced = true; procMsgs.push('Null Memory silences!'); }
+          }
+          // void_herald: Weaken on every hit
+          if (_skills.includes('void_herald')) {
+            b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('Void Weaken −2 ATK.');
+          }
+          // chroma_strike: PERFECT hit applies random status
+          if (hitType === 'PERFECT' && _skills.includes('chroma_strike')) {
+            const _chromaC = _skills.filter(s => s.startsWith('chroma_')).length;
+            const _emberC = _skills.filter(s => s.startsWith('ember_')).length;
+            const statusPool: string[] = ['confuse', 'freeze', 'burn', 'weaken'];
+            // Sunfire Spectrum: extra burn entry in pool
+            if (_chromaC >= 2 && _emberC >= 2) statusPool.push('burn');
+            const chosen = statusPool[Math.floor(Math.random() * statusPool.length)];
+            if (chosen === 'confuse' && !b.flags.confused) {
+              b.flags.confused = true; procMsgs.push('[Spectrum: Confused!]');
+            } else if (chosen === 'freeze' && !b.flags.frozen) {
+              b.flags.frozen = true; procMsgs.push('[Spectrum: Frozen!]');
+            } else if (chosen === 'burn' && b.burnDmg === 0) {
+              b.burnDmg = _skills.includes('ember_forge') ? 4 : 2;
+              procMsgs.push('[Spectrum: Burning!]');
+              // Sunfire Spectrum: burn grants +1 resonance
+              if (_chromaC >= 2 && _emberC >= 2) { b.resonance = Math.min(3, b.resonance + 1); procMsgs.push('+1 Resonance!'); }
+            } else if (chosen === 'weaken') {
+              b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('[Spectrum: −2 ATK!]');
+            }
+            // Prismatic Void hybrid: also apply weaken (void ≥2 + chroma ≥2)
+            const _vC2 = _skills.filter(s => s.startsWith('void_')).length;
+            if (_vC2 >= 2 && _chromaC >= 2) {
+              b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('[Prismatic Void: −2 ATK]');
+            }
+          }
+
+          // ── Weapon enchant procs ────────────────────────────────────
           const wEnch = getEquippedEnchantData(state, 'weapon');
           if (wEnch) procMsgs.push(...applyWeaponProcs(state, wEnch));
-          // Offhand weapon (dual wield)
           const ohEnch = getOffhandWeaponEnchantData(state);
           if (ohEnch) procMsgs.push(...applyWeaponProcs(state, ohEnch));
           if (procMsgs.length) b.actionMsg += ' ' + procMsgs.join(' ');
@@ -231,11 +322,14 @@ export function updateBattlePhase(state: GameStateData) {
     if (b.timer > 60) {
       // ── Tick poison ───────────────────────────────────────────────
       if (b.poisonDmg > 0 && b.poisonTurns > 0) {
-        b.enemy.hp = Math.max(0, b.enemy.hp - b.poisonDmg);
+        // ember_shell: poison ticks for 2× damage per turn
+        const poisonTickDmg = (state.player.learnedSkills ?? []).includes('ember_shell')
+          ? b.poisonDmg * 2 : b.poisonDmg;
+        b.enemy.hp = Math.max(0, b.enemy.hp - poisonTickDmg);
         b.poisonTurns--;
         const poisonNote = b.poisonTurns > 0
-          ? `Poison deals ${b.poisonDmg} damage! (${b.poisonTurns} turns left)`
-          : `Poison deals ${b.poisonDmg} damage! Poison fades.`;
+          ? `Poison deals ${poisonTickDmg} damage! (${b.poisonTurns} turns left)`
+          : `Poison deals ${poisonTickDmg} damage! Poison fades.`;
         if (b.poisonTurns === 0) b.poisonDmg = 0;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; b.actionMsg = poisonNote; return; }
         b.actionMsg = poisonNote;
@@ -245,7 +339,9 @@ export function updateBattlePhase(state: GameStateData) {
       if (b.burnDmg > 0) {
         b.enemy.hp = Math.max(0, b.enemy.hp - b.burnDmg);
         const burnNote = `Burning for ${b.burnDmg} damage!`;
-        b.burnDmg = b.burnDmg >= 32 ? 0 : b.burnDmg * 2; // double each turn, cap then clear
+        // ember_forge: cap raised from 32 to 64
+        const burnCap = (state.player.learnedSkills ?? []).includes('ember_forge') ? 64 : 32;
+        b.burnDmg = b.burnDmg >= burnCap ? 0 : b.burnDmg * 2; // double each turn, cap then clear
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; b.actionMsg = burnNote; return; }
         b.actionMsg = burnNote;
         b.timer = -60; return;
@@ -280,26 +376,55 @@ export function updateBattlePhase(state: GameStateData) {
       const dx = p.x - b.soulX; const dy = p.y - b.soulY;
       if (dx * dx + dy * dy < 100) {
         if (state.player.invincibility <= 0) {
-          const shieldBlock = getShieldBlockBonus(state);
-          const rawDmg = Math.max(1, Math.floor(b.enemy.atk * (b.voidWard ? 0.5 : 1)) - getArmorDefBonus(state));
-          const dmg = Math.max(0, rawDmg - shieldBlock);
-          state.player.hp -= dmg;
-          state.player.invincibility = 30;
-          // ── Enemy status proc on hit ──────────────────────────────
-          if (p.proc === 'stun' && !b.flags.playerStunned && Math.random() < 0.40) {
-            b.flags.playerStunned = true;
-          }
-          b.voidWard = false;
-          // ── Armor enchant: thorn damage ────────────────────────────
-          const aEnch = getEquippedEnchantData(state, 'armor');
-          if (aEnch?.thornDmg && dmg > 0) {
-            b.enemy.hp = Math.max(0, b.enemy.hp - aEnch.thornDmg);
-            if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; }
+          const _sk = state.player.learnedSkills ?? [];
+          // Chromatic Veil: 15% chance to auto-dodge
+          if (_sk.includes('chroma_veil') && Math.random() < 0.15) {
+            state.player.invincibility = 8; // brief grace period
+          } else {
+            // Echo Armor: 25% chance to fully block
+            if (_sk.includes('echo_armor') && Math.random() < 0.25) {
+              state.player.invincibility = 15;
+              b.actionMsg = 'Memory Armor blocked the hit!';
+            } else {
+              const shieldBlock = getShieldBlockBonus(state);
+              // void_herald: Void Ward blocks 100% (instead of 50%)
+              const wardMult = b.voidWard ? (_sk.includes('void_herald') ? 0 : 0.5) : 1;
+              let rawDmg = b.voidWard && _sk.includes('void_herald')
+                ? 0
+                : Math.max(1, Math.floor(b.enemy.atk * wardMult) - getArmorDefBonus(state));
+              // echo_nova: take 1 less damage per hit
+              if (_sk.includes('echo_nova')) rawDmg = Math.max(0, rawDmg - 1);
+              const dmg = Math.max(0, rawDmg - shieldBlock);
+              state.player.hp -= dmg;
+              state.player.invincibility = 30;
+              // ── Enemy status proc on hit ────────────────────────────
+              if (p.proc === 'stun' && !b.flags.playerStunned && Math.random() < 0.40) {
+                b.flags.playerStunned = true;
+              }
+              b.voidWard = false;
+              // ── Armor enchant: thorn damage (ember_will: ×2) ────────
+              const aEnch = getEquippedEnchantData(state, 'armor');
+              if (aEnch?.thornDmg && dmg > 0) {
+                const thornMult = _sk.includes('ember_will') ? 2 : 1;
+                b.enemy.hp = Math.max(0, b.enemy.hp - aEnch.thornDmg * thornMult);
+                if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; }
+              }
+            }
           }
         }
       }
     }
-    if (state.player.hp <= 0) { state.battle = null; state.mode = GameMode.GAME_OVER; }
+    // ── ember_phoenix: revive once per battle ────────────────────────
+    if (state.player.hp <= 0) {
+      const _sk2 = state.player.learnedSkills ?? [];
+      if (_sk2.includes('ember_phoenix') && !b.flags.phoenixUsed) {
+        b.flags.phoenixUsed = true;
+        state.player.hp = Math.max(1, Math.floor(state.player.maxHp * 0.25));
+        b.actionMsg = '🔥 Phoenix Ember! You rise from the ashes!';
+      } else {
+        state.battle = null; state.mode = GameMode.GAME_OVER;
+      }
+    }
     if (b.timer <= 0) {
       if (b.flags.playerStunned) {
         b.flags.playerStunned = false;
@@ -446,9 +571,30 @@ function endBattle(state: GameStateData) {
   state.mode = GameMode.OVERWORLD;
   const b = state.battle!;
   if (b.endType === 'DEFEATED' || b.endType === 'REMEMBERED') {
-    const e = b.endType === 'REMEMBERED' ? Math.floor(b.enemy.echoes * 1.5) : b.enemy.echoes;
+    const _sk = state.player.learnedSkills ?? [];
+    // ── Echoes multiplier: echo_legacy raises REMEMBERED bonus to 1.75, void_herald +20% all ──
+    let echoesMult = 1;
+    if (b.endType === 'REMEMBERED') echoesMult = _sk.includes('echo_legacy') ? 1.75 : 1.5;
+    if (_sk.includes('void_herald')) echoesMult *= 1.2;
+    const e = Math.floor(b.enemy.echoes * echoesMult);
     state.player.echoes += e;
     state.player.flags['defeated_' + b.enemy.id] = true;
+
+    // ── Skill: void_drain — heal 6 HP on defeating (not Remembering) ──
+    if (b.endType === 'DEFEATED' && _sk.includes('void_drain')) {
+      const healed = Math.min(6, state.player.maxHp - state.player.hp);
+      if (healed > 0) state.player.hp += healed;
+    }
+    // ── Skill: chroma_morthus — heal 15 HP on Remembering ─────────
+    if (b.endType === 'REMEMBERED' && _sk.includes('chroma_morthus')) {
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 15);
+    }
+    // ── Hybrid: Ashen Void (void≥2 + ember≥2) — heal 5 HP if enemy was burning/poisoned ──
+    const _vC = _sk.filter(s => s.startsWith('void_')).length;
+    const _emC = _sk.filter(s => s.startsWith('ember_')).length;
+    if (_vC >= 2 && _emC >= 2 && (b.poisonDmg > 0 || b.burnDmg > 0)) {
+      state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5);
+    }
 
     // ── Bestiary: track encounter count ────────────────────────────
     state.player.bestiary[b.enemy.id] = (state.player.bestiary[b.enemy.id] ?? 0) + 1;
@@ -456,7 +602,8 @@ function endBattle(state: GameStateData) {
     // XP mirrors the Echoes reward — remembering an enemy (vs. just defeating it) pays out more of both.
     const levelsGained = grantXp(state, e);
     if (levelsGained > 0) {
-      pushMessages(state, [`Level Up! You are now level ${state.player.level}.`, `+${levelsGained * 2} stat points — press [M] to spend them`]);
+      const spAvail = (state.player.skillPoints ?? 0) > 0 ? ` +1 Skill Point — press [K] for Skill Tree!` : '';
+      pushMessages(state, [`Level Up! You are now level ${state.player.level}.`, `+${levelsGained * 2} stat points — press [M] to spend them.${spAvail}`]);
     }
 
     if (state.player.quests['quest_main'] === 1 && Math.random() < 0.35) {

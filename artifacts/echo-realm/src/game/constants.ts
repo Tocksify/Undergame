@@ -580,7 +580,23 @@ export function recomputeMaxHp(state: GameStateData) {
   const enchBookId = armorSlot >= 0 ? state.player.enchantedSlots[armorSlot] : null;
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.maxHp ? ITEMS[enchBookId].enchantData!.maxHp! : 0;
   const vitBonus = (state.player.baseStats?.vit ?? 0) * VIT_HP_PER_POINT;
-  state.player.maxHp = BASE_MAX_HP + bonus + enchBonus + vitBonus;
+  // ── Skill bonuses ──────────────────────────────────────────────────
+  const skills = state.player.learnedSkills ?? [];
+  // ember_shell: +20 max HP. hybrid_echo_ember doubles it to +40.
+  const hasEmberShell = skills.includes('ember_shell');
+  const forgeEchoActive = skills.includes('ember_shell') && skills.includes('echo_nova') &&
+    ['void', 'chroma', 'echo', 'ember'].filter(p => {
+      const counts: Record<string, number> = { void: 0, chroma: 0, echo: 0, ember: 0 };
+      for (const s of skills) {
+        if (s.startsWith('void_')) counts.void++;
+        else if (s.startsWith('chroma_')) counts.chroma++;
+        else if (s.startsWith('echo_')) counts.echo++;
+        else if (s.startsWith('ember_')) counts.ember++;
+      }
+      return counts.echo >= 2 && counts.ember >= 2;
+    }).length > 0;
+  const emberHpBonus = hasEmberShell ? (forgeEchoActive ? 40 : 20) : 0;
+  state.player.maxHp = BASE_MAX_HP + bonus + enchBonus + vitBonus + emberHpBonus;
   state.player.hp = Math.min(state.player.hp, state.player.maxHp);
 }
 
@@ -627,7 +643,11 @@ export function getArmorDefBonus(state: GameStateData): number {
   const enchBookId = aSlot >= 0 ? state.player.enchantedSlots[aSlot] : null;
   const enchBonus = enchBookId && ITEMS[enchBookId]?.enchantData?.def ? ITEMS[enchBookId].enchantData!.def! : 0;
   const defBonus = (state.player.baseStats?.def ?? 0) * DEF_DEF_PER_POINT;
-  return base + enchBonus + defBonus;
+  // ── Skill bonuses ──────────────────────────────────────────────────
+  const skills = state.player.learnedSkills ?? [];
+  const forgeBonus = skills.includes('ember_forge') ? 2 : 0;
+  const willBonus = skills.includes('ember_will') && state.player.hp <= state.player.maxHp * 0.25 ? 4 : 0;
+  return base + enchBonus + defBonus + forgeBonus + willBonus;
 }
 
 // ── LEVELING & STAT ALLOCATION ────────────────────────────────────────
@@ -647,12 +667,22 @@ export function xpForLevel(level: number): number {
 // chain multiple levels). Returns the number of levels gained, so callers
 // can surface a toast.
 export function grantXp(state: GameStateData, amount: number): number {
-  state.player.xp += amount;
+  // ── Skill XP multipliers (echo_surge +20%, echo_legacy +30%, stack multiplicatively) ──
+  const skills = state.player.learnedSkills ?? [];
+  let xpMult = 1;
+  if (skills.includes('echo_surge'))  xpMult *= 1.20;
+  if (skills.includes('echo_legacy')) xpMult *= 1.30;
+  state.player.xp += Math.round(amount * xpMult);
+
   let levelsGained = 0;
   while (state.player.xp >= state.player.xpToNext) {
     state.player.xp -= state.player.xpToNext;
     state.player.level += 1;
     state.player.statPoints += POINTS_PER_LEVEL;
+    // Grant 1 skill point every 2 levels
+    if (state.player.level % 2 === 0) {
+      state.player.skillPoints = (state.player.skillPoints ?? 0) + 1;
+    }
     state.player.xpToNext = xpForLevel(state.player.level);
     levelsGained++;
   }
@@ -2379,6 +2409,8 @@ export const INITIAL_STATE: GameStateData = {
     enchantedSlots: [],
     equipment: { weapon: null, armor: null, offhand: null },
     bestiary: {},
+    learnedSkills: [],
+    skillPoints: 0,
     quests: {
       'quest_main': 0, 'quest_name': 0, 'quest_hollow': 0,
       'quest_archive': 0, 'quest_frost': 0, 'quest_ash': 0,
@@ -2418,7 +2450,9 @@ export const INITIAL_STATE: GameStateData = {
   questLogScroll: 0,
   bestiaryScroll: 0,
   statAllocIndex: 0,
+  skillTreeCursor: { pathIdx: 0, skillIdx: 0 },
   notifications: { itemsBaseline: 0, questsBaseline: {} },
   trueEndingMenuIndex: 0,
   endLegacyRequested: false,
+  skillLearnedFlash: null,
 };

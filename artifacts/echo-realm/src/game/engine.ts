@@ -1,5 +1,6 @@
 import { GameStateData, GameMode, EnemyData } from './types';
 import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS } from './constants';
+import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
@@ -494,6 +495,49 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── SKILL TREE (K key) ─────────────────────────────────────────────
+  if (state.mode === GameMode.SKILL_TREE) {
+    if (justPressed(state, 'Escape') || justPressed(state, 'k') || justPressed(state, 'x')) {
+      state.mode = GameMode.OVERWORLD; return;
+    }
+    const _paths = PATH_ORDER;
+    const _curPathId = _paths[state.skillTreeCursor.pathIdx];
+    const _pathSkills = PATH_DEFS[_curPathId].skills;
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) {
+      state.skillTreeCursor.pathIdx = Math.max(0, state.skillTreeCursor.pathIdx - 1);
+      const _newPathSkills = PATH_DEFS[_paths[state.skillTreeCursor.pathIdx]].skills;
+      state.skillTreeCursor.skillIdx = Math.min(state.skillTreeCursor.skillIdx, _newPathSkills.length - 1);
+      return;
+    }
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) {
+      state.skillTreeCursor.pathIdx = Math.min(_paths.length - 1, state.skillTreeCursor.pathIdx + 1);
+      const _newPathSkills2 = PATH_DEFS[_paths[state.skillTreeCursor.pathIdx]].skills;
+      state.skillTreeCursor.skillIdx = Math.min(state.skillTreeCursor.skillIdx, _newPathSkills2.length - 1);
+      return;
+    }
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
+      state.skillTreeCursor.skillIdx = Math.max(0, state.skillTreeCursor.skillIdx - 1); return;
+    }
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
+      state.skillTreeCursor.skillIdx = Math.min(_pathSkills.length - 1, state.skillTreeCursor.skillIdx + 1); return;
+    }
+    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
+      const _skillId = _pathSkills[state.skillTreeCursor.skillIdx];
+      const _learned = state.player.learnedSkills ?? [];
+      const _sp = state.player.skillPoints ?? 0;
+      if (canLearnSkill(_skillId, _learned, _sp)) {
+        state.player.learnedSkills = [..._learned, _skillId];
+        state.player.skillPoints = _sp - 1;
+        state.skillLearnedFlash = _skillId;
+        recomputeMaxHp(state);
+        state.uiMessage = `Learned: ${SKILL_DEFS[_skillId].name}!`;
+        state.uiMessageTimer = 140;
+      }
+      return;
+    }
+    return;
+  }
+
   // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); return; }
@@ -501,6 +545,7 @@ export function updateGame(state: GameStateData) {
   if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
   if (justPressed(state, 'b'))      { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; return; }
+  if (justPressed(state, 'k'))      { state.mode = GameMode.SKILL_TREE; return; }
 
   const map = MAPS[state.mapId];
 
@@ -639,14 +684,19 @@ export function updateGame(state: GameStateData) {
 }
 
 function startBattle(state: GameStateData, enemy: EnemyData) {
+  const _sk = state.player.learnedSkills ?? [];
   state.mode = GameMode.BATTLE;
   state.battle = {
     enemy: JSON.parse(JSON.stringify(enemy)),
     phase: 'MENU', menuIndex: 0,
     soulX: 384, soulY: 420,
-    projectiles: [], timer: 0, resonance: 0,
+    projectiles: [], timer: 0,
+    // chroma_morthus: start each battle with 1 Resonance
+    resonance: _sk.includes('chroma_morthus') ? 1 : 0,
     actionMsg: null, minigame: null,
-    voidWard: false, flags: {},
+    // echo_legacy: start each battle with Void Ward active
+    voidWard: _sk.includes('echo_legacy'),
+    flags: {},
     poisonDmg: 0, poisonTurns: 0, burnDmg: 0,
   };
 }

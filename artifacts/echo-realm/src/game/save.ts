@@ -32,6 +32,8 @@ export interface SavedGameState {
     baseStats?: { str: number; vit: number; def: number };
     appearance?: SpriteAppearance;
     bestiary?: Record<string, number>;
+    learnedSkills?: string[];
+    skillPoints?: number;
   };
   battle?: {
     enemy: EnemyData;
@@ -64,6 +66,8 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       statPoints: state.player.statPoints,
       baseStats: { ...state.player.baseStats },
       appearance: state.player.appearance ? { ...state.player.appearance } : undefined,
+      learnedSkills: [...(state.player.learnedSkills ?? [])],
+      skillPoints: state.player.skillPoints ?? 0,
     },
     battle: state.battle ? {
       enemy: JSON.parse(JSON.stringify(state.battle.enemy)),
@@ -114,6 +118,8 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.statPoints = saved.player.statPoints ?? STARTING_STAT_POINTS;
     state.player.baseStats = saved.player.baseStats ? { ...saved.player.baseStats } : { str: 0, vit: 0, def: 0 };
     state.player.appearance = saved.player.appearance ? { ...saved.player.appearance } : undefined;
+    state.player.learnedSkills = saved.player.learnedSkills ? [...saved.player.learnedSkills] : [];
+    state.player.skillPoints = saved.player.skillPoints ?? 0;
     recomputeMaxHp(state);
     // Baseline the notification badges to the loaded save so pre-existing
     // items/quest progress don't show up as "new" the moment the game loads.

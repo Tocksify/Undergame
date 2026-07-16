@@ -2,6 +2,7 @@ import { GameStateData, GameMode } from './types';
 import { MAPS, ITEMS, ENEMIES, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT } from './constants';
 import { QUESTS } from './quests';
 import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, drawHair, drawSprite } from './npcAppearance';
+import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, HYBRID_BONUSES, getActiveHybrids, canLearnSkill, CHROMA_HUES } from './skillTree';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
 const C = {
@@ -315,6 +316,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     renderStatAllocation(ctx, state); drawScanlines(ctx); return;
   }
 
+  // ── SKILL TREE ────────────────────────────────────────────────────
+  if (state.mode === GameMode.SKILL_TREE) {
+    renderSkillTree(ctx, state); drawScanlines(ctx); return;
+  }
+
   // ── OVERWORLD ──────────────────────────────────────────────────────
   const map = MAPS[state.mapId];
   const camX = Math.max(0, Math.min(state.player.x - W / 2 + TILE_SIZE / 2, map.width * TILE_SIZE - W));
@@ -459,10 +465,12 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   const questBadge = countQuestNotifications(state);
   const statBadge = state.player.statPoints;
   const itemBadge = Math.max(0, state.player.inventory.length - state.notifications.itemsBaseline);
+  const skillBadge = state.player.skillPoints ?? 0;
   const sections: { label: string; key: string; badge: number }[] = [
     { label: 'QUESTS', key: 'Q', badge: questBadge },
     { label: 'STATS', key: 'M', badge: statBadge },
     { label: 'ITEMS', key: 'I', badge: itemBadge },
+    { label: 'SKILLS', key: 'K', badge: skillBadge },
   ];
   ctx.textAlign = 'left';
   for (const sec of sections) {
@@ -1538,6 +1546,223 @@ function renderStatAllocation(ctx: CanvasRenderingContext2D, state: GameStateDat
 
   ctx.fillStyle = '#556655'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
   ctx.fillText('[↑↓] select  |  [SPACE] allocate point  |  [M]/[ESC] close', W / 2, by + boxH - 18);
+}
+
+// ── SKILL TREE ─────────────────────────────────────────────────────────────
+function renderSkillTree(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  const learned = state.player.learnedSkills ?? [];
+  const sp = state.player.skillPoints ?? 0;
+  const activeHybrids = getActiveHybrids(learned);
+  const { pathIdx, skillIdx } = state.skillTreeCursor;
+
+  const NODE_W = 160; const NODE_H = 52;
+  const NODE_TIER_Y = [82, 148, 214, 280]; // top Y of each tier
+  const COL_CENTERS = [96, 288, 480, 672];
+
+  // ── Background ────────────────────────────────────────────────────
+  ctx.fillStyle = '#03030a'; ctx.fillRect(0, 0, W, H);
+
+  // Faint per-path radial glows
+  PATH_ORDER.forEach((pathId, pi) => {
+    const path = PATH_DEFS[pathId];
+    const cx = COL_CENTERS[pi];
+    const alpha = pi === pathIdx ? 0.10 : 0.04;
+    const grd = ctx.createRadialGradient(cx, 200, 0, cx, 200, 190);
+    grd.addColorStop(0, path.color + Math.round(alpha * 255).toString(16).padStart(2, '0'));
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+  });
+
+  // ── Top bar ───────────────────────────────────────────────────────
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 50);
+  ctx.strokeStyle = '#1a1a26'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(W, 50); ctx.stroke();
+
+  ctx.textAlign = 'center'; ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#dde8dd';
+  ctx.fillText('SKILL TREE', W / 2, 28);
+  ctx.font = '11px monospace'; ctx.fillStyle = '#2a3a2a';
+  ctx.fillText('[K / ESC]  Close     [← →]  Path     [↑ ↓]  Skill     [Z]  Learn', W / 2, 44);
+
+  ctx.textAlign = 'right'; ctx.font = 'bold 15px monospace';
+  ctx.fillStyle = sp > 0 ? '#ffdd44' : '#2a2a2a';
+  ctx.fillText(`${sp} Skill Pt${sp !== 1 ? 's' : ''}`, W - 14, 24);
+  ctx.font = '10px monospace'; ctx.fillStyle = sp > 0 ? '#887722' : '#1a1a1a';
+  ctx.fillText('available', W - 14, 38);
+  ctx.textAlign = 'left';
+
+  // ── Column separators ─────────────────────────────────────────────
+  for (let pi = 1; pi < 4; pi++) {
+    const sx = COL_CENTERS[pi] - 96;
+    ctx.strokeStyle = '#0f0f18'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sx, 52); ctx.lineTo(sx, 340); ctx.stroke();
+  }
+
+  // ── Path columns ──────────────────────────────────────────────────
+  PATH_ORDER.forEach((pathId, pi) => {
+    const path = PATH_DEFS[pathId];
+    const cx = COL_CENTERS[pi];
+    const nx = cx - NODE_W / 2;
+    const isSelPath = pi === pathIdx;
+
+    // Path name header
+    ctx.textAlign = 'center'; ctx.font = isSelPath ? 'bold 12px monospace' : '11px monospace';
+    ctx.fillStyle = isSelPath ? path.color : path.dimColor;
+    ctx.fillText(path.name, cx, 68);
+
+    // Skill nodes
+    path.skills.forEach((skillId, si) => {
+      const def = SKILL_DEFS[skillId];
+      const ny = NODE_TIER_Y[si];
+      const isLearned = learned.includes(skillId);
+      const isCursor = isSelPath && si === skillIdx;
+      const prereqMet = !def.prereq || learned.includes(def.prereq);
+      const isAvail = prereqMet && !isLearned && sp > 0;
+
+      // Node fill
+      if (isLearned) {
+        ctx.fillStyle = path.dimColor + '99';
+        ctx.fillRect(nx, ny, NODE_W, NODE_H);
+      } else if (isCursor) {
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(nx, ny, NODE_W, NODE_H);
+      }
+
+      // Node border
+      const bCol = isLearned ? path.color : isCursor ? '#aaaaaa' : prereqMet ? '#2e2e3a' : '#141420';
+      ctx.strokeStyle = bCol; ctx.lineWidth = isLearned || isCursor ? 2 : 1;
+      ctx.strokeRect(nx + 0.5, ny + 0.5, NODE_W - 1, NODE_H - 1);
+
+      // Chromatic rainbow top-edge shimmer
+      if (pathId === 'chroma' && (isCursor || isLearned)) {
+        const segW = NODE_W / CHROMA_HUES.length;
+        const offset = (state.frameCount * 2) % (CHROMA_HUES.length * segW);
+        CHROMA_HUES.forEach((hue, hi) => {
+          const gx = nx + ((hi * segW - offset + NODE_W * 2) % NODE_W);
+          ctx.strokeStyle = hue; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(gx, ny); ctx.lineTo(Math.min(gx + segW, nx + NODE_W), ny); ctx.stroke();
+        });
+      }
+
+      // Tier badge
+      const tierStr = si === 3 ? '★' : `T${si + 1}`;
+      ctx.font = '9px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = isLearned ? path.color : prereqMet ? '#333344' : '#1a1a26';
+      ctx.fillText(tierStr, nx + 4, ny + 11);
+
+      // Skill name
+      ctx.textAlign = 'center'; ctx.font = (isCursor || isLearned) ? 'bold 12px monospace' : '11px monospace';
+      ctx.fillStyle = isLearned ? '#ffffff' : isCursor && prereqMet ? '#dddddd' : isCursor ? '#888888' : prereqMet ? '#666677' : '#282833';
+      const nameFit = def.name.length > 17 ? def.name.slice(0, 15) + '…' : def.name;
+      ctx.fillText(nameFit, cx, ny + 22);
+
+      // Short desc snippet
+      ctx.font = '9px monospace';
+      ctx.fillStyle = isLearned ? '#888899' : isCursor && prereqMet ? '#777788' : '#242430';
+      const snip = def.shortDesc.length > 29 ? def.shortDesc.slice(0, 27) + '…' : def.shortDesc;
+      ctx.fillText(snip, cx, ny + 36);
+
+      // Bottom status line
+      ctx.font = '9px monospace';
+      if (isLearned) {
+        ctx.fillStyle = path.color; ctx.fillText('✓ learned', cx, ny + 48);
+      } else if (!prereqMet) {
+        ctx.fillStyle = '#252530';
+        const preName = SKILL_DEFS[def.prereq!]?.name ?? '';
+        ctx.fillText(`need: ${preName.slice(0, 14)}`, cx, ny + 48);
+      } else if (isAvail) {
+        const pulse = 0.6 + 0.4 * Math.sin(state.frameCount * 0.09);
+        ctx.globalAlpha = pulse; ctx.fillStyle = '#ffcc44';
+        ctx.fillText('[Z] learn — 1 pt', cx, ny + 48);
+        ctx.globalAlpha = 1;
+      } else if (sp === 0 && !isLearned) {
+        ctx.fillStyle = '#2a2a38'; ctx.fillText('no skill points', cx, ny + 48);
+      }
+
+      // Connector line to next node
+      if (si < 3) {
+        const nextNy = NODE_TIER_Y[si + 1];
+        const connColor = learned.includes(path.skills[si + 1]) ? path.color + '88' : '#111120';
+        ctx.strokeStyle = connColor; ctx.lineWidth = 2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(cx, ny + NODE_H); ctx.lineTo(cx, nextNy); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    });
+  });
+
+  // ── Hybrid Bonds row ──────────────────────────────────────────────
+  const hybridLabelY = 342;
+  ctx.textAlign = 'center'; ctx.font = '10px monospace'; ctx.fillStyle = '#1e1e30';
+  ctx.fillText('HYBRID BONDS — invest 2 skills in two paths to awaken', W / 2, hybridLabelY);
+
+  const BADGE_W = 118; const BADGE_H = 28;
+  const totalBW = HYBRID_BONUSES.length * BADGE_W + (HYBRID_BONUSES.length - 1) * 8;
+  const bStartX = (W - totalBW) / 2;
+  const badgesY = hybridLabelY + 6;
+
+  HYBRID_BONUSES.forEach((h, hi) => {
+    const bx = bStartX + hi * (BADGE_W + 8);
+    const isActive = activeHybrids.includes(h.id);
+
+    ctx.fillStyle = isActive ? h.color + '18' : '#07070e';
+    ctx.fillRect(bx, badgesY, BADGE_W, BADGE_H);
+    ctx.strokeStyle = isActive ? h.color : '#181825'; ctx.lineWidth = 1;
+    ctx.strokeRect(bx + 0.5, badgesY + 0.5, BADGE_W - 1, BADGE_H - 1);
+
+    ctx.textAlign = 'center'; ctx.font = isActive ? 'bold 9px monospace' : '9px monospace';
+    ctx.fillStyle = isActive ? h.color : '#252530';
+    ctx.fillText(h.name, bx + BADGE_W / 2, badgesY + 12);
+    ctx.font = '8px monospace'; ctx.fillStyle = isActive ? '#555566' : '#141420';
+    const reqLabel = `${h.paths[0]}≥2 + ${h.paths[1]}≥2`;
+    ctx.fillText(reqLabel, bx + BADGE_W / 2, badgesY + 23);
+  });
+
+  // ── Detail panel ──────────────────────────────────────────────────
+  const detailY = badgesY + BADGE_H + 8;
+  pixelBox(ctx, 12, detailY, W - 24, H - detailY - 10, '#03030a',
+    PATH_DEFS[PATH_ORDER[pathIdx]].color + '55', 1);
+
+  const selPath = PATH_DEFS[PATH_ORDER[pathIdx]];
+  const selSkillId = selPath.skills[skillIdx];
+  const selDef = SKILL_DEFS[selSkillId];
+  const selLearned = learned.includes(selSkillId);
+  const selPrereqMet = !selDef.prereq || learned.includes(selDef.prereq);
+  const selAvail = selPrereqMet && !selLearned && sp > 0;
+
+  ctx.textAlign = 'left'; ctx.font = 'bold 14px monospace';
+  ctx.fillStyle = selLearned ? '#ffffff' : selAvail ? selPath.color : '#666677';
+  ctx.fillText(selDef.name, 24, detailY + 20);
+
+  // Status tag after name
+  const nameW = ctx.measureText(selDef.name).width;
+  ctx.font = '10px monospace';
+  if (selLearned) {
+    ctx.fillStyle = selPath.color; ctx.fillText('  ✓', 24 + nameW, detailY + 20);
+  } else if (selAvail) {
+    const pulse2 = 0.6 + 0.4 * Math.sin(state.frameCount * 0.09);
+    ctx.globalAlpha = pulse2; ctx.fillStyle = '#ffcc44';
+    ctx.fillText('  [Z] learn (1 skill point)', 24 + nameW, detailY + 20);
+    ctx.globalAlpha = 1;
+  } else if (!selPrereqMet) {
+    ctx.fillStyle = '#444455';
+    ctx.fillText(`  — learn ${SKILL_DEFS[selDef.prereq!]?.name ?? ''} first`, 24 + nameW, detailY + 20);
+  } else if (sp === 0 && !selLearned) {
+    ctx.fillStyle = '#333344'; ctx.fillText('  — no skill points', 24 + nameW, detailY + 20);
+  }
+
+  // Full description word-wrapped
+  ctx.font = '11px monospace'; ctx.fillStyle = '#888899';
+  const maxTextW = W - 56;
+  const descWords = selDef.fullDesc.split(' ');
+  let line2 = ''; let lineY2 = detailY + 38;
+  for (const w2 of descWords) {
+    const test2 = line2 ? line2 + ' ' + w2 : w2;
+    if (ctx.measureText(test2).width > maxTextW && line2) {
+      ctx.fillText(line2, 24, lineY2); lineY2 += 15; line2 = w2;
+      if (lineY2 > H - 20) break; // don't overflow canvas
+    } else { line2 = test2; }
+  }
+  if (line2 && lineY2 <= H - 20) ctx.fillText(line2, 24, lineY2);
 }
 
 function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {

@@ -2,3 +2,4 @@
 - [Echo Realm building access](echo-realm-building-access.md) — CT city buildings: NPCs/chests must be in interior maps or at doorY+1 (never doorY-1 which is inside wall H tiles).
 - [Artifact registration lost on re-import](artifact-reimport-registration.md) — fresh GitHub import with artifact.toml on disk but listArtifacts() empty: fix via no-op verifyAndReplaceArtifactToml, not createArtifact.
 - [Echo Realm combat depth](echo-realm-combat-depth.md) — status effects (poison/burn/freeze/silence), dual wield/shields (offhand slot), enemy resistances, Bestiary screen — full architecture.
+- [Echo Realm skill tree](echo-realm-skill-tree.md) — 4 paths (Void/Chromatic/Echo/Ember), 16 skills, 6 hybrids, K key, integration across constants/engine/battle/renderer/save.

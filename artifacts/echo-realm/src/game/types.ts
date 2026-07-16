@@ -16,6 +16,7 @@ export enum GameMode {
   STAT_ALLOCATION, // 14 - M key: spend earned stat points into STR/VIT/DEF
   TRUE_ENDING,    // 15 - the peaceful death ending, reached via Morthus's cutscene in Color
   BESTIARY,       // 16 - B key: enemy bestiary with revealed resistances
+  SKILL_TREE,     // 17 - K key: Void/Chromatic/Echo/Ember skill tree
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
@@ -162,6 +163,9 @@ export interface GameStateData {
     // Tracks total encounters resolved (defeat + remember, not flee) per enemy id.
     // At 3+ the bestiary reveals that enemy's resistances/weaknesses.
     bestiary: Record<string, number>;
+    // ── Skill Tree ────────────────────────────────────────────────────────────
+    learnedSkills: string[];   // ids of learned skills from the skill tree
+    skillPoints: number;       // unspent points (earned every 2 levels)
   };
   camera: { x: number; y: number };
   adjacentInteractable: any;
@@ -209,11 +213,14 @@ export interface GameStateData {
   questLogScroll: number; // top index of the visible window in the QUEST_LOG list
   bestiaryScroll: number; // top index of the visible window in the BESTIARY list
   statAllocIndex: number; // selected stat row (STR/VIT/DEF) in the STAT_ALLOCATION menu
+  skillTreeCursor: { pathIdx: number; skillIdx: number }; // SKILL_TREE navigation cursor
   // TRUE_ENDING screen: 0 = "Enter Sandbox Mode", 1 = "End Legacy"
   trueEndingMenuIndex: number;
   // Set by engine.ts when the player chooses "End Legacy" on the true-ending screen.
   // Game.tsx watches this and calls onEndLegacy (which deletes the save slot and exits).
   endLegacyRequested: boolean;
+  // Set by skill tree engine when a skill is newly learned (clears after one frame).
+  skillLearnedFlash: string | null;
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player
