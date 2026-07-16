@@ -17,7 +17,7 @@ const C = {
   accent:   '#e8e8e8',
   dim:      '#505050',
   bookBg:   '#0d0d1a',
-  bookBorder: '#4444aa',
+  bookBorder: '#8899ff',
   enchant:  '#cc88ff',
 };
 
@@ -144,8 +144,8 @@ function drawWrappedText(ctx: CanvasRenderingContext2D, text: string, x: number,
 }
 
 // Draws text colored by item/reward tier. Mythic ("Mortus") renders as an
-// animated dark-blue/black moving gradient instead of a flat color, keyed off
-// frameCount so it visibly shifts over time.
+// animated blue/violet moving gradient, keyed off frameCount so it visibly
+// shifts over time. Colors are bright enough to read on a black background.
 function drawTierText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, tier: string, frame: number) {
   if (tier === 'mythic') {
     const tw = ctx.measureText(text).width;
@@ -153,9 +153,9 @@ function drawTierText(ctx: CanvasRenderingContext2D, text: string, x: number, y:
     const startX = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
     const shift = (frame * 1.5) % (tw + 60);
     const grad = ctx.createLinearGradient(startX - 30 + shift - (tw + 60), y, startX + 30 + shift, y);
-    grad.addColorStop(0, '#000000');
-    grad.addColorStop(0.5, '#1a2a6c');
-    grad.addColorStop(1, '#000000');
+    grad.addColorStop(0,   '#5533cc');
+    grad.addColorStop(0.5, '#aabbff');
+    grad.addColorStop(1,   '#5533cc');
     ctx.fillStyle = grad;
     ctx.fillText(text, x, y);
     return;
@@ -1333,7 +1333,7 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
 
   ctx.textAlign = 'left'; ctx.font = '13px monospace';
   const listTop = 150;
-  const rowH = 26;
+  const rowH = 42;  // tall enough for 2 wrapped lines
   const listBottom = H - 130;
   const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
 
@@ -1354,15 +1354,33 @@ function renderQuests(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillStyle = done ? C.silver : C.light;
     ctx.fillText(doneMark + prefix, 124, qy);
     const prefixW = ctx.measureText(doneMark + prefix).width;
-    // Reward-tier coloring: the label text itself is tinted by the highest
-    // possible reward tier for this quest (probabilistic pools use their best case).
+
+    // Reward-tier coloring: label tinted by the highest possible reward tier.
     const tier = getHighestTier(q.rewardPool, q.rewardItem);
-    if (tier === 'common' || tier === 'uncommon') {
-      ctx.fillStyle = done ? C.silver : C.light;
-      ctx.fillText(label, 124 + prefixW, qy);
-    } else {
-      drawTierText(ctx, label, 124 + prefixW, qy, tier, state.frameCount);
+    const flatColor = done ? C.silver : (tier === 'common' || tier === 'uncommon') ? C.light : (TIER_COLOR[tier] ?? C.light);
+
+    // Wrap the label so long quest names don't run off the modal edge.
+    const labelX = 124 + prefixW;
+    const labelMaxW = W - 100 - labelX - 14;
+    const words = label.split(' ');
+    let line = ''; const lines: string[] = [];
+    for (const w of words) {
+      const test = line ? line + ' ' + w : w;
+      if (ctx.measureText(test).width > labelMaxW && line) { lines.push(line); line = w; }
+      else { line = test; }
     }
+    if (line) lines.push(line);
+
+    lines.forEach((ln, li) => {
+      const ly = qy + li * 18;
+      if (tier !== 'common' && tier !== 'uncommon' && !done) {
+        drawTierText(ctx, ln, labelX, ly, tier, state.frameCount);
+      } else {
+        ctx.fillStyle = flatColor;
+        ctx.fillText(ln, labelX, ly);
+      }
+    });
+
     qy += rowH;
   }
   ctx.restore();
