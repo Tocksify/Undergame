@@ -247,6 +247,16 @@ export const ITEMS: Record<string, Item> = {
   'book_survivors_diary':    { name: "A Survivor's Diary",        desc: 'A diary kept by someone who stayed.',             price: 0, tier: 'rare',      category: 'book', bookId: 'book_survivors_diary' },
   'book_forgotten_flyer':    { name: 'Torn Festival Flyer',       desc: 'A flyer for a festival that may never happen again.', price: 0, tier: 'common',  category: 'book', bookId: 'book_forgotten_flyer' },
 
+  // ── HOUSE / FLAVOR NOTES (scattered through Crestfall & Ashfall) ──
+  'book_house_note_1': { name: 'A Shopping List, Unfinished',    desc: 'Found in a drawer. The fourth item was crossed out three times.',         price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_1' },
+  'book_house_note_2': { name: 'A Note on the Windowsill',       desc: 'Left behind for someone who might come back.',                            price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_2' },
+  'book_house_note_3': { name: "A Child's Drawing, Pinned Up",   desc: 'Three stick figures and a lopsided sun. Still on the wall.',              price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_3' },
+  'book_house_note_4': { name: 'A Receipt, Kept for No Reason',  desc: 'One kettle, mended. One pair of boots, resoled. Kept for eleven years.',  price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_4' },
+  'book_house_note_5': { name: 'A Line of Verse on a Doorframe', desc: 'Scratched low, at a child\'s height. The lines get shorter going down.',  price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_5' },
+  'book_house_note_6': { name: 'A Recipe Card, Stained',         desc: "Mother's stew — the good kind, not the fast kind.",                      price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_6' },
+  'book_house_note_7': { name: 'An Unsent Letter',               desc: 'Folded but never sealed. It ends mid-sentence.',                          price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_7' },
+  'book_house_note_8': { name: 'A Tally on the Wall',            desc: 'Dozens of scratch marks. Whatever they were counting is never named.',    price: 0, tier: 'common', category: 'book', bookId: 'book_house_note_8' },
+
   // ── SECRET NOTE TRAIL ──
   'book_trail_note_1': { name: 'A Scrap of Directions', desc: 'Half-burned directions to somewhere in the city.', price: 0, tier: 'common',   category: 'book', bookId: 'book_trail_note_1' },
   'book_trail_note_2': { name: 'A Second Scrap',        desc: 'A crooked door is drawn in the margin.',           price: 0, tier: 'uncommon', category: 'book', bookId: 'book_trail_note_2' },
