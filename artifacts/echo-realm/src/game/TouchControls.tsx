@@ -78,6 +78,7 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
         <button aria-label="Quest Log" className={`${util} w-14 h-9`} {...bind('q')}>QUEST</button>
         <button aria-label="Stats"     className={`${util} w-14 h-9`} {...bind('m')}>STATS</button>
         <button aria-label="Memory Transit" className={`${util} w-14 h-9`} {...bind('n')}>TRNST</button>
+        <button aria-label="Skills"    className={`${util} w-14 h-9`} {...bind('k')}>SKILL</button>
       </div>
 
       {/* Action buttons */}
