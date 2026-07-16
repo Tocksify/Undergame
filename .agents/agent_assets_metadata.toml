@@ -6,3 +6,15 @@ id = "nyzaW13HZAJIDIdjxQuTz"
 uri = "file://attached_assets/generated_images/echo-realm-icon-scaled.png"
 type = "image"
 title = "Echo Realm — icon preview (32×32, shown at 10×)"
+
+[[outputs]]
+id = "txvaKtrHhoEQMPfVCXzGb"
+uri = "file://attached_assets/MaxSave_Slot1.ersav"
+type = "unspecified"
+title = "MaxSave_Slot1.ersav"
+
+[[outputs]]
+id = "ox91b9vUIrmJS6g00buax"
+uri = "file://attached_assets/MaxSave_Slot2.ersav"
+type = "unspecified"
+title = "MaxSave_Slot2.ersav"
