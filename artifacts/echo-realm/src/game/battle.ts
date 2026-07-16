@@ -113,7 +113,7 @@ export function updateBattlePhase(state: GameStateData) {
         }
       }
     }
-    if (state.player.hp <= 0) { state.mode = GameMode.GAME_OVER; }
+    if (state.player.hp <= 0) { state.battle = null; state.mode = GameMode.GAME_OVER; }
     if (b.timer <= 0) { b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null; }
   }
 }
