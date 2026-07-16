@@ -279,8 +279,24 @@ class AudioEngine {
   setPreviewTrack(key: string | null) {
     this.previewKey = key;
     if (key !== null) {
-      this.currentKey = null; // force restart so playTrack doesn't short-circuit
-      this.playTrack(key);
+      // Silence the menu MP3 immediately so they don't overlap.
+      if (this.menuAudioEl) this.menuAudioEl.pause();
+      // Hard-stop whatever synth track is playing (tiny fade to avoid click),
+      // then start the requested track once it's clear.
+      this.stopCurrentTrack(0.04);
+      this.currentKey = null;
+      const def = TRACKS[key];
+      if (!def) return;
+      window.setTimeout(() => {
+        if (this.previewKey !== key) return; // user already switched again
+        this.currentKey = key;
+        this.startTrack(def);
+      }, 60);
+    } else {
+      // Preview stopped — restore the menu MP3 and clear the synth track.
+      this.stopCurrentTrack(0.3);
+      this.currentKey = null;
+      if (this.menuAudioEl) this.menuAudioEl.play().catch(() => {});
     }
   }
 
