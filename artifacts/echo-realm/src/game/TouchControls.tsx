@@ -71,14 +71,14 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
         <div />
       </div>
 
-      {/* Utility buttons — 2 rows of 3 / 2 */}
-      <div className="grid grid-cols-3 gap-1">
-        <button aria-label="Menu"      className={`${util} w-14 h-9`} {...bind('Escape')}>MENU</button>
-        <button aria-label="Inventory" className={`${util} w-14 h-9`} {...bind('i')}>ITEM</button>
-        <button aria-label="Quest Log" className={`${util} w-14 h-9`} {...bind('q')}>QUEST</button>
-        <button aria-label="Stats"     className={`${util} w-14 h-9`} {...bind('m')}>STATS</button>
-        <button aria-label="Memory Transit" className={`${util} w-14 h-9`} {...bind('n')}>TRNST</button>
-        <button aria-label="Skills"    className={`${util} w-14 h-9`} {...bind('k')}>SKILL</button>
+      {/* Utility buttons — 2 rows of 3, each column fixed at 56px */}
+      <div className="grid gap-1" style={{ gridTemplateColumns: 'repeat(3, 56px)' }}>
+        <button aria-label="Menu"      className={`${util} w-full h-9`} {...bind('Escape')}>MENU</button>
+        <button aria-label="Inventory" className={`${util} w-full h-9`} {...bind('i')}>ITEM</button>
+        <button aria-label="Quest Log" className={`${util} w-full h-9`} {...bind('q')}>QUEST</button>
+        <button aria-label="Stats"     className={`${util} w-full h-9`} {...bind('m')}>STATS</button>
+        <button aria-label="Memory Transit" className={`${util} w-full h-9`} {...bind('n')}>TRNST</button>
+        <button aria-label="Skills"    className={`${util} w-full h-9`} {...bind('k')}>SKILL</button>
       </div>
 
       {/* Action buttons */}
