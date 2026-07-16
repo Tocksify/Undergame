@@ -27,8 +27,8 @@
   },
   "nsis": {
     "oneClick": false,
+    "perMachine": true,
     "allowToChangeInstallationDirectory": true,
-    "defaultInstallDir": "$PROGRAMFILES\\Echo Realm",
     "createDesktopShortcut": true,
     "shortcutName": "Echo Realm",
     "installerHeaderIcon": "public/icon.ico",
