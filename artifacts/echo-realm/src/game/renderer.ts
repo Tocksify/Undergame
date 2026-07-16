@@ -2136,9 +2136,9 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   pixelBox(ctx, 120, 90, W - 240, H - 180, '#050510', C.enchant, 3);
 
   ctx.fillStyle = C.enchant; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('TOMES BLESSING', W / 2, 124);
+  ctx.fillText('CRAFTING TABLE', W / 2, 124);
   ctx.fillStyle = C.silver; ctx.font = '12px monospace';
-  ctx.fillText('Craft any enchantment from scratch. The Empty Book and Blessing are consumed.', W / 2, 144);
+  ctx.fillText('Craft any enchantment from scratch. The Tomes Blessing and Empty Book are consumed.', W / 2, 144);
 
   ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(150, 156); ctx.lineTo(W - 150, 156); ctx.stroke();

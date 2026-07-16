@@ -1,5 +1,6 @@
 import { GameStateData, GameMode, DialogueNode } from './types';
 import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS, MAPS } from './constants';
+import { pickNextEmblem, addEarnedEmblemId } from '../challengeStore';
 
 export function getDialogueStartNode(state: GameStateData, npcId: string): DialogueNode {
   const qMain   = state.player.quests['quest_main']   || 0;
@@ -469,6 +470,87 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
         { label: "Are you all right?", nextId: 'survivor_ok' },
         { label: "Stay hidden. It'll be over soon." }
       ]
+    };
+  }
+
+  // ── CHALLENGE KEEPER (Challenge Arena — orchestrates all five waves) ───────
+  if (npcId === 'challenge_keeper') {
+    const f = state.player.flags;
+    const w1 = !!f['defeated_challenge_w1'];
+    const w2 = !!f['defeated_challenge_w2'];
+    const w3 = !!f['defeated_challenge_w3'];
+    const w4 = !!f['defeated_challenge_w4'];
+    const w5 = !!f['defeated_challenge_final'];
+
+    if (f['challenge_won']) {
+      return {
+        text: "You have proven yourself. The emblem is yours — it will follow you into every new journey. Leave through the southern gate when you are ready.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+      };
+    }
+
+    if (w5) {
+      return {
+        text: "The Echoing Gate falls. You are worthy. An emblem has been placed in your record — claim it at the start of your next journey.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        action: (s) => {
+          const emblem = pickNextEmblem();
+          addEarnedEmblemId(emblem.id);
+          s.player.flags['challenge_won'] = true;
+          s.uiMessage = `Challenge Complete! Emblem earned: ${emblem.name}`;
+          s.uiMessageTimer = 360;
+        },
+      };
+    }
+
+    if (!w1) {
+      return {
+        text: "The Challenge Arena tests those who seek to carry the past forward. Five trials await. First: face the Trial Shade.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w1'])); },
+      };
+    }
+    if (!w2) {
+      return {
+        text: "One trial cleared. The Trial Crawler rises to test your resolve.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w2'])); },
+      };
+    }
+    if (!w3) {
+      return {
+        text: "Strength and endurance proven. Now face the Trial Specter — an echo of every Keeper who almost made it.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w3'])); },
+      };
+    }
+    if (!w4) {
+      return {
+        text: "Three down. The Trial Warden has guarded this threshold since before memory. Stand your ground.",
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w4'])); },
+      };
+    }
+
+    return {
+      text: "Four trials behind you. One remains. The Echoing Gate — the Arena's final question. Answer well.",
+      speaker: 'Challenge Keeper', color: '#aabbff',
+      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_final'])); },
+    };
+  }
+
+  // ── CHALLENGE MENDER (healer in the Challenge Arena) ─────────────────────
+  if (npcId === 'challenge_mender') {
+    if (state.player.hp >= state.player.maxHp) {
+      return { text: "You are at full strength. Face your trials.", speaker: 'The Mender', color: '#88ccaa' };
+    }
+    return {
+      text: "Rest between trials. The Arena is not about suffering — it is about growth.",
+      speaker: 'The Mender', color: '#88ccaa',
+      options: [
+        { label: 'Rest up.', action: (s) => { s.player.hp = s.player.maxHp; s.uiMessage = 'Rested. HP restored.'; s.uiMessageTimer = 120; } },
+        { label: 'Press on.' },
+      ],
     };
   }
 

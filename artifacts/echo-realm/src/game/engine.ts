@@ -734,6 +734,10 @@ export function updateGame(state: GameStateData) {
     } else if (intFound.type === 'NPC') {
       if (intFound.npc.type === 'SHOP') {
         state.mode = GameMode.SHOP; state.shopIndex = 0; state.shopNpcId = intFound.npc.id;
+      } else if (intFound.npc.type === 'CRAFT') {
+        // Open the Crafting Table UI directly (same as using Tomes Blessing from inventory)
+        state.tomeCraft = { cursorIndex: 0, chosenEnchantId: null };
+        state.mode = GameMode.TOME_CRAFT;
       } else {
         state.dialogue.currentNode = getDialogueStartNode(state, intFound.npc.id);
         state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;

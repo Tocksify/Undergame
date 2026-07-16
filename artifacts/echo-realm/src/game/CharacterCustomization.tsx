@@ -4,6 +4,7 @@ import {
   SKIN_TONES, HAIR_COLORS, HAIR_STYLES, EYE_COLORS, ACCESSORIES, CLOTH_COLORS,
   SpriteAppearance, HairStyle, Accessory,
 } from './npcAppearance';
+import { CHALLENGE_EMBLEMS, getEarnedEmblemIds } from '../challengeStore';
 
 function sfxProps(onClick?: () => void) {
   return {
@@ -44,8 +45,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function PillBtn({
-  active, disabled, onClick, children,
-}: { active: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+  active, disabled, onClick, children, color,
+}: { active: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
   return (
     <button
       {...sfxProps(onClick)}
@@ -57,6 +58,7 @@ function PillBtn({
           : 'bg-black border-[#333] text-[#666] hover:border-[#888] hover:text-[#ccc]',
         disabled ? 'opacity-30 cursor-not-allowed' : '',
       ].join(' ')}
+      style={active && color ? { backgroundColor: color, borderColor: color, color: '#000' } : undefined}
     >
       {children}
     </button>
@@ -64,7 +66,7 @@ function PillBtn({
 }
 
 interface Props {
-  onConfirm: (appearance: SpriteAppearance) => void;
+  onConfirm: (appearance: SpriteAppearance, emblemId?: string) => void;
   onBack: () => void;
 }
 
@@ -76,6 +78,12 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
   const [cloth, setCloth]         = useState<string>(CLOTH_COLORS[0]);
   const [accessory, setAccessory] = useState<Accessory>('none');
   const [hat, setHat]             = useState(false);
+  const [emblemId, setEmblemId]   = useState<string | undefined>(undefined);
+
+  // Read earned emblems from global store (lazy — only on mount)
+  const earnedEmblemIds = getEarnedEmblemIds();
+  const earnedEmblems = CHALLENGE_EMBLEMS.filter((e) => earnedEmblemIds.includes(e.id));
+  const selectedEmblem = CHALLENGE_EMBLEMS.find((e) => e.id === emblemId);
 
   const confirm = () => {
     const appearance: SpriteAppearance = {
@@ -83,7 +91,7 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
       bodyW: 16, bodyH: 16, headSize: 12,
       accessory, hat,
     };
-    onConfirm(appearance);
+    onConfirm(appearance, emblemId);
   };
 
   return (
@@ -147,6 +155,43 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
             <PillBtn active={hat} onClick={() => setHat(!hat)}>
               {hat ? 'Wearing a Hat' : 'No Hat'}
             </PillBtn>
+          </Section>
+
+          <Section title="STARTING EMBLEM">
+            {earnedEmblems.length === 0 ? (
+              <p className="text-xs text-[#555] leading-relaxed">
+                No emblems earned yet. Complete Challenge Mode to earn emblems that grant starting buffs.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <PillBtn active={emblemId === undefined} onClick={() => setEmblemId(undefined)}>
+                    None
+                  </PillBtn>
+                  {earnedEmblems.map(e => (
+                    <PillBtn
+                      key={e.id}
+                      active={emblemId === e.id}
+                      onClick={() => setEmblemId(emblemId === e.id ? undefined : e.id)}
+                      color={e.color}
+                    >
+                      {e.name}
+                    </PillBtn>
+                  ))}
+                </div>
+                {selectedEmblem && (
+                  <p
+                    className="text-xs mt-2 leading-relaxed"
+                    style={{ color: selectedEmblem.color }}
+                  >
+                    {selectedEmblem.desc}
+                  </p>
+                )}
+                {!selectedEmblem && (
+                  <p className="text-xs text-[#444] mt-2">No emblem selected — start without a bonus.</p>
+                )}
+              </>
+            )}
           </Section>
         </div>
 

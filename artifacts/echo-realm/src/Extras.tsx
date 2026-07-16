@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { audio } from './game/audio';
+import { CHALLENGE_EMBLEMS, getEarnedEmblemIds } from './challengeStore';
 
 interface Props { onBack: () => void; }
 
-type Tab = 'credits' | 'sound' | 'lore';
+type Tab = 'credits' | 'sound' | 'lore' | 'codex';
 
 const SOUND_TRACKS: { key: string; label: string }[] = [
   { key: 'title',        label: 'Title Theme'        },
@@ -101,6 +102,7 @@ export default function Extras({ onBack }: Props) {
     { id: 'credits', label: 'CREDITS'    },
     { id: 'sound',   label: 'SOUND TEST' },
     { id: 'lore',    label: 'LORE'       },
+    { id: 'codex',   label: 'CODEX'      },
   ];
 
   return (
@@ -189,6 +191,53 @@ export default function Extras({ onBack }: Props) {
                 ))}
               </div>
             )}
+
+            {/* ── CODEX ── */}
+            {tab === 'codex' && (() => {
+              const earnedIds = getEarnedEmblemIds();
+              return (
+                <div className="extras-lore">
+                  <p className="text-xs text-[#555] mb-4 leading-relaxed">
+                    Emblems are earned by completing Challenge Mode. Each run awards a new emblem.
+                    Earned emblems grant starting buffs on new characters.
+                  </p>
+                  {CHALLENGE_EMBLEMS.map((emblem) => {
+                    const earned = earnedIds.includes(emblem.id);
+                    return (
+                      <div
+                        key={emblem.id}
+                        className="extras-lore-entry"
+                        style={{
+                          borderLeft: `3px solid ${earned ? emblem.color : '#333'}`,
+                          paddingLeft: '12px',
+                          marginBottom: '10px',
+                        }}
+                      >
+                        <div
+                          className="text-sm font-bold tracking-wider mb-1"
+                          style={{ color: earned ? emblem.color : '#444' }}
+                        >
+                          {earned ? emblem.name : '???'}
+                        </div>
+                        <div className="text-xs" style={{ color: earned ? '#aaa' : '#333' }}>
+                          {earned ? emblem.desc : 'Complete Challenge Mode to reveal this emblem.'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {earnedIds.length === 0 && (
+                    <p className="text-xs text-[#444] mt-2 italic">
+                      No emblems earned yet. Select CHALLENGE from the main menu to begin.
+                    </p>
+                  )}
+                  {earnedIds.length > 0 && (
+                    <p className="text-xs text-[#555] mt-3">
+                      {earnedIds.length} / {CHALLENGE_EMBLEMS.length} emblems earned.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
 
           </div>
 

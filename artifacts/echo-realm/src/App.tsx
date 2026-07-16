@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Game from './game/Game';
 import CharacterCustomization from './game/CharacterCustomization';
-import { GameStateData } from './game/types';
+import { GameStateData, GameMode } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState } from './game/save';
+import { TILE_SIZE } from './game/constants';
 import { audio } from './game/audio';
 import { SpriteAppearance } from './game/npcAppearance';
+import { CHALLENGE_EMBLEMS } from './challengeStore';
 import {
   ErsavFile, LocalSlot,
   createSlot, updateSlot, getSlotById,
@@ -15,7 +17,7 @@ import Options from './Options';
 import Extras from './Extras';
 import './index.css';
 
-type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras';
+type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras' | 'challenge';
 
 function App() {
   const [screen, setScreen]             = useState<Screen>('menu');
@@ -71,10 +73,41 @@ function App() {
     setScreen('game');
   }, []);
 
+  // ── Challenge Mode ───────────────────────────────────────────────
+  const handleChallenge = useCallback(() => {
+    const state = buildInitialState(null, false);
+    state.mapId = 'CHALLENGE_ARENA';
+    state.player.x = 9 * TILE_SIZE;
+    state.player.y = 9 * TILE_SIZE;
+    state.player.targetX = 9 * TILE_SIZE;
+    state.player.targetY = 9 * TILE_SIZE;
+    state.player.hp = 40;
+    state.player.maxHp = 40;
+    state.player.inventory.push('tonic');
+    state.player.enchantedSlots.push(null);
+    state.mode = GameMode.OVERWORLD;
+    setActiveSlotId(null);
+    setInitialState(state);
+    setScreen('challenge');
+  }, []);
+
   // ── Customization done → create slot with initial state ──────────
-  const confirmCustomization = useCallback(async (appearance: SpriteAppearance) => {
+  const confirmCustomization = useCallback(async (appearance: SpriteAppearance, emblemId?: string) => {
     const state      = buildInitialState(null, false);
     state.player.appearance = appearance;
+
+    // Apply emblem starting buffs if one was selected
+    if (emblemId) {
+      const emblem = CHALLENGE_EMBLEMS.find((e) => e.id === emblemId);
+      if (emblem) {
+        if (emblem.buffs.maxHp)  { state.player.maxHp += emblem.buffs.maxHp; state.player.hp += emblem.buffs.maxHp; }
+        if (emblem.buffs.str)    state.player.baseStats.str += emblem.buffs.str;
+        if (emblem.buffs.vit)    state.player.baseStats.vit += emblem.buffs.vit;
+        if (emblem.buffs.def)    state.player.baseStats.def += emblem.buffs.def;
+        if (emblem.buffs.echoes) state.player.echoes += emblem.buffs.echoes;
+        if (emblem.buffs.item)   { state.player.inventory.push(emblem.buffs.item); state.player.enchantedSlots.push(null); }
+      }
+    }
     const serialized = serializeGameState(state);
     const id         = await createSlot({
       version: 1,
@@ -107,6 +140,11 @@ function App() {
     setInitialState(null); setActiveSlotId(null); setScreen('slots');
   }, []);
 
+  // ── Exit challenge mode ──────────────────────────────────────────
+  const onChallengeExit = useCallback(() => {
+    setInitialState(null); setActiveSlotId(null); setScreen('menu');
+  }, []);
+
   const onEndLegacy = useCallback(() => {
     setInitialState(null); setActiveSlotId(null); setScreen('menu');
   }, []);
@@ -116,6 +154,7 @@ function App() {
     return (
       <MainMenu
         onPlay={() => setScreen('slots')}
+        onChallenge={handleChallenge}
         onOptions={() => setScreen('options')}
         onExtras={() => setScreen('extras')}
         onQuit={() => {
@@ -140,7 +179,7 @@ function App() {
   if (screen === 'customization') {
     return (
       <CharacterCustomization
-        onConfirm={appearance => { void confirmCustomization(appearance); }}
+        onConfirm={(appearance, emblemId) => { void confirmCustomization(appearance, emblemId); }}
         onBack={() => setScreen('slots')}
       />
     );
@@ -154,6 +193,19 @@ function App() {
           onSave={onSave}
           onExit={onExit}
           onEndLegacy={onEndLegacy}
+        />
+      </div>
+    );
+  }
+
+  if (screen === 'challenge' && initialState) {
+    return (
+      <div className="fullscreen-black">
+        <Game
+          initialState={initialState}
+          onSave={onSave}
+          onExit={onChallengeExit}
+          onEndLegacy={onChallengeExit}
         />
       </div>
     );

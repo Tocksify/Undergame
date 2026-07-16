@@ -995,6 +995,54 @@ export const ENEMIES: Record<string, EnemyData> = {
     ],
     resistances: { poison: 0, burn: 0 }, // a child — fire and poison deal no damage here
   },
+  // ── Challenge Arena enemies (five escalating trials) ──────────────────
+  'challenge_w1': {
+    id: 'challenge_w1', name: 'Trial Shade', hp: 25, maxHp: 25, atk: 5, color: '#8888bb',
+    flavor: 'A shadow given shape by the Arena. It watches you with borrowed eyes.',
+    rememberText: 'The shadow stills. A trial passed is a memory kept.',
+    echoes: 30, acts: [
+      { id: 'flicker', name: 'Flicker', effect: 'weaken', power: 1 },
+      { id: 'watch',   name: 'Watch',   effect: 'resonance', power: 1 },
+    ],
+  },
+  'challenge_w2': {
+    id: 'challenge_w2', name: 'Trial Crawler', hp: 40, maxHp: 40, atk: 7, color: '#666699',
+    flavor: 'Formed from the accumulated weight of tests not yet passed.',
+    rememberText: 'It dissolves. You carried it — and that made it real.',
+    echoes: 40, acts: [
+      { id: 'grind', name: 'Grind', effect: 'damage', power: 4 },
+      { id: 'yield', name: 'Yield', effect: 'resonance', power: 1 },
+    ],
+  },
+  'challenge_w3': {
+    id: 'challenge_w3', name: 'Trial Specter', hp: 60, maxHp: 60, atk: 9, color: '#9988cc',
+    flavor: 'An echo of every Keeper who failed at this gate and forgot why they came.',
+    rememberText: 'The specter nods. It remembers, at last, that it once tried.',
+    echoes: 55, acts: [
+      { id: 'echo_strike', name: 'Echo Strike', effect: 'damage', power: 6 },
+      { id: 'listen',      name: 'Listen',      effect: 'resonance', power: 1, magic: true },
+    ],
+  },
+  'challenge_w4': {
+    id: 'challenge_w4', name: 'Trial Warden', hp: 90, maxHp: 90, atk: 11, color: '#7766aa',
+    flavor: 'Built to guard the final threshold. It has stood here longer than memory.',
+    rememberText: 'The Warden steps aside. It was never the destination — only the gate.',
+    echoes: 70, acts: [
+      { id: 'bar',     name: 'Bar the Way', effect: 'confuse', magic: true },
+      { id: 'concede', name: 'Concede',     effect: 'resonance', power: 1 },
+    ],
+    resistances: { weaken: 0.5, freeze: 0.5 },
+  },
+  'challenge_final': {
+    id: 'challenge_final', name: 'The Echoing Gate', hp: 130, maxHp: 130, atk: 13, color: '#aabbff',
+    flavor: 'It is not a creature. It is the final question the Arena asks of you.',
+    rememberText: "The Gate opens. On the other side: your reflection. It answers, 'Yes.'",
+    echoes: 100, acts: [
+      { id: 'resound',  name: 'Resound', effect: 'damage',    power: 8 },
+      { id: 'question', name: 'Ask',     effect: 'resonance', power: 2, magic: true },
+    ],
+    resistances: { poison: 0.5, burn: 0.5, freeze: 0.5, silence: 0.5 },
+  },
 };
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────
@@ -1052,6 +1100,10 @@ function buildVH(): string[][] {
   poke(L, 8, 7, 'M'); poke(L, 15, 7, 'M');
   poke(L, 8, 9, 'M'); poke(L, 15, 9, 'M');
 
+  // ── Crafting Workshop (center-north, between Inn NW and Maren NE) ──
+  rect(L, 10, 2, 13, 5, 'H');
+  rect(L, 11, 3, 12, 4, 'P'); // visible interior windows
+
   poke(L, 12, 0, '>');      // north -> Whispering Wastes
   poke(L, W - 1, 8, '!');   // east -> Crestfall City
   poke(L, 12, H - 1, '<');  // south (locked, flavor)
@@ -1087,6 +1139,8 @@ function buildWW(): string[][] {
 
   poke(L, 5, 9, 'M'); poke(L, 6, 12, 'M');
   poke(L, 16, 9, 'M'); poke(L, 8, 6, 'M');
+  // Hidden void pocket entrance (center platform, right side)
+  poke(L, 12, 8, '@');
   return L;
 }
 
@@ -1343,6 +1397,12 @@ function buildTF(): string[][] {
   // ── Far-west lone meadow (westernmost reach of the forest) ──────────
   rect(L, 2, 37, 6, 43, 'P');
   poke(L, 4, 40, 'M');
+
+  // ── Crafting Hut (Deep Grove area, between standing stones) ──────────
+  rect(L, 15, 38, 17, 40, 'H');
+
+  // ── Hidden clearing entrance (Deep Grove, west of shrine) ────────────
+  poke(L, 6, 36, '!');
 
   return L;
 }
@@ -1733,6 +1793,63 @@ function buildCO(): string[][] {
   return L;
 }
 
+// ── CRAFTING INTERIOR (VH — workshop variant + hidden room exit) ──────
+function buildVHCraftingInterior(): string[][] {
+  const L = buildInterior('workshop');
+  poke(L, 2, 4, '!'); // hidden alcove entrance (left wall, mid-height)
+  return L;
+}
+
+// ── CRAFTING INTERIOR (TF — simple workshop) ──────────────────────────
+function buildTFCraftingInterior(): string[][] {
+  return buildInterior('workshop');
+}
+
+// ── VH HIDDEN ALCOVE (10 × 6) — tucked behind the workshop ──────────
+function buildVHHidden(): string[][] {
+  const W = 10, H = 6;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  poke(L, 2, 2, 'M'); poke(L, 7, 2, 'M'); // old stone plinths
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
+// ── TF HIDDEN GROVE (12 × 8) — secret forest clearing ────────────────
+function buildTFHidden(): string[][] {
+  const W = 12, H = 8;
+  const L = buildMap(W, H, 'T');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  poke(L, 2, 2, 'M'); poke(L, 9, 2, 'M'); // ancient markers
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
+// ── WW HIDDEN POCKET (12 × 8) — void pocket ─────────────────────────
+function buildWWHidden(): string[][] {
+  const W = 12, H = 8;
+  const L = buildMap(W, H, 'V');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  poke(L, 5, 2, 'M'); poke(L, 6, 2, 'M'); // void residue
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
+// ── CHALLENGE ARENA (18 × 12) — sequential trial arena ───────────────
+function buildChallengeArena(): string[][] {
+  const W = 18, H = 12;
+  const L = buildMap(W, H, 'W');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  // Stone pillars at corners of the arena floor
+  poke(L, 3, 3, 'M'); poke(L, 14, 3, 'M');
+  poke(L, 3, 8, 'M'); poke(L, 14, 8, 'M');
+  // Central altar marker
+  poke(L, 8, 5, 'M'); poke(L, 9, 5, 'M');
+  // Exit at south
+  poke(L, Math.floor(W / 2), H - 1, '<');
+  return L;
+}
+
 const vhLayout = buildVH();
 const srLayout = buildSR();
 const coLayout = buildCO();
@@ -1749,6 +1866,14 @@ const ctP = ctBuild.placements;
 const arBuild = buildARFull();
 const arLayout = arBuild.layout;
 const arP = arBuild.placements;
+
+// ── New interior & hidden room layouts ──
+const vhCraftingLayout = buildVHCraftingInterior();
+const tfCraftingLayout = buildTFCraftingInterior();
+const vhHiddenLayout = buildVHHidden();
+const tfHiddenLayout = buildTFHidden();
+const wwHiddenLayout = buildWWHidden();
+const challengeArenaLayout = buildChallengeArena();
 
 const ctH1Layout = buildBigInterior();          // Scholar's Refuge (2 floors)
 const ctH1F2Layout = buildUpperFloor();
@@ -1969,7 +2094,9 @@ export const MAPS: Record<string, any> = {
       { id: 'ch_vh_note1', flag: 'ch_vh_note1', x: 9, y: 5, item: 'book_innkeepers_notice' },
       { id: 'ch_vh_note2', flag: 'ch_vh_note2', x: 9, y: 11, item: 'book_stall_ledger_scrap' },
     ],
-    doors: [],
+    doors: [
+      { id: 'door_vh_crafting', x: 11, y: 5, targetMapId: 'VH_CRAFTING', targetX: 7, targetY: 6, label: 'Crafting Workshop' },
+    ],
     books: [],
     encounterPool: [],
     exits: {
@@ -2038,7 +2165,8 @@ export const MAPS: Record<string, any> = {
     encounterPool: ['wisp', 'crawler', 'specter'],
     exits: {
       '>': { mapId: 'MS', x: 9, y: 12, reqQuest: 'quest_main', reqState: 2, lockMsg: "The Sanctum is sealed. Restore the village first." },
-      '<': { mapId: 'VH', x: 12, y: 1 }
+      '<': { mapId: 'VH', x: 12, y: 1 },
+      '@': { mapId: 'WW_HIDDEN', x: 5, y: 3 }
     }
   },
 
@@ -2187,12 +2315,107 @@ export const MAPS: Record<string, any> = {
       // Far-west lone meadow
       { id: 'ch_tf_12', flag: 'ch_tf_12', x: 3,  y: 40, item: 'void_needle' },
     ],
-    doors: [],
+    doors: [
+      { id: 'door_tf_crafting', x: 16, y: 40, targetMapId: 'TF_CRAFTING', targetX: 7, targetY: 6, label: 'Forest Crafting Hut' },
+    ],
     books: [],
     encounterPool: [],
     exits: {
-      '<': { mapId: 'VH', x: 1, y: 8 }
+      '<': { mapId: 'VH', x: 1, y: 8 },
+      '!': { mapId: 'TF_HIDDEN', x: 5, y: 3 }
     }
+  },
+
+  // ── VH CRAFTING WORKSHOP (14 × 9) — enterable from Verdant Hollow ──
+  'VH_CRAFTING': {
+    id: 'VH_CRAFTING', name: 'Crafting Workshop', width: 14, height: 9,
+    layout: vhCraftingLayout,
+    npcs: [
+      { id: 'vh_crafting_npc', x: 10, y: 4, color: '#8888aa', name: 'Crafting Table', type: 'CRAFT' },
+    ],
+    chests: [
+      { id: 'ch_vh_craft1', flag: 'ch_vh_craft1', x: 10, y: 2, item: 'empty_book' },
+    ],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'VH', x: 11, y: 6 }, '!': { mapId: 'VH_HIDDEN', x: 5, y: 3 } }
+  },
+
+  // ── VH HIDDEN ALCOVE (10 × 6) — secret room behind the workshop ──
+  'VH_HIDDEN': {
+    id: 'VH_HIDDEN', name: 'A Forgotten Alcove', width: 10, height: 6,
+    layout: vhHiddenLayout,
+    npcs: [],
+    chests: [
+      { id: 'ch_vh_hidden1', flag: 'ch_vh_hidden1', x: 3, y: 1, item: 'ench_wither_mark' },
+      { id: 'ch_vh_hidden2', flag: 'ch_vh_hidden2', x: 6, y: 1, item: 'echoes_40' },
+    ],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'VH_CRAFTING', x: 1, y: 5 } }
+  },
+
+  // ── TF CRAFTING HUT (14 × 9) — enterable from Thornwood Forest ──
+  'TF_CRAFTING': {
+    id: 'TF_CRAFTING', name: 'Forest Crafting Hut', width: 14, height: 9,
+    layout: tfCraftingLayout,
+    npcs: [
+      { id: 'tf_crafting_npc', x: 10, y: 4, color: '#88aa88', name: 'Crafting Table', type: 'CRAFT' },
+    ],
+    chests: [
+      { id: 'ch_tf_craft1', flag: 'ch_tf_craft1', x: 10, y: 2, item: 'tomes_blessing' },
+    ],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'TF', x: 16, y: 41 } }
+  },
+
+  // ── TF HIDDEN GROVE (12 × 8) — secret forest clearing ──
+  'TF_HIDDEN': {
+    id: 'TF_HIDDEN', name: 'The Hidden Grove', width: 12, height: 8,
+    layout: tfHiddenLayout,
+    npcs: [],
+    chests: [
+      { id: 'ch_tf_hidden1', flag: 'ch_tf_hidden1', x: 4, y: 1, item: 'ench_shard_frostbite' },
+      { id: 'ch_tf_hidden2', flag: 'ch_tf_hidden2', x: 7, y: 1, item: 'echoes_60' },
+    ],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'TF', x: 7, y: 37 } }
+  },
+
+  // ── WW HIDDEN POCKET (12 × 8) — void pocket in the Wastes ──
+  'WW_HIDDEN': {
+    id: 'WW_HIDDEN', name: 'Void Pocket', width: 12, height: 8,
+    layout: wwHiddenLayout,
+    npcs: [],
+    chests: [
+      { id: 'ch_ww_hidden1', flag: 'ch_ww_hidden1', x: 4, y: 1, item: 'ench_venom_brand' },
+      { id: 'ch_ww_hidden2', flag: 'ch_ww_hidden2', x: 7, y: 1, item: 'echoes_80' },
+    ],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'WW', x: 12, y: 9 } }
+  },
+
+  // ── CHALLENGE ARENA (18 × 12) — sequential trial arena ──
+  'CHALLENGE_ARENA': {
+    id: 'CHALLENGE_ARENA', name: 'The Challenge Arena', width: 18, height: 12,
+    layout: challengeArenaLayout,
+    npcs: [
+      { id: 'challenge_keeper', x: 9, y: 2, color: '#aabbff', name: 'Challenge Keeper', type: 'TALK' },
+      { id: 'challenge_mender', x: 3, y: 9, color: '#88ccaa', name: 'The Mender',       type: 'TALK' },
+    ],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: { '<': { mapId: 'VH', x: 12, y: 8 } }
   },
 
   // ── CRESTFALL CITY (100 × 100) — a sprawling city of streets and blocks ──
