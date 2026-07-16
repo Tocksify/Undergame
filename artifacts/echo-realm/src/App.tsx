@@ -23,6 +23,14 @@ function App() {
   const [initialState, setInitialState] = useState<GameStateData | null>(null);
   const menuAudioRef = useRef<HTMLAudioElement | null>(null);
 
+  // ── Register battle / special MP3 tracks once on mount ───────────
+  useEffect(() => {
+    audio.registerMp3Track('battle',     '/BattleMusic1.mp3');
+    audio.registerMp3Track('battle2',    '/BattleMusic2.mp3');
+    audio.registerMp3Track('battle3',    '/BattleMusic3.mp3');
+    audio.registerMp3Track('child_void', '/ChildVoidEnemy.mp3');
+  }, []);
+
   // ── Menu music (MP3) ─────────────────────────────────────────────
   useEffect(() => {
     if (screen === 'game') { menuAudioRef.current?.pause(); return; }

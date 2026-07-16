@@ -239,6 +239,10 @@ class AudioEngine {
   private menuAudioEl: HTMLAudioElement | null = null;
   /** Stable random variant chosen at the start of each regular battle (battle or battle2). */
   private battleVariant: 'battle' | 'battle2' = 'battle';
+  /** MP3 HTMLAudioElements registered for specific track keys (e.g. battle, boss). */
+  private mp3Tracks: Partial<Record<string, HTMLAudioElement>> = {};
+  /** Key of whichever MP3 is currently playing (null if synth is active). */
+  private currentMp3Key: string | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -293,12 +297,26 @@ class AudioEngine {
     if (el) el.volume = this.userMusicVol;
   }
 
+  /**
+   * Pre-load an MP3 file for a track key.  When that key is requested by
+   * syncMusic/setPreviewTrack the MP3 plays instead of the synth fallback.
+   */
+  registerMp3Track(key: string, src: string) {
+    const el = new Audio(src);
+    el.loop = true;
+    el.volume = this.userMusicVol;
+    this.mp3Tracks[key] = el;
+  }
+
   /** Set music volume 0–100; persisted to localStorage. */
   setMusicVolume(pct: number) {
     this.userMusicVol = Math.max(0, Math.min(100, pct)) / 100;
     localStorage.setItem('er_music_vol', String(pct));
-    // Also update the MP3 element immediately.
+    // Update menu MP3 and every registered battle/special MP3.
     if (this.menuAudioEl) this.menuAudioEl.volume = this.userMusicVol;
+    for (const el of Object.values(this.mp3Tracks)) {
+      if (el) el.volume = this.userMusicVol;
+    }
     // musicGain for the synthesised tracks is corrected every syncMusic frame.
   }
 
@@ -313,21 +331,45 @@ class AudioEngine {
   setPreviewTrack(key: string | null) {
     this.previewKey = key;
     if (key !== null) {
-      // Silence the menu MP3 immediately so they don't overlap.
+      // Silence the menu MP3 and any playing battle MP3 immediately.
       if (this.menuAudioEl) this.menuAudioEl.pause();
-      // Hard-stop whatever synth track is playing (tiny fade to avoid click),
-      // then start the requested track once it's clear.
+      if (this.currentMp3Key && this.mp3Tracks[this.currentMp3Key]) {
+        this.mp3Tracks[this.currentMp3Key]!.pause();
+        this.mp3Tracks[this.currentMp3Key]!.currentTime = 0;
+        this.currentMp3Key = null;
+      }
       this.stopCurrentTrack(0.04);
       this.currentKey = null;
+
+      const mp3 = this.mp3Tracks[key];
+      if (mp3) {
+        // Preview of an MP3 track.
+        window.setTimeout(() => {
+          if (this.previewKey !== key) return;
+          this.currentKey = key;
+          this.currentMp3Key = key;
+          mp3.currentTime = 0;
+          mp3.volume = this.userMusicVol;
+          mp3.play().catch(() => {});
+        }, 60);
+        return;
+      }
+
+      // Preview of a synth track.
       const def = TRACKS[key];
       if (!def) return;
       window.setTimeout(() => {
-        if (this.previewKey !== key) return; // user already switched again
+        if (this.previewKey !== key) return;
         this.currentKey = key;
         this.startTrack(def);
       }, 60);
     } else {
-      // Preview stopped — restore the menu MP3 and clear the synth track.
+      // Preview stopped — halt any preview MP3, restore the menu MP3.
+      if (this.currentMp3Key && this.mp3Tracks[this.currentMp3Key]) {
+        this.mp3Tracks[this.currentMp3Key]!.pause();
+        this.mp3Tracks[this.currentMp3Key]!.currentTime = 0;
+        this.currentMp3Key = null;
+      }
       this.stopCurrentTrack(0.3);
       this.currentKey = null;
       if (this.menuAudioEl) this.menuAudioEl.play().catch(() => {});
@@ -428,19 +470,37 @@ class AudioEngine {
 
   private playTrack(key: string) {
     if (this.currentKey === key) return;
+    const prevKey = this.currentKey;
     this.currentKey = key;
+
+    // Stop any previously playing registered MP3.
+    if (prevKey && this.mp3Tracks[prevKey]) {
+      const prev = this.mp3Tracks[prevKey]!;
+      prev.pause();
+      prev.currentTime = 0;
+      this.currentMp3Key = null;
+    }
+
+    const mp3 = this.mp3Tracks[key];
+    if (mp3) {
+      // MP3 track: quickly fade out any synth that's still running, then play.
+      this.stopCurrentTrack(0.15);
+      this.currentMp3Key = key;
+      mp3.currentTime = 0;
+      mp3.volume = this.userMusicVol;
+      mp3.play().catch(() => {});
+      return;
+    }
+
+    // Synth track — original cross-fade logic.
     const ctx = this.ensureCtx();
     if (!ctx || !this.musicGain) return;
     const def = TRACKS[key];
     const wasPlaying = this.trackGain !== null;
     if (!wasPlaying) {
-      // Nothing playing yet (e.g. first track) — start immediately.
       if (def) this.startTrack(def);
       return;
     }
-    // A track is already playing: fade it out fully and only start the new
-    // one once it's silent, so at most one bgm track is ever audible at a
-    // time (no crossfade overlap).
     const fadeSec = 0.35;
     this.stopCurrentTrack(fadeSec);
     window.setTimeout(() => {
@@ -469,10 +529,15 @@ class AudioEngine {
     this.activeDef = null;
   }
 
-  /** Immediately stop all procedural music (call when the Game component unmounts). */
+  /** Immediately stop all music — synth and MP3 (call when the Game component unmounts). */
   stop() {
+    if (this.currentMp3Key && this.mp3Tracks[this.currentMp3Key]) {
+      this.mp3Tracks[this.currentMp3Key]!.pause();
+      this.mp3Tracks[this.currentMp3Key]!.currentTime = 0;
+      this.currentMp3Key = null;
+    }
     this.stopCurrentTrack(0.25);
-    this.currentKey = null; // next syncMusic call will restart cleanly
+    this.currentKey = null;
   }
 
   /** Fully tear down the AudioContext — used by HMR so stale oscillators don't outlive the module. */
