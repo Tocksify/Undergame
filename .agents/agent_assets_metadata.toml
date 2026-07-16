@@ -18,3 +18,9 @@ id = "ox91b9vUIrmJS6g00buax"
 uri = "file://attached_assets/MaxSave_Slot2.ersav"
 type = "unspecified"
 title = "MaxSave_Slot2.ersav"
+
+[[outputs]]
+id = "IOTDcUMZqKpmwy7Li5Vq1"
+uri = "file://attached_assets/EchoRealm_TierList.md"
+type = "text"
+title = "Echo Realm — Complete Item Tier List"
