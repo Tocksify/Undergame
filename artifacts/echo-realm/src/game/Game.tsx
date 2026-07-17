@@ -142,9 +142,10 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
 
   const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectron;
 
+  // ── Electron: letterbox-fill, no chrome ────────────────────────────
   if (isElectron) {
     return (
-      <div style={{ width: '100vw', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f0518' }}>
+      <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
         <canvas
           ref={canvasRef}
           width={768}
@@ -155,15 +156,33 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
     );
   }
 
+  // ── Mobile (touch device): canvas shrinks to give room for buttons ──
+  if (isTouchDevice) {
+    return (
+      <div style={{ width: '100vw', height: '100dvh', display: 'flex', flexDirection: 'column', background: '#000', overflow: 'hidden' }}>
+        {/* Canvas area: flex:1 + minHeight:0 means it fills space above the buttons */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <canvas
+            ref={canvasRef}
+            width={768}
+            height={576}
+            style={{ maxWidth: '100%', maxHeight: '100%', imageRendering: 'pixelated', display: 'block' }}
+          />
+        </div>
+        <TouchControls stateRef={stateRef} />
+      </div>
+    );
+  }
+
+  // ── Desktop browser: full black fill, no purple TV frame ───────────
   return (
-    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0518' }}>
+    <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <canvas
         ref={canvasRef}
         width={768}
         height={576}
         style={{ width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated', display: 'block' }}
       />
-      {isTouchDevice && <TouchControls stateRef={stateRef} />}
     </div>
   );
 }
