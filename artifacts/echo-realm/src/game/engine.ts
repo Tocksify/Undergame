@@ -6,7 +6,7 @@ import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
-import { CHALLENGE_TIERS, getUnlockedTierIndex } from '../challengeStore';
+import { CHALLENGE_TIERS, getUnlockedTierIndex, addEarnedChallengeItem } from '../challengeStore';
 
 export function justPressed(state: GameStateData, key: string) {
   const k = key; const K = key.toUpperCase();
@@ -227,7 +227,7 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.MENU) {
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
-    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(7, state.menuIndex + 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(6, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
@@ -243,7 +243,6 @@ export function updateGame(state: GameStateData) {
       }
       if (state.menuIndex === 5) state.exitRequested = true;
       if (state.menuIndex === 6) { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; }
-      if (state.menuIndex === 7) { state.mode = GameMode.EXTRAS; state.extrasState = { menuIndex: 0, subScreen: 'menu', codexScroll: 0 }; }
     }
     return;
   }
@@ -735,6 +734,7 @@ export function updateGame(state: GameStateData) {
         if (!state.player.flags[claimFlag]) {
           const chosen = csTier.pool[state.challengeSelectState.poolCursor];
           addInventoryItem(state, chosen.itemId);
+          addEarnedChallengeItem(chosen.itemId);
           state.player.flags[claimFlag] = true;
           const itemName = ITEMS[chosen.itemId]?.name ?? chosen.label;
           state.uiMessage = `Claimed: ${itemName}!`; state.uiMessageTimer = 240;

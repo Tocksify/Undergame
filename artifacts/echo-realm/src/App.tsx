@@ -5,7 +5,7 @@ import { GameStateData } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState } from './game/save';
 import { audio } from './game/audio';
 import { SpriteAppearance } from './game/npcAppearance';
-import { CHALLENGE_EMBLEMS } from './challengeStore';
+import { ITEMS } from './game/constants';
 import {
   ErsavFile, LocalSlot,
   createSlot, updateSlot, getSlotById,
@@ -78,17 +78,10 @@ function App() {
     const state      = buildInitialState(null, false);
     state.player.appearance = appearance;
 
-    // Apply emblem starting buffs if one was selected
-    if (emblemId) {
-      const emblem = CHALLENGE_EMBLEMS.find((e) => e.id === emblemId);
-      if (emblem) {
-        if (emblem.buffs.maxHp)  { state.player.maxHp += emblem.buffs.maxHp; state.player.hp += emblem.buffs.maxHp; }
-        if (emblem.buffs.str)    state.player.baseStats.str += emblem.buffs.str;
-        if (emblem.buffs.vit)    state.player.baseStats.vit += emblem.buffs.vit;
-        if (emblem.buffs.def)    state.player.baseStats.def += emblem.buffs.def;
-        if (emblem.buffs.echoes) state.player.echoes += emblem.buffs.echoes;
-        if (emblem.buffs.item)   { state.player.inventory.push(emblem.buffs.item); state.player.enchantedSlots.push(null); }
-      }
+    // Add selected challenge item to starting inventory
+    if (emblemId && ITEMS[emblemId]) {
+      state.player.inventory.push(emblemId);
+      state.player.enchantedSlots.push(null);
     }
     const serialized = serializeGameState(state);
     const id         = await createSlot({

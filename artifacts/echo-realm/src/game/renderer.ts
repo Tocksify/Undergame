@@ -164,6 +164,21 @@ function drawTierText(ctx: CanvasRenderingContext2D, text: string, x: number, y:
     ctx.fillText(text, x, y);
     return;
   }
+  if (tier === 'chromatic') {
+    const tw = ctx.measureText(text).width;
+    const align = ctx.textAlign;
+    const startX = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+    const shift = (frame * 2.5) % (tw + 80);
+    const grad = ctx.createLinearGradient(startX - 40 + shift - (tw + 80), y, startX + 40 + shift, y);
+    grad.addColorStop(0,    '#ff4488');
+    grad.addColorStop(0.25, '#ffaa33');
+    grad.addColorStop(0.5,  '#44ffaa');
+    grad.addColorStop(0.75, '#33aaff');
+    grad.addColorStop(1,    '#ff4488');
+    ctx.fillStyle = grad;
+    ctx.fillText(text, x, y);
+    return;
+  }
   ctx.fillStyle = TIER_COLOR[tier] ?? C.light;
   ctx.fillText(text, x, y);
 }
@@ -181,6 +196,7 @@ function itemDisplayName(state: GameStateData, inventoryIndex: number): string {
 function categoryTag(id: string): string {
   const item = ITEMS[id];
   if (!item) return '';
+  if (id.startsWith('ch_')) return '[CH]';
   if (item.category === 'book') return '[BOOK]';
   if (item.category === 'enchanted_book') return '[ENCH]';
   if (item.category === 'weapon') return '[WPN]';
@@ -195,6 +211,7 @@ function categoryTag(id: string): string {
 function categoryTagColor(id: string): string {
   const item = ITEMS[id];
   if (!item) return C.dim;
+  if (id.startsWith('ch_')) return '#ff77ee';
   if (item.category === 'book') return '#88aaff';
   if (item.category === 'enchanted_book') return '#cc88ff';
   if (item.category === 'weapon') return '#ffaa88';
@@ -1120,7 +1137,7 @@ function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, 
 // ── MENU ───────────────────────────────────────────────────────────
 function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
-  pixelBox(ctx, 274, 130, 220, 308, C.black, C.white, 3);
+  pixelBox(ctx, 274, 130, 220, 280, C.black, C.white, 3);
   ctx.fillStyle = C.silver; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
   ctx.fillText('MENU', W / 2, 156);
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
@@ -1131,7 +1148,6 @@ function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
     state.meta.isGuest ? 'Quit to Title' : 'Save & Quit',
     'Exit to Title',
     'Bestiary [B]',
-    'Extras',
   ];
   ctx.textAlign = 'left'; ctx.font = '14px monospace';
   opts.forEach((opt, i) => {

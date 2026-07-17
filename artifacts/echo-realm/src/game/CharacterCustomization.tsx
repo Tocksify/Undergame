@@ -4,7 +4,8 @@ import {
   SKIN_TONES, HAIR_COLORS, HAIR_STYLES, EYE_COLORS, ACCESSORIES, CLOTH_COLORS,
   SpriteAppearance, HairStyle, Accessory,
 } from './npcAppearance';
-import { CHALLENGE_EMBLEMS, getEarnedEmblemIds } from '../challengeStore';
+import { getEarnedChallengeItemIds } from '../challengeStore';
+import { ITEMS, TIER_LABEL, TIER_COLOR } from './constants';
 
 function sfxProps(onClick?: () => void) {
   return {
@@ -80,10 +81,11 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
   const [hat, setHat]             = useState(false);
   const [emblemId, setEmblemId]   = useState<string | undefined>(undefined);
 
-  // Read earned emblems from global store (lazy — only on mount)
-  const earnedEmblemIds = getEarnedEmblemIds();
-  const earnedEmblems = CHALLENGE_EMBLEMS.filter((e) => earnedEmblemIds.includes(e.id));
-  const selectedEmblem = CHALLENGE_EMBLEMS.find((e) => e.id === emblemId);
+  // Read earned challenge items from global store (persists across runs)
+  const earnedItemIds = getEarnedChallengeItemIds();
+  // Only show items that actually exist in the ITEMS registry and start with ch_
+  const earnedChallengeItems = earnedItemIds.filter(id => id.startsWith('ch_') && ITEMS[id]);
+  const selectedItem = emblemId ? ITEMS[emblemId] : null;
 
   const confirm = () => {
     const appearance: SpriteAppearance = {
@@ -157,10 +159,10 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
             </PillBtn>
           </Section>
 
-          <Section title="STARTING EMBLEM">
-            {earnedEmblems.length === 0 ? (
+          <Section title="STARTING CHALLENGE ITEM">
+            {earnedChallengeItems.length === 0 ? (
               <p className="text-xs text-[#555] leading-relaxed">
-                No emblems earned yet. Complete Challenge Mode to earn emblems that grant starting buffs.
+                No challenge items earned yet. Visit the Challenge Herald NPC and claim a board reward to unlock items here.
               </p>
             ) : (
               <>
@@ -168,27 +170,31 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
                   <PillBtn active={emblemId === undefined} onClick={() => setEmblemId(undefined)}>
                     None
                   </PillBtn>
-                  {earnedEmblems.map(e => (
-                    <PillBtn
-                      key={e.id}
-                      active={emblemId === e.id}
-                      onClick={() => setEmblemId(emblemId === e.id ? undefined : e.id)}
-                      color={e.color}
-                    >
-                      {e.name}
-                    </PillBtn>
-                  ))}
+                  {earnedChallengeItems.map(id => {
+                    const item = ITEMS[id]!;
+                    const tierClr = TIER_COLOR[item.tier] ?? '#ff77ee';
+                    return (
+                      <PillBtn
+                        key={id}
+                        active={emblemId === id}
+                        onClick={() => setEmblemId(emblemId === id ? undefined : id)}
+                        color={tierClr}
+                      >
+                        {item.name}
+                      </PillBtn>
+                    );
+                  })}
                 </div>
-                {selectedEmblem && (
+                {selectedItem && (
                   <p
                     className="text-xs mt-2 leading-relaxed"
-                    style={{ color: selectedEmblem.color }}
+                    style={{ color: TIER_COLOR[selectedItem.tier] ?? '#ff77ee' }}
                   >
-                    {selectedEmblem.desc}
+                    [{TIER_LABEL[selectedItem.tier] ?? selectedItem.tier}] {selectedItem.desc}
                   </p>
                 )}
-                {!selectedEmblem && (
-                  <p className="text-xs text-[#444] mt-2">No emblem selected — start without a bonus.</p>
+                {!selectedItem && (
+                  <p className="text-xs text-[#444] mt-2">No challenge item selected — start without one.</p>
                 )}
               </>
             )}

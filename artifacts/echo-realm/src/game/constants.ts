@@ -602,10 +602,28 @@ export const ITEMS: Record<string, Item> = {
   'ch_echo_bulwark':    { name: 'Echo Bulwark',           desc: 'Forged from solidified resonance. Blocks 10 flat damage per hit. Challenge-exclusive.',            price: 0, tier: 'epic',      category: 'shield',   block: 10 },
   'ch_nexus_crown':     { name: 'Nexus Crown',            desc: 'The crown of whatever ruled the Nexus before the silence. Challenge-exclusive.',                   price: 0, tier: 'legendary', category: 'helmet',   def: 5, maxHp: 15 },
   'ch_oblivion_fang':   { name: 'Oblivion Fang',          desc: 'A blade that forgets what it cuts through. The cut remains. Challenge-exclusive.',                 price: 0, tier: 'legendary', category: 'weapon',   atk: 16 },
-  // Void / Mortus tier — only available at the highest challenge tier
+  // Mortus tier challenge items (legacy — defined for lore completeness)
   'ch_mortus_throne_blade': { name: 'Throne Blade of Mortus', desc: 'The blade that ended the first age. Still hungry. Challenge-exclusive — Mortus tier.',            price: 0, tier: 'mythic', category: 'weapon',  atk: 25 },
   'ch_mortus_void_mantle':  { name: 'Void Mantle of Mortus',  desc: "The armor of the Void's own herald. Refuses every ending. Challenge-exclusive — Mortus tier.",  price: 0, tier: 'mythic', category: 'armor',   maxHp: 50, def: 10 },
   'ch_mortus_eye':          { name: 'Eye of Mortus',           desc: 'Preserved from the final witness of the old world. Watches for you. Challenge-exclusive — Mortus tier.', price: 0, tier: 'mythic', category: 'trinket', atk: 8, def: 6, maxHp: 20 },
+  // ── Color tier (hardest challenge tier) ──
+  'ch_creed_emblem': {
+    name: 'Creed Emblem',
+    desc: 'A trinket pulsing with the full spectrum of the Chromatic path. Its power grows with each chroma skill you carry into battle. Challenge-exclusive — Chromatic tier.',
+    price: 0, tier: 'chromatic', category: 'trinket', atk: 4, def: 3, maxHp: 10,
+  },
+  'ch_ench_chromatic_tide': {
+    name: 'Chromatic Tide',
+    desc: 'Enchants a weapon. +8 ATK. On a solid hit: confuses the enemy, freezes it solid, and weakens its attack by 2. A spectrum of suffering. Challenge-exclusive — Chromatic tier.',
+    price: 0, tier: 'chromatic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 8, confuse: true, freeze: true, weaken: 2 },
+  },
+  "ch_ench_mortus_verdict": {
+    name: "Mortus' Verdict",
+    desc: "Enchants a weapon. +15 ATK. On a solid hit: drains 8 HP from the enemy back to you and silences it. The last word written in any age. Challenge-exclusive — Mortus tier.",
+    price: 0, tier: 'mythic', category: 'enchanted_book',
+    enchantData: { compatibleCategories: ['weapon'], atk: 15, drain: 8, silence: true },
+  },
 };
 
 // Enchantments craftable from scratch via the Tomes Blessing — spans every tier.
@@ -643,15 +661,16 @@ export const TIER_COLOR: Record<string, string> = {
   rare: '#38bdf8',
   epic: '#c084fc',
   legendary: '#f59e0b',
-  mythic: '#1a1a3a', // fallback; mythic is drawn as an animated gradient — see renderer's drawTierText
+  mythic: '#1a1a3a',     // fallback; mythic is drawn as an animated gradient — see renderer's drawTierText
+  chromatic: '#ff77ee',  // challenge-exclusive Color tier — drawn as a shifting rainbow gradient
 };
 
 // Display label for tiers — the top tier is branded "Mortus" in-world.
 export const TIER_LABEL: Record<string, string> = {
-  common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary', mythic: 'Mortus',
+  common: 'Common', uncommon: 'Uncommon', rare: 'Rare', epic: 'Epic', legendary: 'Legendary', mythic: 'Mortus', chromatic: 'Chromatic',
 };
 
-const TIER_RANK: Record<string, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5 };
+const TIER_RANK: Record<string, number> = { common: 0, uncommon: 1, rare: 2, epic: 3, legendary: 4, mythic: 5, chromatic: 6 };
 
 // Given a probabilistic reward pool, returns the tier of the highest-tier
 // possible reward — used to color quest/reward text by its best-case payout.
@@ -1155,6 +1174,34 @@ export const RECIPES: CraftRecipe[] = [
     ingredients: [{ itemId: 'herb_bundle', count: 1 }, { itemId: 'cloth_scrap', count: 1 }] },
   { id: 'r_elixir',       name: 'Void Elixir',        outputId: 'elixir',        outputCount: 1, category: 'consumable',
     ingredients: [{ itemId: 'herb_bundle', count: 3 }, { itemId: 'void_dust', count: 1 }] },
+  // ── NEW INGREDIENT RECIPES ──
+  // Materials
+  { id: 'r_reclaimed_iron',    name: 'Reclaimed Iron Dust',  outputId: 'iron_dust',    outputCount: 8, category: 'material',
+    ingredients: [{ itemId: 'rusted_chain', count: 2 }] },
+  { id: 'r_resonance_silver',  name: 'Resonance Silver',     outputId: 'silver_ingot', outputCount: 2, category: 'material',
+    ingredients: [{ itemId: 'resonance_dust', count: 2 }, { itemId: 'iron_dust', count: 2 }] },
+  { id: 'r_void_essence_craft',name: 'Void Essence',         outputId: 'void_essence', outputCount: 1, category: 'material',
+    ingredients: [{ itemId: 'void_crystal', count: 1 }, { itemId: 'void_dust', count: 3 }] },
+  // Weapons
+  { id: 'r_claw_edge',         name: 'Beast-Claw Edge',      outputId: 'bone_edge',        outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'beast_claw', count: 2 }, { itemId: 'ancient_bark', count: 1 }] },
+  { id: 'r_essence_blade',     name: 'Essence Blade',        outputId: 'resonance_blade',  outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'void_essence', count: 1 }, { itemId: 'silver_ingot', count: 1 }] },
+  // Armor
+  { id: 'r_chainlink_wrap',    name: 'Chainlink Wrap',       outputId: 'hide_wrap',     outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'rusted_chain', count: 3 }, { itemId: 'cloth_scrap', count: 2 }] },
+  { id: 'r_bark_armor',        name: 'Bark-Woven Leather',   outputId: 'woven_leather', outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'ancient_bark', count: 2 }, { itemId: 'leather_hide', count: 2 }] },
+  // Trinkets
+  { id: 'r_quartz_band',       name: 'Quartz Band',          outputId: 'void_token',    outputCount: 1, category: 'trinket',
+    ingredients: [{ itemId: 'clear_quartz', count: 2 }, { itemId: 'resonance_dust', count: 1 }] },
+  // Consumables
+  { id: 'r_forest_tonic',      name: 'Forest Tonic (×3)',    outputId: 'tonic',         outputCount: 3, category: 'consumable',
+    ingredients: [{ itemId: 'dried_mushroom', count: 2 }, { itemId: 'herb_bundle', count: 1 }] },
+  { id: 'r_salted_crystal',    name: 'Salted Crystal (×2)',  outputId: 'crystal',       outputCount: 2, category: 'consumable',
+    ingredients: [{ itemId: 'ghost_salt', count: 1 }, { itemId: 'void_dust', count: 1 }] },
+  { id: 'r_preserved_elixir',  name: 'Preserved Elixir',     outputId: 'elixir',        outputCount: 1, category: 'consumable',
+    ingredients: [{ itemId: 'ghost_salt', count: 1 }, { itemId: 'herb_bundle', count: 2 }, { itemId: 'void_dust', count: 1 }] },
 ];
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────

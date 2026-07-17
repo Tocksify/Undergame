@@ -236,6 +236,15 @@ export function handleBattleInput(state: GameStateData) {
           dmg += b.resonance * 3 * novaMult;
         }
 
+        // ch_creed_emblem: bonus damage per chromatic skill learned (trinket must be equipped)
+        if (hitType !== 'MISS') {
+          const _equip = state.player.equipment as Record<string, string | null>;
+          if (_equip['trinket'] === 'ch_creed_emblem') {
+            const _chromaC = _skills.filter(s => s.startsWith('chroma_')).length;
+            if (_chromaC > 0) dmg += _chromaC * 2;
+          }
+        }
+
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }

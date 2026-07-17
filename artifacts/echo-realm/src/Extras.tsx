@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { audio } from './game/audio';
-import { CHALLENGE_TIERS } from './challengeStore';
+import { CHALLENGE_TIERS, getEarnedChallengeItemIds } from './challengeStore';
 import { ACHIEVEMENTS, getEarnedAchievementIds } from './achievementStore';
 
 interface Props { onBack: () => void; }
@@ -76,7 +76,7 @@ const CREDITS: { heading: string; lines: string[] }[] = [
 // Tier colors matching the canvas renderer
 const TIER_CLR: Record<string, string> = {
   bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700',
-  platinum: '#e5e4e2', diamond: '#b9f2ff', void: '#9966ff',
+  platinum: '#e5e4e2', diamond: '#b9f2ff', color: '#ff77ee',
 };
 
 export default function Extras({ onBack }: Props) {
@@ -247,53 +247,65 @@ export default function Extras({ onBack }: Props) {
             )}
 
             {/* ── CODEX ── */}
-            {tab === 'codex' && (
-              <div>
-                <p className="text-xs mb-3 leading-relaxed" style={{ color: '#555' }}>
-                  Items claimable exclusively through the Challenge Board — find the Challenge Herald NPC to begin
-                </p>
-                {CHALLENGE_TIERS.map((tier) => (
-                  <div key={tier.name} style={{ marginBottom: '18px' }}>
-                    {/* Tier header */}
-                    <div
-                      className="text-xs font-bold tracking-widest mb-2"
-                      style={{
-                        color: TIER_CLR[tier.name] ?? '#888',
-                        borderBottom: `1px solid ${TIER_CLR[tier.name] ?? '#333'}33`,
-                        paddingBottom: '4px',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {tier.displayName} Tier
-                    </div>
-                    {/* Item rows */}
-                    {tier.pool.map((poolItem) => (
-                      <div
-                        key={poolItem.itemId}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          borderLeft: `3px solid ${TIER_CLR[tier.name] ?? '#333'}`,
-                          paddingLeft: '10px',
-                          marginBottom: '6px',
-                          paddingTop: '3px',
-                          paddingBottom: '3px',
-                        }}
-                      >
-                        <div style={{ flex: 1 }}>
-                          <div className="text-sm font-bold tracking-wider" style={{ color: '#9977cc' }}>
-                            {poolItem.label}
-                          </div>
-                          <div className="text-xs" style={{ color: '#443355' }}>
-                            {poolItem.desc}
-                          </div>
+            {tab === 'codex' && (() => {
+              const earnedItemIds = getEarnedChallengeItemIds();
+              return (
+                <div>
+                  <p className="text-xs mb-3 leading-relaxed" style={{ color: '#555' }}>
+                    Items claimable via the Challenge Board — claim a tier reward to reveal its entry here
+                  </p>
+                  {CHALLENGE_TIERS.map((tier) => {
+                    const tierColor = TIER_CLR[tier.name] ?? '#888';
+                    return (
+                      <div key={tier.name} style={{ marginBottom: '18px' }}>
+                        {/* Tier header */}
+                        <div
+                          className="text-xs font-bold tracking-widest mb-2"
+                          style={{
+                            color: tierColor,
+                            borderBottom: `1px solid ${tierColor}33`,
+                            paddingBottom: '4px',
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {tier.displayName} Tier
                         </div>
+                        {/* Item rows */}
+                        {tier.pool.map((poolItem) => {
+                          const revealed = earnedItemIds.includes(poolItem.itemId);
+                          return (
+                            <div
+                              key={poolItem.itemId}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                borderLeft: `3px solid ${revealed ? tierColor : '#222'}`,
+                                paddingLeft: '10px',
+                                marginBottom: '6px',
+                                paddingTop: '3px',
+                                paddingBottom: '3px',
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  className="text-sm font-bold tracking-wider"
+                                  style={{ color: revealed ? tierColor : '#2a2a2a' }}
+                                >
+                                  {revealed ? poolItem.label : '???'}
+                                </div>
+                                <div className="text-xs" style={{ color: revealed ? '#554466' : '#1a1a1a' }}>
+                                  {revealed ? poolItem.desc : '— claim this tier to reveal —'}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
           </div>
 

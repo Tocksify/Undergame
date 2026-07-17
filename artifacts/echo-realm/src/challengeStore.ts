@@ -4,7 +4,7 @@
 // When the player creates a new slot and visits the Challenge Keeper, they
 // pick ONE item from their highest unlocked tier's item pool.
 
-export type ChallengeTierName = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'void';
+export type ChallengeTierName = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond' | 'color';
 
 export interface ChallengeTierItem {
   itemId: string;   // item ID from the ITEMS registry
@@ -77,14 +77,14 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     ],
   },
   {
-    name: 'void',
-    displayName: 'Void',
-    color: '#9966ff',
-    desc: 'The final rite. Only the most seasoned Keepers walk this far — Mortus-tier rewards await.',
+    name: 'color',
+    displayName: 'Color',
+    color: '#ff77ee',
+    desc: 'The final rite. Those who see all colours at once. Chromatic and Mortus-tier rewards await.',
     pool: [
-      { itemId: 'ch_mortus_throne_blade', label: 'Throne Blade of Mortus', desc: 'Weapon: +25 ATK — Mortus tier, challenge-exclusive' },
-      { itemId: 'ch_mortus_void_mantle',  label: 'Void Mantle of Mortus',  desc: 'Armor: +50 HP, +10 DEF — Mortus tier, challenge-exclusive' },
-      { itemId: 'ch_mortus_eye',          label: 'Eye of Mortus',          desc: 'Trinket: +8 ATK, +6 DEF, +20 HP — Mortus tier, challenge-exclusive' },
+      { itemId: 'ch_creed_emblem',         label: 'Creed Emblem',      desc: 'Trinket: +4 ATK, +3 DEF, +10 HP — scales with Chromatic skills. Chromatic tier, challenge-exclusive.' },
+      { itemId: 'ch_ench_chromatic_tide',  label: 'Chromatic Tide',    desc: 'Weapon enchant: +8 ATK, confuse + freeze + weaken on hit. Chromatic tier, challenge-exclusive.' },
+      { itemId: 'ch_ench_mortus_verdict',  label: "Mortus' Verdict",   desc: 'Weapon enchant: +15 ATK, drain 8 HP + silence on hit. Mortus tier, challenge-exclusive.' },
     ],
   },
 ];
@@ -92,6 +92,23 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
 // All tiers are permanently unlocked — no earning required.
 export function getUnlockedTierIndex(): number { return 5; }
 export function unlockChallengeTier(_tierIndex: number): void { /* all tiers already unlocked */ }
+
+// ── Earned Challenge Items ─────────────────────────────────────────────────
+// Global store that tracks which challenge-board items a player has ever
+// claimed across all journeys, so they can be offered at character creation.
+const EARNED_ITEMS_KEY = 'er-challenge-items-v1';
+
+export function getEarnedChallengeItemIds(): string[] {
+  try { return JSON.parse(localStorage.getItem(EARNED_ITEMS_KEY) ?? '[]') as string[]; } catch { return []; }
+}
+
+export function addEarnedChallengeItem(itemId: string): void {
+  const earned = getEarnedChallengeItemIds();
+  if (!earned.includes(itemId)) {
+    earned.push(itemId);
+    try { localStorage.setItem(EARNED_ITEMS_KEY, JSON.stringify(earned)); } catch { /* storage full */ }
+  }
+}
 
 export function getUnlockedTier(): ChallengeTier {
   return CHALLENGE_TIERS[getUnlockedTierIndex()];
