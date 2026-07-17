@@ -2884,7 +2884,7 @@ export const TIER_WAVE_SEQUENCES: Record<string, string[]> = {
   gold:     ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final'],
   platinum: ['challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final', 'echo_warden', 'ring_boss'],
   diamond:  ['challenge_w3', 'challenge_w4', 'challenge_final', 'archivist', 'echo_warden', 'ring_boss', 'echo_warden'],
-  color:    ['challenge_w3', 'challenge_w4', 'challenge_final', 'archivist', 'echo_warden', 'ring_boss', 'child_void_kid', 'echo_warden'],
+  color:    ['challenge_w3', 'challenge_w4', 'challenge_final', 'archivist', 'void_sentinel', 'echo_warden', 'ring_boss', 'boss', 'child_void_kid', 'echo_warden'],
 };
 
 export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: number; y: number }[] = [
@@ -2980,4 +2980,5 @@ export const INITIAL_STATE: GameStateData = {
   challengeResult: null,
   challengeResultMenuIndex: 0,
   extrasState: { menuIndex: 0, subScreen: 'menu' as const, codexScroll: 0 },
+  lastBattleEndType: null,
 };

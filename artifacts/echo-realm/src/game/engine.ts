@@ -287,6 +287,9 @@ export function updateGame(state: GameStateData) {
       removeInventoryItem(state, second);
       addInventoryItem(state, chosenId);
       state.player.flags['tomes_blessing_used'] = true;
+      if (awardAchievement('ach_tomes_blessing')) {
+        state.messageStack.push({ text: "📖 Achievement: Tome's Grace", timer: 180 });
+      }
       const newSlot = state.player.inventory.length - 1;
       const itemName = ITEMS[chosenId]?.name ?? chosenId;
       state.uiMessage = `Forged: ${itemName}! Choose an item to enchant.`; state.uiMessageTimer = 150;
@@ -835,7 +838,27 @@ export function updateGame(state: GameStateData) {
     if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
       const cr = state.challengeResult!;
       if (state.challengeResultMenuIndex === 0) {
-        // ── RERUN: strip player again and restart the same tier ──
+        // ── RERUN: spin the item pool first — you still earn something each run ──
+        const _rerunTier = CHALLENGE_TIERS.find(t => t.name === cr.tierName);
+        if (_rerunTier && state.challengeSnapshot) {
+          const _rerunItemId = pickRandomChallengeItem(_rerunTier);
+          const _snapInv = state.challengeSnapshot.player.inventory;
+          const _isDupRerun = _snapInv.includes(_rerunItemId);
+          if (_isDupRerun) {
+            const _ev = ITEMS[_rerunItemId]?.price ?? 50;
+            state.challengeSnapshot.player.echoes += _ev;
+            state.messageStack.push({ text: `Rerun reward: +${_ev} Echoes (duplicate)`, timer: 240 });
+          } else {
+            _snapInv.push(_rerunItemId);
+            state.challengeSnapshot.player.enchantedSlots.push(null);
+            addEarnedChallengeItem(_rerunItemId);
+            state.messageStack.push({ text: `Rerun reward: +${ITEMS[_rerunItemId]?.name ?? _rerunItemId}`, timer: 240, tier: ITEMS[_rerunItemId]?.tier });
+          }
+          if (_rerunItemId === 'ch_creed_emblem' && awardAchievement('ach_creed_emblem')) {
+            state.messageStack.push({ text: '🌈 Achievement: Chromatic Keeper!', timer: 240 });
+          }
+        }
+        // ── Strip player again and restart the same tier ──
         resetPlayerForChallenge(state);
         if (state.challengeSnapshot) {
           state.player.quests = JSON.parse(JSON.stringify(state.challengeSnapshot.player.quests));
@@ -892,6 +915,21 @@ export function updateGame(state: GameStateData) {
   }
 
   // ── OVERWORLD ─────────────────────────────────────────────────────
+  // Passive achievement checks (run each overworld frame)
+  {
+    const _eq = state.player.equipment as Record<string, string | null>;
+    if (Object.values(_eq).some(id => id && id.startsWith('ch_')) && awardAchievement('ach_challenge_slot')) {
+      state.messageStack.push({ text: '⚡ Achievement: Trial Bearer', timer: 180 });
+    }
+    // Easter egg achievements: fire when flags are present
+    if (state.player.flags['crestfall_egg_done'] && awardAchievement('ach_crestfall_egg')) {
+      state.messageStack.push({ text: '🏙 Achievement: City Secret', timer: 180 });
+    }
+    if ((state.player.flags['morthus_ending_seen'] || state.player.flags['ashfall_egg_done']) && awardAchievement('ach_ashfall_egg')) {
+      state.messageStack.push({ text: '🔥 Achievement: Ring of Secrets', timer: 180 });
+    }
+  }
+
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); return; }
   if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; markQuestsSeen(state); return; }
@@ -927,45 +965,64 @@ export function updateGame(state: GameStateData) {
   if (state.challengeAttempt && !state.battle && state.mapId === 'CHALLENGE_ARENA') {
     const ca = state.challengeAttempt;
     if (ca.waveLaunched && !state.pendingEncounter) {
-      // Wave just finished — advance counter
-      const waves = TIER_WAVE_SEQUENCES[ca.tierName] ?? [];
-      const nextWave = ca.wave + 1;
-      if (nextWave < waves.length) {
-        ca.wave = nextWave;
+      // Fled — reset wave so player can speak to keeper and try again
+      if (state.lastBattleEndType === 'FLED') {
         ca.waveLaunched = false;
-        state.uiMessage = `Wave ${nextWave} cleared! Speak to the Keeper for the next trial.`;
+        state.uiMessage = 'You fled! Speak to the Keeper to attempt this wave again.';
         state.uiMessageTimer = 180;
       } else {
-        // All waves cleared — award item, handle duplicates via snapshot
-        const tier = CHALLENGE_TIERS.find(t => t.name === ca.tierName);
-        if (tier) {
-          const timeSeconds = (state.frameCount - ca.startFrame) / 60;
-          const itemId = pickRandomChallengeItem(tier);
-          const snapshotInv = state.challengeSnapshot?.player.inventory ?? [];
-          const isDuplicate = snapshotInv.includes(itemId);
-          if (isDuplicate) {
-            // Duplicate → grant echoes into the snapshot (returned on Return)
-            const echoVal = ITEMS[itemId]?.price ?? 50;
-            if (state.challengeSnapshot) {
-              state.challengeSnapshot.player.echoes += echoVal;
+        // Wave cleared (defeated or remembered) — advance counter
+        const waves = TIER_WAVE_SEQUENCES[ca.tierName] ?? [];
+        const nextWave = ca.wave + 1;
+        if (nextWave < waves.length) {
+          ca.wave = nextWave;
+          ca.waveLaunched = false;
+          state.uiMessage = `Wave ${nextWave} cleared! Speak to the Keeper for the next trial.`;
+          state.uiMessageTimer = 180;
+        } else {
+          // All waves cleared — award item, handle duplicates via snapshot
+          const tier = CHALLENGE_TIERS.find(t => t.name === ca.tierName);
+          if (tier) {
+            const timeSeconds = (state.frameCount - ca.startFrame) / 60;
+            const itemId = pickRandomChallengeItem(tier);
+            const snapshotInv = state.challengeSnapshot?.player.inventory ?? [];
+            const isDuplicate = snapshotInv.includes(itemId);
+            if (isDuplicate) {
+              // Duplicate → grant echoes into the snapshot (returned on Return)
+              const echoVal = ITEMS[itemId]?.price ?? 50;
+              if (state.challengeSnapshot) {
+                state.challengeSnapshot.player.echoes += echoVal;
+              }
+            } else {
+              // New item — add to snapshot inventory so it's there on Return
+              if (state.challengeSnapshot) {
+                state.challengeSnapshot.player.inventory.push(itemId);
+                state.challengeSnapshot.player.enchantedSlots.push(null);
+              }
+              addEarnedChallengeItem(itemId);
             }
-          } else {
-            // New item — add to snapshot inventory so it's there on Return
+            state.player.flags[`ch_claimed_${tier.name}`] = true;
             if (state.challengeSnapshot) {
-              state.challengeSnapshot.player.inventory.push(itemId);
-              state.challengeSnapshot.player.enchantedSlots.push(null);
+              state.challengeSnapshot.player.flags[`ch_claimed_${tier.name}`] = true;
             }
-            addEarnedChallengeItem(itemId);
+            // Award challenge tier achievement
+            const _tierAchMap: Record<string, string> = {
+              bronze: 'ach_tier_bronze', silver: 'ach_tier_silver', gold: 'ach_tier_gold',
+              platinum: 'ach_tier_platinum', diamond: 'ach_tier_diamond', color: 'ach_tier_color',
+            };
+            if (_tierAchMap[tier.name] && awardAchievement(_tierAchMap[tier.name])) {
+              state.messageStack.push({ text: `🏆 Achievement: ${tier.displayName} Trial!`, timer: 240 });
+            }
+            // Creed emblem achievement
+            if (itemId === 'ch_creed_emblem' && awardAchievement('ach_creed_emblem')) {
+              state.messageStack.push({ text: '🌈 Achievement: Chromatic Keeper!', timer: 240 });
+            }
+            state.challengeResult = { timeSeconds, itemId, tierName: tier.name, isDuplicate };
+            state.challengeResultMenuIndex = 0;
+            state.mode = GameMode.CHALLENGE_RESULT;
           }
-          state.player.flags[`ch_claimed_${tier.name}`] = true;
-          if (state.challengeSnapshot) {
-            state.challengeSnapshot.player.flags[`ch_claimed_${tier.name}`] = true;
-          }
-          state.challengeResult = { timeSeconds, itemId, tierName: tier.name, isDuplicate };
-          state.challengeResultMenuIndex = 0;
-          state.mode = GameMode.CHALLENGE_RESULT;
+          state.challengeAttempt = null;
         }
-        state.challengeAttempt = null;
       }
     }
   }
@@ -1027,6 +1084,10 @@ export function updateGame(state: GameStateData) {
             // Never register the Challenge Arena as a discovered transit point
             if (exit.mapId !== 'CHALLENGE_ARENA') {
               state.player.flags['discovered_' + exit.mapId] = true;
+              // Secret room discovery achievement
+              if (exit.mapId === 'SR' && awardAchievement('ach_secret_room')) {
+                state.messageStack.push({ text: '🗝 Achievement: Off the Map', timer: 180 });
+              }
             }
             state.adjacentInteractable = null;
           }
@@ -1124,5 +1185,6 @@ function startBattle(state: GameStateData, enemy: EnemyData) {
     voidWard: _sk.includes('echo_legacy'),
     flags: {},
     poisonDmg: 0, poisonTurns: 0, burnDmg: 0,
+    skillCooldowns: {},
   };
 }

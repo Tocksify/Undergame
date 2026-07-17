@@ -35,6 +35,21 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'ach_bestiary_full',     name: 'Chronicler',         desc: 'Encounter every enemy type 3+ times.',          icon: '👁' },
   // ── Wealth ──
   { id: 'ach_rich',              name: 'Echo Hoarder',       desc: 'Accumulate 500 Echoes at once.',                icon: '💰' },
+  // ── Collector / Secrets ──
+  { id: 'ach_creed_emblem',      name: 'Chromatic Keeper',   desc: 'Obtain the Creed Emblem — the rarest challenge reward.',        icon: '🌈' },
+  { id: 'ach_secret_room',       name: 'Off the Map',        desc: 'Discover the South Road, a hidden path few Keepers ever find.', icon: '🗝' },
+  { id: 'ach_crestfall_egg',     name: 'City Secret',        desc: 'Uncover the hidden easter egg buried in Crestfall City.',       icon: '🏙' },
+  { id: 'ach_ashfall_egg',       name: 'Ring of Secrets',    desc: 'Complete the hidden sequence in Ashfall Ring.',                 icon: '🔥' },
+  // ── Special actions ──
+  { id: 'ach_tomes_blessing',    name: "Tome's Grace",       desc: "Use the Tome's Blessing to craft a custom enchantment.",        icon: '📖' },
+  { id: 'ach_challenge_slot',    name: 'Trial Bearer',       desc: 'Equip a Challenge Board item in a gear slot for the first time.', icon: '⚡' },
+  // ── Challenge tiers ──
+  { id: 'ach_tier_bronze',       name: 'Bronze Trial',       desc: 'Complete the Bronze tier challenge.',                           icon: '🥉' },
+  { id: 'ach_tier_silver',       name: 'Silver Trial',       desc: 'Complete the Silver tier challenge.',                           icon: '🥈' },
+  { id: 'ach_tier_gold',         name: 'Gold Trial',         desc: 'Complete the Gold tier challenge.',                             icon: '🥇' },
+  { id: 'ach_tier_platinum',     name: 'Platinum Trial',     desc: 'Complete the Platinum tier challenge.',                         icon: '💎' },
+  { id: 'ach_tier_diamond',      name: 'Diamond Trial',      desc: 'Complete the Diamond tier challenge.',                          icon: '✦' },
+  { id: 'ach_tier_color',        name: 'The Color Rite',     desc: 'Complete the Color trial — the ultimate challenge.',            icon: '🌈' },
 ];
 
 const STORE_KEY = 'er-achievements';

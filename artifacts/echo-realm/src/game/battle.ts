@@ -252,14 +252,14 @@ export function handleBattleInput(state: GameStateData) {
         // ── Post-hit skill procs (PERFECT or GOOD only) ───────────────
         if (hitType !== 'MISS') {
           const procMsgs: string[] = [];
-          // void_drain: PERFECT hits heal 4 HP
-          if (hitType === 'PERFECT' && _skills.includes('void_drain')) {
+          // void_drain: PERFECT hits heal 4 HP (CD 3 turns)
+          if (hitType === 'PERFECT' && _skills.includes('void_drain') && !b.skillCooldowns['void_drain']) {
             const healed = Math.min(4, state.player.maxHp - state.player.hp);
-            if (healed > 0) { state.player.hp += healed; procMsgs.push(`Void Drain +${healed} HP.`); }
+            if (healed > 0) { state.player.hp += healed; procMsgs.push(`Void Drain +${healed} HP.`); b.skillCooldowns['void_drain'] = 3; }
           }
-          // void_strike: 20% silence on PERFECT
-          if (hitType === 'PERFECT' && _skills.includes('void_strike') && !b.flags.silenced && Math.random() < 0.20) {
-            b.flags.silenced = true; procMsgs.push('Void silences enemy!');
+          // void_strike: 20% silence on PERFECT (CD 3 turns)
+          if (hitType === 'PERFECT' && _skills.includes('void_strike') && !b.flags.silenced && !b.skillCooldowns['void_strike'] && Math.random() < 0.20) {
+            b.flags.silenced = true; procMsgs.push('Void silences enemy!'); b.skillCooldowns['void_strike'] = 3;
           }
           // Null Memory hybrid: PERFECT FORGET always silences (void ≥2 + echo ≥2)
           if (hitType === 'PERFECT' && !b.flags.silenced) {
@@ -267,12 +267,12 @@ export function handleBattleInput(state: GameStateData) {
             const _eC = _skills.filter(s => s.startsWith('echo_')).length;
             if (_vC >= 2 && _eC >= 2) { b.flags.silenced = true; procMsgs.push('Null Memory silences!'); }
           }
-          // void_herald: Weaken on every hit
-          if (_skills.includes('void_herald')) {
-            b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('Void Weaken −2 ATK.');
+          // void_herald: Weaken on every hit (CD 2 turns)
+          if (_skills.includes('void_herald') && !b.skillCooldowns['void_herald']) {
+            b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('Void Weaken −2 ATK.'); b.skillCooldowns['void_herald'] = 2;
           }
-          // chroma_strike: PERFECT hit applies random status
-          if (hitType === 'PERFECT' && _skills.includes('chroma_strike')) {
+          // chroma_strike: PERFECT hit applies random status (CD 3 turns)
+          if (hitType === 'PERFECT' && _skills.includes('chroma_strike') && !b.skillCooldowns['chroma_strike']) {
             const _chromaC = _skills.filter(s => s.startsWith('chroma_')).length;
             const _emberC = _skills.filter(s => s.startsWith('ember_')).length;
             const statusPool: string[] = ['confuse', 'freeze', 'burn', 'weaken'];
@@ -296,6 +296,7 @@ export function handleBattleInput(state: GameStateData) {
             if (_vC2 >= 2 && _chromaC >= 2) {
               b.enemy.atk = Math.max(1, b.enemy.atk - 2); procMsgs.push('[Prismatic Void: −2 ATK]');
             }
+            b.skillCooldowns['chroma_strike'] = 3;
           }
 
           // ── Weapon enchant procs ────────────────────────────────────
@@ -374,6 +375,10 @@ export function updateBattlePhase(state: GameStateData) {
       }
     }
     if (b.timer === 0 && b.phase === 'ACTION') {
+      // Decrement passive cooldowns each player turn
+      for (const k of Object.keys(b.skillCooldowns)) {
+        if (b.skillCooldowns[k] > 0) b.skillCooldowns[k]--;
+      }
       b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null;
     }
   } else if (b.phase === 'DODGE') {
@@ -386,14 +391,15 @@ export function updateBattlePhase(state: GameStateData) {
       if (dx * dx + dy * dy < 100) {
         if (state.player.invincibility <= 0) {
           const _sk = state.player.learnedSkills ?? [];
-          // Chromatic Veil: 15% chance to auto-dodge
-          if (_sk.includes('chroma_veil') && Math.random() < 0.15) {
+          // Chromatic Veil: 15% chance to auto-dodge (CD 2 turns)
+          if (_sk.includes('chroma_veil') && !b.skillCooldowns['chroma_veil'] && Math.random() < 0.15) {
             state.player.invincibility = 8; // brief grace period
+            b.skillCooldowns['chroma_veil'] = 2;
           } else {
-            // Echo Armor: 25% chance to fully block
-            if (_sk.includes('echo_armor') && Math.random() < 0.25) {
+            // Echo Armor: 25% chance to fully block (CD 2 turns)
+            if (_sk.includes('echo_armor') && !b.skillCooldowns['echo_armor'] && Math.random() < 0.25) {
               state.player.invincibility = 15;
-              b.actionMsg = 'Memory Armor blocked the hit!';
+              b.actionMsg = 'Memory Armor blocked the hit!'; b.skillCooldowns['echo_armor'] = 2;
             } else {
               const shieldBlock = getShieldBlockBonus(state);
               // void_herald: Void Ward blocks 100% (instead of 50%)
@@ -440,6 +446,10 @@ export function updateBattlePhase(state: GameStateData) {
         b.actionMsg = "You are stunned! The enemy seizes the moment!";
         b.phase = 'ACTION'; b.timer = 0;
       } else {
+        // Decrement passive cooldowns after each dodge phase (one full turn)
+        for (const k of Object.keys(b.skillCooldowns)) {
+          if (b.skillCooldowns[k] > 0) b.skillCooldowns[k]--;
+        }
         b.phase = 'MENU'; b.menuIndex = 0; b.actionMsg = null;
       }
     }
@@ -712,5 +722,6 @@ function endBattle(state: GameStateData) {
       pushMessages(state, ['The Ringkeeper is remembered no more.', '+Tomes Blessing'], ITEMS['tomes_blessing']?.tier);
     }
   }
+  state.lastBattleEndType = b.endType ?? null;
   state.battle = null;
 }

@@ -1,5 +1,5 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, ENEMIES, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT, EQUIP_SLOTS, getWeaponAtkBonus, getArmorDefBonus, RECIPES } from './constants';
+import { MAPS, ITEMS, ENEMIES, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT, EQUIP_SLOTS, getWeaponAtkBonus, getArmorDefBonus, RECIPES, TIER_WAVE_SEQUENCES } from './constants';
 import { ACHIEVEMENTS as ACH_DEFS, getEarnedAchievementIds } from '../achievementStore';
 import { getGlobalCodex } from '../codexStore';
 import { QUESTS } from './quests';
@@ -1075,12 +1075,37 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     });
   }
 
+  // ── Passive skill cooldown display (top-right) ──────────────────────────
+  {
+    const _pSkills = state.player.learnedSkills ?? [];
+    const _cdDefs = [
+      { id: 'void_drain',    label: 'V.Drain'  },
+      { id: 'void_strike',   label: 'V.Strike' },
+      { id: 'void_herald',   label: 'V.Herald' },
+      { id: 'chroma_strike', label: 'C.Strike' },
+      { id: 'echo_armor',    label: 'E.Armor'  },
+      { id: 'chroma_veil',   label: 'C.Veil'   },
+    ].filter(cs => _pSkills.includes(cs.id));
+    if (_cdDefs.length > 0) {
+      ctx.font = 'bold 9px monospace'; ctx.textAlign = 'right';
+      let cdY = 36;
+      ctx.fillStyle = '#332244';
+      ctx.fillText('PASSIVES', W - 6, cdY); cdY += 13;
+      for (const cs of _cdDefs) {
+        const cd = b.skillCooldowns?.[cs.id] ?? 0;
+        ctx.fillStyle = cd === 0 ? '#33bb55' : '#cc7722';
+        ctx.fillText(`${cs.label}: ${cd === 0 ? 'READY' : `${cd}t`}`, W - 6, cdY);
+        cdY += 12;
+      }
+    }
+  }
+
   const BOX = { x: 234, y: 310, w: 300, h: 195 };
   pixelBox(ctx, BOX.x, BOX.y, BOX.w, BOX.h, '#000000', C.white, 3);
 
   if (b.phase === 'MENU') {
     ctx.fillStyle = C.silver; ctx.font = '13px monospace'; ctx.textAlign = 'center';
-    drawWrappedText(ctx, b.actionMsg || b.enemy.flavor, W / 2, 280, 500, 18);
+    drawWrappedText(ctx, b.actionMsg || b.enemy.flavor, W / 2, 280, BOX.w - 20, 18);
     const opts = ['REMEMBER', 'FORGET', 'ACT', 'ITEMS', 'FLEE'];
     ctx.textAlign = 'left'; ctx.font = 'bold 15px monospace';
     opts.forEach((opt, i) => {
@@ -1134,8 +1159,8 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillStyle = C.white; ctx.font = '12px monospace'; ctx.textAlign = 'left';
     ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, BOX.x + 8, BOX.y + BOX.h - 6);
   } else if (b.phase === 'ACTION' || b.phase === 'END') {
-    ctx.fillStyle = C.light; ctx.font = '15px monospace'; ctx.textAlign = 'center';
-    drawWrappedText(ctx, b.actionMsg || '...', W / 2, 390, 460, 24);
+    ctx.fillStyle = C.light; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    drawWrappedText(ctx, b.actionMsg || '...', W / 2, 370, BOX.w - 20, 20);
     if (b.phase === 'END') {
       if (Math.floor(state.frameCount / 20) % 2 === 0) {
         ctx.fillStyle = C.gray; ctx.font = '13px monospace';
@@ -2509,14 +2534,33 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
     }
 
     ctx.font = '10px monospace'; ctx.fillStyle = isDone ? '#334433' : '#554466';
+    const _tierWaves = TIER_WAVE_SEQUENCES[selTier.name] ?? [];
     const subLine = isDone
       ? "You've completed this tier's challenge this journey."
-      : 'Beat all 5 trial waves — you earn one reward at random based on the chances below.';
+      : `Beat all ${_tierWaves.length} trial waves — earn one reward at random based on the chances below.`;
     drawWrappedText(ctx, subLine, poolX, 136, poolW, 14);
 
+    // ── Wave list ────────────────────────────────────────────────────
+    let waveListEndY = 153;
+    if (_tierWaves.length > 0) {
+      ctx.font = 'bold 10px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = isDone ? '#2a2a3a' : '#7755aa';
+      ctx.fillText(`WAVES (${_tierWaves.length}):`, poolX, waveListEndY);
+      waveListEndY += 13;
+      ctx.font = '10px monospace';
+      _tierWaves.forEach((wId, wi) => {
+        const eName = ENEMIES[wId]?.name ?? wId;
+        const eColor = isDone ? '#2a2040' : (ENEMIES[wId]?.color ?? '#9988bb');
+        ctx.fillStyle = eColor;
+        ctx.fillText(`${wi + 1}. ${eName}`, poolX + 6, waveListEndY);
+        waveListEndY += 12;
+      });
+      waveListEndY += 4;
+    }
+
     // Pool items list
-    const poolRowH = 62;
-    const poolTop = 164;
+    const poolRowH = 52;
+    const poolTop = waveListEndY;
     const totalChance = selTier.pool.reduce((s, p) => s + p.chance, 0);
 
     selTier.pool.forEach((item, pi) => {
@@ -2534,24 +2578,24 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
       // Item name
       ctx.font = '13px monospace'; ctx.textAlign = 'left';
       ctx.fillStyle = isDone ? '#3a3a4a' : '#ccbbee';
-      ctx.fillText(item.label, poolX + 2, py + 16);
+      ctx.fillText(item.label, poolX + 2, py + 15);
 
       // Tier tag
       if (itemData) {
         ctx.font = '10px monospace'; ctx.textAlign = 'right';
         ctx.fillStyle = isDone ? '#2a2a36' : tc;
-        ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, poolX + poolW - 4, py + 16);
+        ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, poolX + poolW - 4, py + 15);
       }
 
       // Chance
       ctx.font = 'bold 11px monospace'; ctx.textAlign = 'right';
       ctx.fillStyle = isDone ? '#2a3a2a' : '#88dd66';
-      ctx.fillText(`${pct}%`, poolX + poolW - 4, py + 32);
+      ctx.fillText(`${pct}%`, poolX + poolW - 4, py + 30);
 
       // Description (wrapped)
       ctx.font = '10px monospace'; ctx.textAlign = 'left';
       ctx.fillStyle = isDone ? '#252530' : '#665577';
-      drawWrappedText(ctx, item.desc, poolX + 2, py + 32, poolW - 40, 14);
+      drawWrappedText(ctx, item.desc, poolX + 2, py + 30, poolW - 40, 12);
     });
 
     // Attempt / done CTA

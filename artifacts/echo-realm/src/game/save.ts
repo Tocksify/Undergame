@@ -158,6 +158,7 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
         voidWard: false,
         flags: { ...saved.battle.flags },
         poisonDmg: 0, poisonTurns: 0, burnDmg: 0,
+        skillCooldowns: {},
       };
     }
   }

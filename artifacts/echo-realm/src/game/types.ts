@@ -159,6 +159,8 @@ export interface BattleState {
   poisonDmg: number;    // > 0 while poisoned; damage per ACTION phase
   poisonTurns: number;  // turns remaining for poison
   burnDmg: number;      // > 0 while burning; doubles each turn (cap 32)
+  // ── Passive skill cooldowns (turns remaining) ──────────────────────────────
+  skillCooldowns: Record<string, number>;
 }
 
 export interface GameStateData {
@@ -301,6 +303,9 @@ export interface GameStateData {
   endLegacyStep: number;
   // Set by engine when the player confirms slot erasure; Game.tsx calls onDeleteLegacy.
   deleteSlotRequested: boolean;
+  // Tracks how the most recent battle ended — used by challenge wave logic to
+  // prevent fleeing from counting as a wave clear.
+  lastBattleEndType: 'DEFEATED' | 'REMEMBERED' | 'FLED' | null;
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player
