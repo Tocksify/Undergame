@@ -5,6 +5,7 @@ import { getGlobalCodex } from '../codexStore';
 import { QUESTS } from './quests';
 import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, drawHair, drawSprite } from './npcAppearance';
 import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, HYBRID_BONUSES, getActiveHybrids, canLearnSkill, CHROMA_HUES } from './skillTree';
+import { CHALLENGE_TIERS, getUnlockedTierIndex } from '../challengeStore';
 
 // ── NOIR 8-BIT PALETTE ──────────────────────────────────────────────
 const C = {
@@ -333,6 +334,16 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     renderAchievements(ctx, state); drawScanlines(ctx); return;
   }
 
+  // ── CHALLENGE SELECT ──────────────────────────────────────────────
+  if (state.mode === GameMode.CHALLENGE_SELECT) {
+    renderChallengeSelect(ctx, state); drawScanlines(ctx); return;
+  }
+
+  // ── EXTRAS ────────────────────────────────────────────────────────
+  if (state.mode === GameMode.EXTRAS) {
+    renderExtras(ctx, state); drawScanlines(ctx); return;
+  }
+
   // ── OVERWORLD ──────────────────────────────────────────────────────
   const map = MAPS[state.mapId];
   const camX = Math.max(0, Math.min(state.player.x - W / 2 + TILE_SIZE / 2, map.width * TILE_SIZE - W));
@@ -422,6 +433,7 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     else if (int.type === 'NPC' && int.npc.type === 'SHOP') label = '[SPACE] - Shop';
     else if (int.type === 'NPC' && int.npc.type === 'HEAL') label = '[SPACE] - Rest';
     else if (int.type === 'NPC' && int.npc.type === 'BOSS') label = '[SPACE] - ???';
+    else if (int.type === 'NPC' && int.npc.type === 'CHALLENGE') label = '[SPACE] - Challenge Board';
 
     ctx.font = 'bold 11px monospace';
     const tw = ctx.measureText(label).width;
@@ -1108,23 +1120,24 @@ function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, 
 // ── MENU ───────────────────────────────────────────────────────────
 function renderMenu(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, H);
-  pixelBox(ctx, 274, 140, 220, 250, C.black, C.white, 3);
+  pixelBox(ctx, 274, 130, 220, 308, C.black, C.white, 3);
   ctx.fillStyle = C.silver; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('MENU', W / 2, 166);
+  ctx.fillText('MENU', W / 2, 156);
   ctx.strokeStyle = C.dim; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(290, 174); ctx.lineTo(474, 174); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(290, 164); ctx.lineTo(474, 164); ctx.stroke();
   const opts = [
     'Resume', 'Inventory', 'Quest Log',
     state.meta.isGuest ? 'Save (login req.)' : 'Save Game',
     state.meta.isGuest ? 'Quit to Title' : 'Save & Quit',
     'Exit to Title',
     'Bestiary [B]',
+    'Extras',
   ];
   ctx.textAlign = 'left'; ctx.font = '14px monospace';
   opts.forEach((opt, i) => {
     const sel = state.menuIndex === i;
     ctx.fillStyle = sel ? C.white : C.dim;
-    ctx.fillText((sel ? '> ' : '  ') + opt, 300, 200 + i * 28);
+    ctx.fillText((sel ? '> ' : '  ') + opt, 300, 192 + i * 28);
   });
 }
 
@@ -2201,104 +2214,344 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillText('[UP/DOWN] select  |  [SPACE] forge & enchant  |  [X] cancel', W / 2, H - 96);
 }
 
-// ── BESTIARY / CODEX (B key) — 3-column grid layout ──────────────────
+// ── BESTIARY / CODEX (B key) — row layout ────────────────────────────
 function renderBestiary(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 60, 50, W - 120, H - 100, '#050510', '#8888cc', 3);
 
-  // Title
   ctx.fillStyle = '#aaaaee'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
   ctx.fillText('CODEX', W / 2, 86);
   ctx.fillStyle = '#444466'; ctx.font = '11px monospace';
-  ctx.fillText('3 encounters unlock an enemy\'s traits  ·  Global — persists across all characters', W / 2, 104);
+  ctx.fillText('3 encounters reveal an enemy\'s traits  ·  Global — persists across all characters', W / 2, 104);
   ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(80, 114); ctx.lineTo(W - 80, 114); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(80, 113); ctx.lineTo(W - 80, 113); ctx.stroke();
 
-  // Merge global codex into view (read-only — actual merge happens on load)
   const globalCodex = getGlobalCodex();
   const getKills = (id: string) => Math.max(state.player.bestiary[id] ?? 0, globalCodex[id] ?? 0);
-
   const enemyIds = Object.keys(ENEMIES);
-  const COLS = 3;
-  const cellW = Math.floor((W - 140) / COLS);
-  const cellH = 60;
-  const gridLeft = 80;
-  const listTop = 126;
-  const listBottom = H - 116;
-  const maxRows = Math.floor((listBottom - listTop) / cellH);
-  const totalRows = Math.ceil(enemyIds.length / COLS);
-  const maxScroll = Math.max(0, totalRows - maxRows);
-  state.bestiaryScroll = Math.min(maxScroll, Math.max(0, state.bestiaryScroll));
-  const rowOffset = state.bestiaryScroll;
 
-  // ── Selected enemy detail panel at bottom ─
-  const selId = enemyIds[state.bestiaryScroll * COLS] ?? null; // first visible row, col 0 — not a cursor, just lore
+  const rowH = 42;
+  const listLeft = 80; const listTop = 123;
+  const listRight = W - 80; const listBottom = H - 108;
+  const rowW = listRight - listLeft;
+  const maxVis = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, enemyIds.length - maxVis);
+  state.bestiaryScroll = Math.min(maxScroll, Math.max(0, state.bestiaryScroll));
+  const scrollOff = state.bestiaryScroll;
 
   ctx.save();
-  ctx.beginPath(); ctx.rect(gridLeft - 4, listTop - 2, W - 140 + 8, listBottom - listTop + 4); ctx.clip();
+  ctx.beginPath(); ctx.rect(listLeft - 2, listTop - 1, rowW + 4, listBottom - listTop + 2); ctx.clip();
 
-  for (let row = 0; row < maxRows; row++) {
-    for (let col = 0; col < COLS; col++) {
-      const idx = (rowOffset + row) * COLS + col;
-      if (idx >= enemyIds.length) break;
-      const id = enemyIds[idx];
-      const enemy = ENEMIES[id];
-      const kills = getKills(id);
-      const encountered = kills > 0;
-      const revealed = kills >= 3;
+  enemyIds.slice(scrollOff, scrollOff + maxVis).forEach((id, vi) => {
+    const enemy = ENEMIES[id];
+    const kills = getKills(id);
+    const encountered = kills > 0;
+    const revealed = kills >= 3;
+    const ry = listTop + vi * rowH;
 
-      const cx = gridLeft + col * cellW;
-      const cy = listTop + row * cellH;
+    // Row background
+    ctx.fillStyle = revealed ? 'rgba(100,100,200,0.07)' : (encountered ? 'rgba(60,60,90,0.05)' : 'transparent');
+    ctx.fillRect(listLeft, ry, rowW, rowH - 2);
+    ctx.strokeStyle = encountered ? '#1e1e3a' : '#111120';
+    ctx.lineWidth = 1; ctx.strokeRect(listLeft, ry, rowW, rowH - 2);
 
-      // Cell background
-      ctx.fillStyle = encountered ? (revealed ? 'rgba(100,100,180,0.08)' : 'rgba(80,80,120,0.06)') : 'rgba(0,0,0,0)';
-      ctx.fillRect(cx, cy + 1, cellW - 4, cellH - 4);
-      ctx.strokeStyle = encountered ? '#2a2a44' : '#151520';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(cx, cy + 1, cellW - 4, cellH - 4);
+    // Revealed accent bar on left
+    if (revealed) { ctx.fillStyle = '#5555aa'; ctx.fillRect(listLeft, ry, 3, rowH - 2); }
+    else if (encountered) { ctx.fillStyle = '#333355'; ctx.fillRect(listLeft, ry, 3, rowH - 2); }
 
-      // Enemy name
-      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
-      ctx.fillStyle = revealed ? '#ccccee' : (encountered ? '#888899' : '#333344');
-      ctx.fillText(encountered ? enemy.name : '??? ??? ???', cx + 6, cy + 18);
+    // Enemy name
+    ctx.textAlign = 'left'; ctx.font = revealed ? 'bold 12px monospace' : '12px monospace';
+    ctx.fillStyle = revealed ? '#ccccee' : (encountered ? '#888899' : '#333344');
+    ctx.fillText(encountered ? enemy.name : '??? ???', listLeft + 10, ry + 15);
 
-      // Kill count
-      ctx.font = '10px monospace';
-      ctx.fillStyle = revealed ? '#88cc99' : (encountered ? '#445566' : '#222233');
-      ctx.fillText(encountered ? `${kills}× encountered` : 'not yet seen', cx + 6, cy + 33);
-
-      // Traits summary (one line if revealed)
-      if (revealed && enemy.resistances) {
-        const parts = Object.entries(enemy.resistances).map(([t, v]) =>
-          v === 0 ? `IMM:${t}` : v >= 2 ? `WEAK:${t}` : `RES:${t}`
-        ).join('  ');
-        ctx.font = '9px monospace'; ctx.fillStyle = '#554466';
-        let trait = parts.slice(0, 28) + (parts.length > 28 ? '…' : '');
-        ctx.fillText(trait, cx + 6, cy + 47);
-      } else if (revealed) {
-        ctx.font = '9px monospace'; ctx.fillStyle = '#334433';
-        ctx.fillText('no special traits', cx + 6, cy + 47);
-      }
+    // HP/ATK stats when revealed
+    if (revealed) {
+      ctx.font = '10px monospace'; ctx.fillStyle = '#445566';
+      ctx.fillText(`HP:${enemy.hp}  ATK:${enemy.atk}  +${enemy.echoes}ec`, listLeft + 10, ry + 30);
     }
-  }
+
+    // Encounter count
+    ctx.textAlign = 'right'; ctx.font = '10px monospace';
+    ctx.fillStyle = revealed ? '#77aa88' : (encountered ? '#445566' : '#222233');
+    ctx.fillText(encountered ? `${kills}× seen` : 'not yet seen', listLeft + 130, ry + 15);
+
+    // Trait badges
+    if (revealed) {
+      let tx = listLeft + 145;
+      if (enemy.resistances) {
+        Object.entries(enemy.resistances).forEach(([t, v]) => {
+          const badge = v === 0 ? `IMM:${t}` : v >= 2 ? `WEAK:${t}` : `RES:${t}`;
+          const bc = v === 0 ? '#aa3333' : v >= 2 ? '#aaaa33' : '#336688';
+          ctx.font = '9px monospace'; ctx.textAlign = 'left';
+          ctx.fillStyle = bc;
+          ctx.fillText(badge, tx, ry + 15);
+          tx += ctx.measureText(badge).width + 8;
+        });
+      } else {
+        ctx.font = '9px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#334433';
+        ctx.fillText('no special traits', listLeft + 145, ry + 15);
+      }
+      // Flavor on second line
+      ctx.font = '9px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#332244';
+      const flav = enemy.flavor.slice(0, 55) + (enemy.flavor.length > 55 ? '…' : '');
+      ctx.fillText(flav, listLeft + 145, ry + 30);
+    }
+  });
+
   ctx.restore();
 
-  // Scroll indicators
-  if (rowOffset > 0) {
-    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
-    ctx.fillText('▲', W / 2, listTop - 6);
-  }
-  if (rowOffset + maxRows < totalRows) {
-    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
-    ctx.fillText('▼', W / 2, listBottom + 8);
-  }
+  if (scrollOff > 0) { ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▲', W/2, listTop - 5); }
+  if (scrollOff + maxVis < enemyIds.length) { ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▼', W/2, listBottom + 6); }
 
-  // Stats footer
   const totalSeen = enemyIds.filter(id => getKills(id) >= 3).length;
   ctx.fillStyle = '#33335a'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
   ctx.fillText(`${totalSeen} / ${enemyIds.length} fully catalogued`, W / 2, H - 100);
   ctx.fillStyle = '#2a2a44'; ctx.font = '11px monospace';
-  ctx.fillText('[↑↓/WS] scroll  |  [B] or [X] close', W / 2, H - 82);
+  ctx.fillText('[↑↓] scroll  |  [B] or [X] close', W / 2, H - 84);
+}
+
+// ── CHALLENGE SELECT (Challenge Board — opens from Challenge Herald NPC) ──
+function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.95)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 40, 40, W - 80, H - 80, '#080814', '#9966ff', 3);
+
+  ctx.fillStyle = '#bb99ff'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('CHALLENGE BOARD', W / 2, 76);
+  ctx.fillStyle = '#443355'; ctx.font = '11px monospace';
+  ctx.fillText('Claim one reward from each unlocked tier  ·  One choice per tier per journey', W / 2, 94);
+  ctx.strokeStyle = '#2a1a44'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, 103); ctx.lineTo(W - 60, 103); ctx.stroke();
+
+  const unlockedIdx = getUnlockedTierIndex();
+  const tiers = CHALLENGE_TIERS;
+  const { tierCursor, poolCursor } = state.challengeSelectState;
+
+  // ── Left panel: tier list ──
+  const tpX = 60; const tpW = 210;
+  const tierListTop = 114; const tierRowH = 50;
+
+  tiers.forEach((tier, i) => {
+    const isUnlocked = i <= unlockedIdx;
+    const isSel = tierCursor === i;
+    const isClaimed = !!state.player.flags[`ch_claimed_${tier.name}`];
+    const ty = tierListTop + i * tierRowH;
+
+    if (isSel) {
+      ctx.fillStyle = isUnlocked ? 'rgba(150,100,255,0.12)' : 'rgba(40,30,70,0.12)';
+      ctx.fillRect(tpX - 2, ty, tpW + 4, tierRowH - 2);
+      ctx.strokeStyle = isUnlocked ? '#6644aa' : '#2a2050'; ctx.lineWidth = 1;
+      ctx.strokeRect(tpX - 2, ty, tpW + 4, tierRowH - 2);
+    }
+
+    ctx.font = isSel ? 'bold 14px monospace' : '13px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = isUnlocked ? tier.color : '#2a2040';
+    ctx.fillText((isSel ? '► ' : '  ') + tier.displayName, tpX + 6, ty + 20);
+
+    ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    if (!isUnlocked) { ctx.fillStyle = '#2a2040'; ctx.fillText('LOCKED', tpX + tpW - 4, ty + 20); }
+    else if (isClaimed) { ctx.fillStyle = '#557744'; ctx.fillText('✓ CLAIMED', tpX + tpW - 4, ty + 20); }
+    else { ctx.fillStyle = '#887733'; ctx.fillText('AVAILABLE', tpX + tpW - 4, ty + 20); }
+
+    ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = isUnlocked ? '#443355' : '#1a1030';
+    const dSlice = tier.desc.slice(0, 28) + (tier.desc.length > 28 ? '…' : '');
+    ctx.fillText(dSlice, tpX + 6, ty + 38);
+  });
+
+  // ── Divider ──
+  const divX = tpX + tpW + 14;
+  ctx.strokeStyle = '#1a0e33'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(divX, 108); ctx.lineTo(divX, H - 72); ctx.stroke();
+
+  // ── Right panel: pool items ──
+  const poolX = divX + 12; const poolW = W - poolX - 52;
+  const selTier = tiers[tierCursor];
+  const isUnlocked = tierCursor <= unlockedIdx;
+
+  if (!isUnlocked) {
+    ctx.fillStyle = '#221133'; ctx.font = '14px monospace'; ctx.textAlign = 'center';
+    const midX = poolX + poolW / 2;
+    ctx.fillText('LOCKED', midX, 200);
+    ctx.fillStyle = '#1a0e28'; ctx.font = '11px monospace';
+    ctx.fillText('Complete the Challenge Arena to unlock.', midX, 224);
+    ctx.fillText('Talk to the Challenge Keeper to begin.', midX, 242);
+  } else if (selTier) {
+    const tierClaimed = !!state.player.flags[`ch_claimed_${selTier.name}`];
+
+    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = selTier.color;
+    ctx.fillText(`${selTier.displayName} Tier Rewards`, poolX, 126);
+    ctx.font = '10px monospace'; ctx.fillStyle = tierClaimed ? '#334433' : '#443355';
+    ctx.fillText(tierClaimed
+      ? "You've already claimed this tier's reward on this journey."
+      : 'Select a reward and press [SPACE] to claim. Choose wisely — one per tier.',
+      poolX, 141);
+
+    const poolRowH = 68;
+    selTier.pool.forEach((item, pi) => {
+      const isSel = poolCursor === pi;
+      const itemData = ITEMS[item.itemId];
+      const py = 154 + pi * poolRowH;
+
+      if (isSel) {
+        ctx.fillStyle = tierClaimed ? 'rgba(20,20,40,0.1)' : 'rgba(130,80,255,0.1)';
+        ctx.fillRect(poolX - 4, py, poolW + 8, poolRowH - 4);
+        ctx.strokeStyle = tierClaimed ? '#222235' : '#7755bb'; ctx.lineWidth = 1;
+        ctx.strokeRect(poolX - 4, py, poolW + 8, poolRowH - 4);
+      }
+
+      const tc = TIER_COLOR[itemData?.tier ?? 'common'] ?? '#888';
+      ctx.font = isSel ? 'bold 13px monospace' : '13px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = tierClaimed ? '#2a2a3a' : (isSel ? '#ddccff' : '#8877aa');
+      ctx.fillText((isSel ? '> ' : '  ') + item.label, poolX + 2, py + 18);
+
+      if (itemData) {
+        ctx.font = '10px monospace'; ctx.textAlign = 'right'; ctx.fillStyle = tc;
+        ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, poolX + poolW - 4, py + 18);
+      }
+
+      ctx.font = '10px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = tierClaimed ? '#1e1e2a' : (isSel ? '#776688' : '#443355');
+      ctx.fillText(item.desc, poolX + 2, py + 34);
+
+      if (itemData) {
+        ctx.fillStyle = tierClaimed ? '#1a1a26' : '#2a1a3a';
+        ctx.fillText(itemData.category.toUpperCase(), poolX + 2, py + 50);
+      }
+
+      ctx.textAlign = 'right';
+      if (tierClaimed) { ctx.fillStyle = '#335533'; ctx.font = '10px monospace'; ctx.fillText('TIER CLAIMED', poolX + poolW - 4, py + 50); }
+      else if (isSel) { ctx.fillStyle = '#997722'; ctx.font = 'bold 10px monospace'; ctx.fillText('[SPACE] CLAIM', poolX + poolW - 4, py + 50); }
+    });
+  }
+
+  // ── Footer ──
+  ctx.strokeStyle = '#1a0e33'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, H - 66); ctx.lineTo(W - 60, H - 66); ctx.stroke();
+  ctx.fillStyle = '#3a2a55'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('[↑↓] select tier  ·  [←→] browse rewards  ·  [SPACE] claim  ·  [X] close', W / 2, H - 48);
+}
+
+// ── EXTRAS ────────────────────────────────────────────────────────────
+function renderChallengeCodex(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.95)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 60, 50, W - 120, H - 100, '#080814', '#9966ff', 3);
+
+  ctx.fillStyle = '#bb99ff'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('CHALLENGE CODEX', W / 2, 86);
+  ctx.fillStyle = '#332244'; ctx.font = '11px monospace';
+  ctx.fillText('Items claimable exclusively through the Challenge Board', W / 2, 104);
+  ctx.strokeStyle = '#1e1035'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(80, 113); ctx.lineTo(W - 80, 113); ctx.stroke();
+
+  const TIER_CLR: Record<string, string> = {
+    bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700',
+    platinum: '#e5e4e2', diamond: '#b9f2ff', void: '#9966ff',
+  };
+
+  // Build codex rows: every item from every tier's pool
+  type CodexEntry = { id: string; tierName: string; tierColor: string };
+  const entries: CodexEntry[] = [];
+  CHALLENGE_TIERS.forEach(tier => {
+    tier.pool.forEach(p => entries.push({ id: p.itemId, tierName: tier.displayName, tierColor: TIER_CLR[tier.name] ?? '#888' }));
+  });
+
+  const rowH = 38; const listLeft = 80; const listTop = 124;
+  const listRight = W - 80; const listBottom = H - 96;
+  const rowW = listRight - listLeft;
+  const maxVis = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, entries.length - maxVis);
+  state.extrasState.codexScroll = Math.min(maxScroll, Math.max(0, state.extrasState.codexScroll));
+  const scrollOff = state.extrasState.codexScroll;
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(listLeft - 2, listTop - 1, rowW + 4, listBottom - listTop + 2); ctx.clip();
+
+  entries.slice(scrollOff, scrollOff + maxVis).forEach((ce, vi) => {
+    const ry = listTop + vi * rowH;
+    const item = ITEMS[ce.id];
+    if (!item) return;
+    const obtained = state.player.inventory.includes(ce.id)
+      || (state.player.equipment as Record<string, string | null>)[item.category as any] === ce.id;
+
+    ctx.fillStyle = obtained ? 'rgba(80,50,160,0.07)' : 'transparent';
+    ctx.fillRect(listLeft, ry, rowW, rowH - 2);
+    ctx.strokeStyle = obtained ? '#1e1244' : '#101020'; ctx.lineWidth = 1;
+    ctx.strokeRect(listLeft, ry, rowW, rowH - 2);
+
+    // Tier color accent bar
+    ctx.fillStyle = ce.tierColor; ctx.fillRect(listLeft, ry, 4, rowH - 2);
+
+    // Item name
+    ctx.font = obtained ? 'bold 12px monospace' : '12px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = obtained ? '#ccbbff' : '#443355';
+    ctx.fillText(item.name, listLeft + 12, ry + 15);
+
+    // Tier source label
+    ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = ce.tierColor;
+    const tLabel = ce.tierName + ' tier';
+    ctx.fillText(tLabel, listLeft + 12, ry + 30);
+
+    // Item tier badge
+    ctx.font = '10px monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = TIER_COLOR[item.tier] ?? '#888';
+    ctx.fillText(`[${(TIER_LABEL[item.tier] ?? item.tier).toUpperCase()}]`, listLeft + rowW - 4, ry + 15);
+
+    // Obtained badge
+    if (obtained) {
+      ctx.fillStyle = '#557744'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
+      ctx.fillText('✓ OBTAINED', listLeft + rowW - 4, ry + 30);
+    }
+  });
+
+  ctx.restore();
+
+  if (scrollOff > 0) { ctx.fillStyle = '#553377'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▲', W/2, listTop - 5); }
+  if (scrollOff + maxVis < entries.length) { ctx.fillStyle = '#553377'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▼', W/2, listBottom + 5); }
+
+  const obtainedCount = entries.filter(e => {
+    const item = ITEMS[e.id]; if (!item) return false;
+    return state.player.inventory.includes(e.id);
+  }).length;
+  ctx.fillStyle = '#2a1a44'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText(`${obtainedCount} / ${entries.length} obtained this journey`, W / 2, H - 84);
+  ctx.fillStyle = '#1e1235';
+  ctx.fillText('[↑↓] scroll  ·  [X] back', W / 2, H - 68);
+}
+
+function renderExtras(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  if (state.extrasState.subScreen === 'codex') {
+    renderChallengeCodex(ctx, state);
+    return;
+  }
+  // Main Extras menu
+  ctx.fillStyle = 'rgba(0,0,0,0.88)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 240, 180, 288, 188, C.black, '#8888cc', 3);
+
+  ctx.fillStyle = '#aaaaee'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('EXTRAS', W / 2, 212);
+  ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(258, 222); ctx.lineTo(510, 222); ctx.stroke();
+
+  const opts = ['Achievements', 'Challenge Codex', 'Close'];
+  const descs = [
+    'Global achievement tracker — persists across all characters',
+    'View all challenge-board rewards and which you\'ve obtained',
+    'Return to the world',
+  ];
+  ctx.textAlign = 'left'; ctx.font = '14px monospace';
+  opts.forEach((opt, i) => {
+    const sel = state.extrasState.menuIndex === i;
+    ctx.fillStyle = sel ? '#ddddff' : '#555577';
+    ctx.fillText((sel ? '> ' : '  ') + opt, 262, 248 + i * 38);
+    if (sel) {
+      ctx.font = '10px monospace'; ctx.fillStyle = '#33334a';
+      ctx.fillText(descs[i], 278, 263 + i * 38);
+    }
+  });
+
+  ctx.fillStyle = '#2a2a44'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('[↑↓] select  ·  [SPACE] open  ·  [X] close', W / 2, H - 86);
 }
 
 // ── ITEM CRAFT (Crafting Table — GameMode.ITEM_CRAFT) ─────────────────

@@ -276,6 +276,12 @@ export const ITEMS: Record<string, Item> = {
   'leather_hide': { name: 'Leather Hide',    desc: 'Cured hide from forest creatures. Tough and supple.',                         price: 8,  tier: 'common',   category: 'ingredient' },
   'void_dust':    { name: 'Void Dust',       desc: 'Residue left by void creatures. Faintly luminous. Unstable in large amounts.', price: 15, tier: 'uncommon', category: 'ingredient' },
   'herb_bundle':  { name: 'Herb Bundle',     desc: 'Dried herbs from the forest floor. Known for their healing properties.',      price: 10, tier: 'common',   category: 'ingredient' },
+  'void_crystal': { name: 'Void Crystal',   desc: 'A shard of crystallized void energy. Rare and highly reactive in forges.',      price: 25, tier: 'uncommon', category: 'ingredient' },
+  'echo_shard':   { name: 'Echo Shard',     desc: 'A fragment of solidified memory resonance. Vibrates faintly near old ruins.',    price: 30, tier: 'uncommon', category: 'ingredient' },
+  'bone_fragment':{ name: 'Bone Fragment',  desc: 'A chip of bone from a void creature. Denser than it looks.',                    price: 6,  tier: 'common',   category: 'ingredient' },
+  'ember_coal':   { name: 'Ember Coal',     desc: 'Coal from the Ashfall Ring that never fully cooled. Still radiates heat.',       price: 8,  tier: 'common',   category: 'ingredient' },
+  'silver_thread':{ name: 'Silver Thread',  desc: 'Spun from void-silver. Essential for high-quality textile crafts.',              price: 35, tier: 'uncommon', category: 'ingredient' },
+  'memory_dust':  { name: 'Memory Dust',    desc: 'Ground from memory crystals. Potent base for advanced alchemical recipes.',      price: 50, tier: 'rare',     category: 'ingredient' },
   // ── CRAFTED GEAR (primarily obtained by crafting) ──
   'iron_band':    { name: 'Iron Band',       desc: 'A plain iron ring, smoothed at the forge. Modest protection.',                price: 0, tier: 'common',   category: 'ring', def: 1 },
 
@@ -576,6 +582,22 @@ export const ITEMS: Record<string, Item> = {
     price: 0, tier: 'mythic', category: 'enchanted_book',
     enchantData: { compatibleCategories: ['armor'], def: 10, maxHp: 15, autoWard: true, thornDmg: 6 },
   },
+
+  // ── CHALLENGE-EXCLUSIVE ITEMS ── (Only claimable via the Challenge Board herald)
+  'ch_wisp_lantern':    { name: 'Wisp Lantern',           desc: 'A sealed lantern holding a captured Shade Wisp. Glows faintly. Challenge-exclusive.',            price: 0, tier: 'uncommon',  category: 'trinket',  atk: 1, maxHp: 5 },
+  'ch_hollow_draught':  { name: 'Hollow Draught',         desc: "Brewed from a Hollow's last breath. Restores 15 HP and clears confusion. Challenge-exclusive.",   price: 0, tier: 'uncommon',  category: 'consumable', subcategory: 'medical' },
+  'ch_resonance_fork':  { name: 'Resonance Fork',         desc: 'A blade tuned to the frequency of memory itself. Hums near void. Challenge-exclusive.',           price: 0, tier: 'rare',      category: 'weapon',   atk: 5 },
+  'ch_echo_tonic':      { name: 'Echo Tonic',             desc: 'Restores 22 HP. The resonance hum lingers on the tongue. Challenge-exclusive.',                    price: 0, tier: 'rare',      category: 'consumable', subcategory: 'medical' },
+  'ch_keeper_sigil':    { name: "Keeper's Sigil",          desc: 'A sigil worn only by those who survived the arena rites. Challenge-exclusive.',                    price: 0, tier: 'rare',      category: 'trinket',  atk: 2, def: 2, maxHp: 5 },
+  'ch_archive_blade':   { name: 'Archive Blade',          desc: 'A page from the Archive, rolled tight and edged in void-steel. Challenge-exclusive.',              price: 0, tier: 'epic',      category: 'weapon',   atk: 9 },
+  'ch_void_shard_edge': { name: 'Void Shard Edge',        desc: 'Cut from a concentrated void shard. Forgets to stop cutting. Challenge-exclusive.',                price: 0, tier: 'epic',      category: 'weapon',   atk: 12 },
+  'ch_echo_bulwark':    { name: 'Echo Bulwark',           desc: 'Forged from solidified resonance. Blocks 10 flat damage per hit. Challenge-exclusive.',            price: 0, tier: 'epic',      category: 'shield',   block: 10 },
+  'ch_nexus_crown':     { name: 'Nexus Crown',            desc: 'The crown of whatever ruled the Nexus before the silence. Challenge-exclusive.',                   price: 0, tier: 'legendary', category: 'helmet',   def: 5, maxHp: 15 },
+  'ch_oblivion_fang':   { name: 'Oblivion Fang',          desc: 'A blade that forgets what it cuts through. The cut remains. Challenge-exclusive.',                 price: 0, tier: 'legendary', category: 'weapon',   atk: 16 },
+  // Void / Mortus tier — only available at the highest challenge tier
+  'ch_mortus_throne_blade': { name: 'Throne Blade of Mortus', desc: 'The blade that ended the first age. Still hungry. Challenge-exclusive — Mortus tier.',            price: 0, tier: 'mythic', category: 'weapon',  atk: 25 },
+  'ch_mortus_void_mantle':  { name: 'Void Mantle of Mortus',  desc: "The armor of the Void's own herald. Refuses every ending. Challenge-exclusive — Mortus tier.",  price: 0, tier: 'mythic', category: 'armor',   maxHp: 50, def: 10 },
+  'ch_mortus_eye':          { name: 'Eye of Mortus',           desc: 'Preserved from the final witness of the old world. Watches for you. Challenge-exclusive — Mortus tier.', price: 0, tier: 'mythic', category: 'trinket', atk: 8, def: 6, maxHp: 20 },
 };
 
 // Enchantments craftable from scratch via the Tomes Blessing — spans every tier.
@@ -2169,7 +2191,8 @@ export const MAPS: Record<string, any> = {
       { id: 'zara',   x: 6,  y: 12, color: '#dddddd', name: 'Zara',         type: 'SHOP' },
       { id: 'hollow', x: 17, y: 12, color: '#eeeeee', name: 'A Hollow',     type: 'TALK' },
       { id: 'pip',    x: 10, y: 8,  color: '#bbbbbb', name: 'Pip',          type: 'TALK' },
-      { id: 'city_gate_guard', x: 20, y: 8, color: '#aaaaff', name: 'City Messenger', type: 'TALK' },
+      { id: 'city_gate_guard',  x: 20, y: 8,  color: '#aaaaff', name: 'City Messenger',   type: 'TALK' },
+      { id: 'challenge_herald', x: 14, y: 7,  color: '#bb99ff', name: 'Challenge Herald', type: 'CHALLENGE' },
     ],
     chests: [
       { id: 'ch_vh1', flag: 'ch_vh1', x: 12, y: 12, item: 'echoes_30' },
@@ -2881,4 +2904,6 @@ export const INITIAL_STATE: GameStateData = {
   skillLearnedFlash: null,
   itemCraft: { categoryIdx: 0, cursorIndex: 0 },
   achievementsScroll: 0,
+  challengeSelectState: { tierCursor: 0, poolCursor: 0 },
+  extrasState: { menuIndex: 0, subScreen: 'menu' as const, codexScroll: 0 },
 };

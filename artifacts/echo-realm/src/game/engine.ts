@@ -6,6 +6,7 @@ import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
+import { CHALLENGE_TIERS, getUnlockedTierIndex } from '../challengeStore';
 
 export function justPressed(state: GameStateData, key: string) {
   const k = key; const K = key.toUpperCase();
@@ -226,7 +227,7 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.MENU) {
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.menuIndex = Math.max(0, state.menuIndex - 1);
-    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(6, state.menuIndex + 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.menuIndex = Math.min(7, state.menuIndex + 1);
     if (justPressed(state, 'Escape') || justPressed(state, 'x')) state.mode = GameMode.OVERWORLD;
     if (justPressed(state, ' ') || justPressed(state, 'z')) {
       if (state.menuIndex === 0) state.mode = GameMode.OVERWORLD;
@@ -242,6 +243,7 @@ export function updateGame(state: GameStateData) {
       }
       if (state.menuIndex === 5) state.exitRequested = true;
       if (state.menuIndex === 6) { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; }
+      if (state.menuIndex === 7) { state.mode = GameMode.EXTRAS; state.extrasState = { menuIndex: 0, subScreen: 'menu', codexScroll: 0 }; }
     }
     return;
   }
@@ -466,7 +468,9 @@ export function updateGame(state: GameStateData) {
         else if (id === 'tonic')           { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 5);  consumed = true; }
         else if (id === 'greater_crystal') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 25); consumed = true; }
         else if (id === 'elixir')          { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 18); consumed = true; }
-        else if (id === 'memory_salve')    { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 30); if (state.battle) state.battle.flags.confused = false; consumed = true; }
+        else if (id === 'memory_salve')      { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 30); if (state.battle) state.battle.flags.confused = false; consumed = true; }
+        else if (id === 'ch_hollow_draught') { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 15); if (state.battle) state.battle.flags.confused = false; consumed = true; }
+        else if (id === 'ch_echo_tonic')     { state.player.hp = Math.min(state.player.maxHp, state.player.hp + 22); consumed = true; }
         else if (id === 'phoenix_ash') {
           state.player.hp = state.player.maxHp;
           if (state.battle) state.battle.flags.confused = false;
@@ -699,13 +703,67 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
-  // ── ACHIEVEMENTS (A key) ───────────────────────────────────────────
+  // ── ACHIEVEMENTS ───────────────────────────────────────────────────
   if (state.mode === GameMode.ACHIEVEMENTS) {
     if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'a')) {
       state.mode = GameMode.OVERWORLD; return;
     }
     if (justPressed(state, 'ArrowUp')   || justPressed(state, 'w')) state.achievementsScroll = Math.max(0, state.achievementsScroll - 1);
     if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.achievementsScroll++;
+    return;
+  }
+
+  // ── CHALLENGE SELECT (Challenge Board) ────────────────────────────
+  if (state.mode === GameMode.CHALLENGE_SELECT) {
+    const unlockedIdx = getUnlockedTierIndex();
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
+      state.challengeSelectState.tierCursor = Math.max(0, state.challengeSelectState.tierCursor - 1);
+      state.challengeSelectState.poolCursor = 0;
+    }
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
+      state.challengeSelectState.tierCursor = Math.min(CHALLENGE_TIERS.length - 1, state.challengeSelectState.tierCursor + 1);
+      state.challengeSelectState.poolCursor = 0;
+    }
+    const csTier = CHALLENGE_TIERS[state.challengeSelectState.tierCursor];
+    const csUnlocked = state.challengeSelectState.tierCursor <= unlockedIdx;
+    if (csUnlocked && csTier) {
+      if (justPressed(state, 'ArrowLeft')  || justPressed(state, 'a')) state.challengeSelectState.poolCursor = Math.max(0, state.challengeSelectState.poolCursor - 1);
+      if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) state.challengeSelectState.poolCursor = Math.min(csTier.pool.length - 1, state.challengeSelectState.poolCursor + 1);
+      if (justPressed(state, ' ') || justPressed(state, 'z')) {
+        const claimFlag = `ch_claimed_${csTier.name}`;
+        if (!state.player.flags[claimFlag]) {
+          const chosen = csTier.pool[state.challengeSelectState.poolCursor];
+          addInventoryItem(state, chosen.itemId);
+          state.player.flags[claimFlag] = true;
+          const itemName = ITEMS[chosen.itemId]?.name ?? chosen.label;
+          state.uiMessage = `Claimed: ${itemName}!`; state.uiMessageTimer = 240;
+        } else {
+          state.uiMessage = "You've already claimed this tier's reward on this journey."; state.uiMessageTimer = 150;
+        }
+      }
+    }
+    return;
+  }
+
+  // ── EXTRAS ────────────────────────────────────────────────────────
+  if (state.mode === GameMode.EXTRAS) {
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      if (state.extrasState.subScreen !== 'menu') { state.extrasState.subScreen = 'menu'; return; }
+      state.mode = GameMode.OVERWORLD; return;
+    }
+    if (state.extrasState.subScreen === 'menu') {
+      if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.extrasState.menuIndex = Math.max(0, state.extrasState.menuIndex - 1);
+      if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.extrasState.menuIndex = Math.min(2, state.extrasState.menuIndex + 1);
+      if (justPressed(state, ' ') || justPressed(state, 'z')) {
+        if (state.extrasState.menuIndex === 0) { state.mode = GameMode.ACHIEVEMENTS; state.achievementsScroll = 0; }
+        if (state.extrasState.menuIndex === 1) { state.extrasState.subScreen = 'codex'; state.extrasState.codexScroll = 0; }
+        if (state.extrasState.menuIndex === 2) { state.mode = GameMode.OVERWORLD; }
+      }
+    } else if (state.extrasState.subScreen === 'codex') {
+      if (justPressed(state, 'ArrowUp') || justPressed(state, 'w'))   state.extrasState.codexScroll = Math.max(0, state.extrasState.codexScroll - 1);
+      if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.extrasState.codexScroll++;
+    }
     return;
   }
 
@@ -717,7 +775,7 @@ export function updateGame(state: GameStateData) {
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
   if (justPressed(state, 'b'))      { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; return; }
   if (justPressed(state, 'k'))      { state.mode = GameMode.SKILL_TREE; return; }
-  if (justPressed(state, 'a'))      { state.mode = GameMode.ACHIEVEMENTS; state.achievementsScroll = 0; return; }
+  // (Achievements accessible via ESC → Menu → Extras)
 
   const map = MAPS[state.mapId];
 
@@ -804,6 +862,9 @@ export function updateGame(state: GameStateData) {
         // Open the Item Crafting Table UI
         state.itemCraft = { categoryIdx: 0, cursorIndex: 0 };
         state.mode = GameMode.ITEM_CRAFT;
+      } else if (intFound.npc.type === 'CHALLENGE') {
+        state.challengeSelectState = { tierCursor: 0, poolCursor: 0 };
+        state.mode = GameMode.CHALLENGE_SELECT;
       } else {
         state.dialogue.currentNode = getDialogueStartNode(state, intFound.npc.id);
         state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;

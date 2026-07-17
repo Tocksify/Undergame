@@ -19,6 +19,8 @@ export enum GameMode {
   SKILL_TREE,     // 17 - K key: Void/Chromatic/Echo/Ember skill tree
   ITEM_CRAFT,     // 18 - Crafting Table: craft items/gear from ingredients
   ACHIEVEMENTS,   // 19 - A key: global achievement tracker
+  CHALLENGE_SELECT, // 20 - Challenge Board: tier reward picker (via herald NPC)
+  EXTRAS,           // 21 - Extras screen: achievements, challenge codex, etc.
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
@@ -254,6 +256,8 @@ export interface GameStateData {
   // Crafting Table (item/gear crafting, ITEM_CRAFT mode)
   itemCraft: { categoryIdx: number; cursorIndex: number; };
   achievementsScroll: number;
+  challengeSelectState: { tierCursor: number; poolCursor: number; };
+  extrasState: { menuIndex: number; subScreen: 'menu' | 'codex'; codexScroll: number; };
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player

@@ -6,3 +6,4 @@
 - [Echo Realm skill tree](echo-realm-skill-tree.md) — 4 paths (Void/Chromatic/Echo/Ember), 16 skills, 6 hybrids, K key, integration across constants/engine/battle/renderer/save.
 - [Echo Realm GameData stores](echo-realm-gamedata-stores.md) — achievementStore/codexStore/challengeStore: global localStorage stores that survive slot deletions.
 - [Echo Realm item crafting](echo-realm-item-crafting.md) — ITEM_CRAFT mode (18): tab-based crafting table; CRAFT NPC opens it; TOME_CRAFT (enchants) still from inventory use.
+- [Echo Realm challenge board](echo-realm-challenge-board.md) — CHALLENGE_SELECT mode (20), EXTRAS mode (21): challenge_herald NPC in VH (x:14,y:7) opens board; tiers claim via ch_claimed_<name> flags; exclusive items prefixed ch_.
