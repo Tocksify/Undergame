@@ -12,44 +12,44 @@ export interface Achievement {
 
 export const ACHIEVEMENTS: Achievement[] = [
   // ── First steps ──
-  { id: 'ach_first_blood',       name: 'First Encounter',   desc: 'Defeat or remember your first enemy.',          icon: '⚔' },
-  { id: 'ach_first_remember',    name: 'Remembered',         desc: 'Successfully Remember an enemy.',               icon: '✦' },
+  { id: 'ach_first_blood',    name: 'First Encounter',    desc: 'Defeat or remember your first enemy.',                              icon: 'X' },
+  { id: 'ach_first_remember', name: 'Remembered',          desc: 'Successfully Remember an enemy.',                                   icon: '*' },
   // ── Exploration ──
-  { id: 'ach_enter_forest',      name: 'Into the Thornwood', desc: 'Reach Thornwood Forest.',                       icon: '🌲' },
-  { id: 'ach_city_gates',        name: 'City Gates',         desc: 'Arrive at Crestfall City.',                     icon: '🏙' },
-  { id: 'ach_all_regions',       name: 'Full Cartographer',  desc: 'Discover every major region.',                  icon: '🗺' },
+  { id: 'ach_enter_forest',   name: 'Into the Thornwood',  desc: 'Reach Thornwood Forest.',                                           icon: '~' },
+  { id: 'ach_city_gates',     name: 'City Gates',           desc: 'Arrive at Crestfall City.',                                        icon: '>' },
+  { id: 'ach_all_regions',    name: 'Full Cartographer',    desc: 'Discover every major region.',                                      icon: '.' },
   // ── Combat ──
-  { id: 'ach_boss_archivist',    name: 'Archivist Felled',   desc: 'Defeat The Archivist.',                         icon: '📜' },
-  { id: 'ach_boss_final',        name: 'Memory Unbound',     desc: 'Defeat the Memory Wraith.',                     icon: '🌑' },
-  { id: 'ach_true_ending',       name: 'The Long Peace',     desc: 'Achieve the true ending.',                      icon: '✨' },
+  { id: 'ach_boss_archivist', name: 'Archivist Felled',    desc: 'Defeat The Archivist.',                                             icon: '#' },
+  { id: 'ach_boss_final',     name: 'Memory Unbound',       desc: 'Defeat the Memory Wraith.',                                        icon: '#' },
+  { id: 'ach_true_ending',    name: 'The Long Peace',       desc: 'Achieve the true ending.',                                         icon: '*' },
   // ── Progression ──
-  { id: 'ach_level_5',           name: 'Seasoned Keeper',    desc: 'Reach level 5.',                                icon: '📈' },
-  { id: 'ach_level_10',          name: 'Veteran Keeper',     desc: 'Reach level 10.',                               icon: '🔺' },
-  { id: 'ach_level_15',          name: 'Keeper of the Void', desc: 'Reach level 15.',                               icon: '🔱' },
+  { id: 'ach_level_5',        name: 'Seasoned Keeper',      desc: 'Reach level 5.',                                                    icon: '^' },
+  { id: 'ach_level_10',       name: 'Veteran Keeper',       desc: 'Reach level 10.',                                                   icon: '^' },
+  { id: 'ach_level_15',       name: 'Keeper of the Void',   desc: 'Reach level 15.',                                                   icon: '^' },
   // ── Equipment & Crafting ──
-  { id: 'ach_craft_item',        name: 'Artisan',            desc: 'Craft your first item at a crafting table.',    icon: '⚒' },
-  { id: 'ach_enchant_item',      name: 'The Marked Blade',   desc: 'Apply an enchantment to any item.',             icon: '🔮' },
-  { id: 'ach_full_equip',        name: 'Fully Armed',        desc: 'Have all major equipment slots filled.',        icon: '🛡' },
+  { id: 'ach_craft_item',     name: 'Artisan',               desc: 'Craft your first item at a crafting table.',                       icon: '+' },
+  { id: 'ach_enchant_item',   name: 'The Marked Blade',     desc: 'Apply an enchantment to any item.',                                icon: 'O' },
+  { id: 'ach_full_equip',     name: 'Fully Armed',           desc: 'Have all major equipment slots filled.',                           icon: '=' },
   // ── Collector ──
-  { id: 'ach_all_books',         name: 'Lore Keeper',        desc: 'Collect at least 8 lore books.',                icon: '📚' },
-  { id: 'ach_bestiary_full',     name: 'Chronicler',         desc: 'Encounter every enemy type 3+ times.',          icon: '👁' },
+  { id: 'ach_all_books',      name: 'Lore Keeper',           desc: 'Collect at least 8 lore books.',                                   icon: '=' },
+  { id: 'ach_bestiary_full',  name: 'Chronicler',             desc: 'Encounter every enemy type 3+ times.',                            icon: 'O' },
   // ── Wealth ──
-  { id: 'ach_rich',              name: 'Echo Hoarder',       desc: 'Accumulate 500 Echoes at once.',                icon: '💰' },
-  // ── Collector / Secrets ──
-  { id: 'ach_creed_emblem',      name: 'Chromatic Keeper',   desc: 'Obtain the Creed Emblem — the rarest challenge reward.',        icon: '🌈' },
-  { id: 'ach_secret_room',       name: 'Off the Map',        desc: 'Discover the South Road, a hidden path few Keepers ever find.', icon: '🗝' },
-  { id: 'ach_crestfall_egg',     name: 'City Secret',        desc: 'Uncover the hidden easter egg buried in Crestfall City.',       icon: '🏙' },
-  { id: 'ach_ashfall_egg',       name: 'Ring of Secrets',    desc: 'Complete the hidden sequence in Ashfall Ring.',                 icon: '🔥' },
+  { id: 'ach_rich',           name: 'Echo Hoarder',           desc: 'Accumulate 500 Echoes at once.',                                  icon: 'E' },
+  // ── Secrets ──
+  { id: 'ach_creed_emblem',   name: 'Chromatic Keeper',      desc: 'Obtain the Creed Emblem — the rarest challenge reward.',          icon: '*' },
+  { id: 'ach_secret_room',    name: 'Off the Map',            desc: 'Discover the South Road, a hidden path few Keepers ever find.',  icon: '?' },
+  { id: 'ach_crestfall_egg',  name: 'City Secret',            desc: 'Uncover the hidden easter egg buried in Crestfall City.',         icon: '?' },
+  { id: 'ach_ashfall_egg',    name: 'Ring of Secrets',        desc: 'Complete the hidden sequence in Ashfall Ring.',                   icon: '?' },
   // ── Special actions ──
-  { id: 'ach_tomes_blessing',    name: "Tome's Grace",       desc: "Use the Tome's Blessing to craft a custom enchantment.",        icon: '📖' },
-  { id: 'ach_challenge_slot',    name: 'Trial Bearer',       desc: 'Equip a Challenge Board item in a gear slot for the first time.', icon: '⚡' },
+  { id: 'ach_tomes_blessing', name: "Tome's Grace",           desc: "Use the Tome's Blessing to craft a custom enchantment.",          icon: 'O' },
+  { id: 'ach_challenge_slot', name: 'Trial Bearer',           desc: 'Equip a Challenge Board item in a gear slot for the first time.', icon: '!' },
   // ── Challenge tiers ──
-  { id: 'ach_tier_bronze',       name: 'Bronze Trial',       desc: 'Complete the Bronze tier challenge.',                           icon: '🥉' },
-  { id: 'ach_tier_silver',       name: 'Silver Trial',       desc: 'Complete the Silver tier challenge.',                           icon: '🥈' },
-  { id: 'ach_tier_gold',         name: 'Gold Trial',         desc: 'Complete the Gold tier challenge.',                             icon: '🥇' },
-  { id: 'ach_tier_platinum',     name: 'Platinum Trial',     desc: 'Complete the Platinum tier challenge.',                         icon: '💎' },
-  { id: 'ach_tier_diamond',      name: 'Diamond Trial',      desc: 'Complete the Diamond tier challenge.',                          icon: '✦' },
-  { id: 'ach_tier_color',        name: 'The Color Rite',     desc: 'Complete the Color trial — the ultimate challenge.',            icon: '🌈' },
+  { id: 'ach_tier_bronze',    name: 'Bronze Trial',           desc: 'Complete the Bronze tier challenge.',                             icon: 'B' },
+  { id: 'ach_tier_silver',    name: 'Silver Trial',           desc: 'Complete the Silver tier challenge.',                             icon: 'S' },
+  { id: 'ach_tier_gold',      name: 'Gold Trial',             desc: 'Complete the Gold tier challenge.',                               icon: 'G' },
+  { id: 'ach_tier_platinum',  name: 'Platinum Trial',         desc: 'Complete the Platinum tier challenge.',                           icon: 'P' },
+  { id: 'ach_tier_diamond',   name: 'Diamond Trial',          desc: 'Complete the Diamond tier challenge.',                            icon: 'D' },
+  { id: 'ach_tier_color',     name: 'The Color Rite',         desc: 'Complete the Color trial — the ultimate challenge.',              icon: 'C' },
 ];
 
 const STORE_KEY = 'er-achievements';

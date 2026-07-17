@@ -330,6 +330,9 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
 
   // ── MEMORY WRAITH (Void Nexus final boss) ─────────────────────────
   if (npcId === 'boss') {
+    if (state.player.flags['boss_defeated']) {
+      return { text: "...", speaker: 'Memory Wraith', color: '#ffffff' };
+    }
     return {
       text: "I CANNOT FORGET THE PAIN. AND SO I WILL ERASE IT ALL. EVERY MEMORY. EVERY SOUL. UNTIL NOTHING REMAINS TO HURT.",
       speaker: 'Memory Wraith', color: '#ffffff',

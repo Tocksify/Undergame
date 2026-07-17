@@ -694,6 +694,10 @@ function endBattle(state: GameStateData) {
       state.player.quests['quest_main'] = 3;
       state.uiMessage = "The way north has opened."; state.uiMessageTimer = 160;
     }
+    // Void Nexus boss — set defeated flag so the NPC won't trigger the fight again
+    if (b.enemy.id === 'boss' && b.endType === 'DEFEATED') {
+      state.player.flags['boss_defeated'] = true;
+    }
     // Void Nexus boss — legendary weapon drops on defeat
     if (b.enemy.id === 'boss' && b.endType === 'DEFEATED' && !state.player.inventory.includes('voidglass_dagger')) {
       addInventoryItem(state, 'voidglass_dagger');
