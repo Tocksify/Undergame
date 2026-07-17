@@ -1,0 +1,209 @@
+{
+  "_comment": "Echo Realm — Global Challenge Item Store. Paste the 'earned' array value into localStorage key 'er-challenge-items-v1' to unlock all challenge items for new character creation. These are slot-independent and survive Legacy (slot deletion).",
+  "storeKey": "er-challenge-items-v1",
+  "earned": [
+    "ch_wisp_lantern",
+    "ch_hollow_draught",
+    "ch_resonance_fork",
+    "ch_echo_tonic",
+    "ch_keeper_sigil",
+    "ch_archive_blade",
+    "ch_void_shard_edge",
+    "ch_echo_bulwark",
+    "ch_nexus_crown",
+    "ch_oblivion_fang",
+    "ch_creed_emblem",
+    "ch_ench_chromatic_tide",
+    "ch_ench_mortus_verdict",
+    "ch_mortus_throne_blade",
+    "ch_mortus_void_mantle",
+    "ch_mortus_eye"
+  ],
+  "allChallengeItems": [
+    {
+      "id": "ch_wisp_lantern",
+      "name": "Wisp Lantern",
+      "tier": "uncommon",
+      "category": "trinket",
+      "challengeTier": "bronze",
+      "stats": { "atk": 1, "maxHp": 5 },
+      "desc": "A sealed lantern holding a captured Shade Wisp. Glows faintly. Challenge-exclusive.",
+      "dropWeight": 50
+    },
+    {
+      "id": "ch_hollow_draught",
+      "name": "Hollow Draught",
+      "tier": "uncommon",
+      "category": "consumable",
+      "challengeTier": "bronze",
+      "stats": {},
+      "desc": "Brewed from a Hollow's last breath. Restores 15 HP and clears confusion. Challenge-exclusive.",
+      "dropWeight": 30
+    },
+    {
+      "id": "ch_resonance_fork",
+      "name": "Resonance Fork",
+      "tier": "rare",
+      "category": "weapon",
+      "challengeTier": "silver",
+      "stats": { "atk": 5 },
+      "desc": "A blade tuned to the frequency of memory itself. Hums near void. Challenge-exclusive.",
+      "dropWeight": 40
+    },
+    {
+      "id": "ch_echo_tonic",
+      "name": "Echo Tonic",
+      "tier": "rare",
+      "category": "consumable",
+      "challengeTier": "silver",
+      "stats": {},
+      "desc": "Restores 22 HP. The resonance hum lingers on the tongue. Challenge-exclusive.",
+      "dropWeight": 35
+    },
+    {
+      "id": "ch_keeper_sigil",
+      "name": "Keeper's Sigil",
+      "tier": "rare",
+      "category": "trinket",
+      "challengeTier": "gold",
+      "stats": { "atk": 2, "def": 2, "maxHp": 5 },
+      "desc": "A sigil worn only by those who survived the arena rites. Challenge-exclusive.",
+      "dropWeight": 45
+    },
+    {
+      "id": "ch_archive_blade",
+      "name": "Archive Blade",
+      "tier": "epic",
+      "category": "weapon",
+      "challengeTier": "gold",
+      "stats": { "atk": 9 },
+      "desc": "A page from the Archive, rolled tight and edged in void-steel. Challenge-exclusive.",
+      "dropWeight": 35
+    },
+    {
+      "id": "ch_void_shard_edge",
+      "name": "Void Shard Edge",
+      "tier": "epic",
+      "category": "weapon",
+      "challengeTier": "platinum",
+      "stats": { "atk": 12 },
+      "desc": "Cut from a concentrated void shard. Forgets to stop cutting. Challenge-exclusive.",
+      "dropWeight": 40
+    },
+    {
+      "id": "ch_echo_bulwark",
+      "name": "Echo Bulwark",
+      "tier": "epic",
+      "category": "shield",
+      "challengeTier": "platinum",
+      "stats": { "block": 10 },
+      "desc": "Forged from solidified resonance. Blocks 10 flat damage per hit. Challenge-exclusive.",
+      "dropWeight": 35
+    },
+    {
+      "id": "ch_nexus_crown",
+      "name": "Nexus Crown",
+      "tier": "legendary",
+      "category": "helmet",
+      "challengeTier": "diamond",
+      "stats": { "def": 5, "maxHp": 15 },
+      "desc": "The crown of whatever ruled the Nexus before the silence. Challenge-exclusive.",
+      "dropWeight": 40
+    },
+    {
+      "id": "ch_oblivion_fang",
+      "name": "Oblivion Fang",
+      "tier": "legendary",
+      "category": "weapon",
+      "challengeTier": "diamond",
+      "stats": { "atk": 16 },
+      "desc": "A blade that forgets what it cuts through. The cut remains. Challenge-exclusive.",
+      "dropWeight": 35
+    },
+    {
+      "id": "ch_creed_emblem",
+      "name": "Creed Emblem",
+      "tier": "chromatic",
+      "category": "trinket",
+      "challengeTier": "color",
+      "stats": { "atk": 4, "def": 3, "maxHp": 10 },
+      "desc": "A trinket pulsing with the full spectrum of the Chromatic path. Its power grows with each chroma skill you carry into battle. Challenge-exclusive — Chromatic tier.",
+      "dropWeight": 45,
+      "note": "Scales with chroma skill count during battle"
+    },
+    {
+      "id": "ch_ench_chromatic_tide",
+      "name": "Chromatic Tide",
+      "tier": "chromatic",
+      "category": "enchanted_book",
+      "challengeTier": "color",
+      "stats": { "atk": 8 },
+      "enchantData": {
+        "compatibleCategories": ["weapon"],
+        "atk": 8,
+        "confuse": true,
+        "freeze": true,
+        "weaken": 2
+      },
+      "desc": "Enchants a weapon. +8 ATK. On a solid hit: confuses, freezes, and weakens the enemy by 2. A spectrum of suffering. Challenge-exclusive — Chromatic tier.",
+      "dropWeight": 35
+    },
+    {
+      "id": "ch_ench_mortus_verdict",
+      "name": "Mortus' Verdict",
+      "tier": "mythic",
+      "category": "enchanted_book",
+      "challengeTier": "color",
+      "stats": { "atk": 15 },
+      "enchantData": {
+        "compatibleCategories": ["weapon"],
+        "atk": 15,
+        "drain": 8,
+        "silence": true
+      },
+      "desc": "Enchants a weapon. +15 ATK. On a solid hit: drains 8 HP from the enemy and silences it. The last word written in any age. Challenge-exclusive — Mortus tier.",
+      "dropWeight": 20
+    },
+    {
+      "id": "ch_mortus_throne_blade",
+      "name": "Throne Blade of Mortus",
+      "tier": "mythic",
+      "category": "weapon",
+      "challengeTier": "color (mortus)",
+      "stats": { "atk": 25 },
+      "desc": "The blade that ended the first age. Still hungry. Challenge-exclusive — Mortus tier.",
+      "dropWeight": 0,
+      "note": "Legacy lore item — defined in constants for completeness"
+    },
+    {
+      "id": "ch_mortus_void_mantle",
+      "name": "Void Mantle of Mortus",
+      "tier": "mythic",
+      "category": "armor",
+      "challengeTier": "color (mortus)",
+      "stats": { "maxHp": 50, "def": 10 },
+      "desc": "The armor of the Void's own herald. Refuses every ending. Challenge-exclusive — Mortus tier.",
+      "dropWeight": 0,
+      "note": "Legacy lore item — defined in constants for completeness"
+    },
+    {
+      "id": "ch_mortus_eye",
+      "name": "Eye of Mortus",
+      "tier": "mythic",
+      "category": "trinket",
+      "challengeTier": "color (mortus)",
+      "stats": { "atk": 8, "def": 6, "maxHp": 20 },
+      "desc": "Preserved from the final witness of the old world. Watches for you. Challenge-exclusive — Mortus tier.",
+      "dropWeight": 0,
+      "note": "Legacy lore item — defined in constants for completeness"
+    }
+  ],
+  "challengeTiers": [
+    { "name": "bronze",   "displayName": "Bronze",   "color": "#cd7f32", "unlockedByDefault": true },
+    { "name": "silver",   "displayName": "Silver",   "color": "#c0c0c0", "unlockedByDefault": true },
+    { "name": "gold",     "displayName": "Gold",     "color": "#ffd700", "unlockedByDefault": true },
+    { "name": "platinum", "displayName": "Platinum", "color": "#e5e4e2", "unlockedByDefault": true },
+    { "name": "diamond",  "displayName": "Diamond",  "color": "#b9f2ff", "unlockedByDefault": true },
+    { "name": "color",    "displayName": "Color",    "color": "#ff77ee", "unlockedByDefault": true }
+  ]
+}

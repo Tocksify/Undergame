@@ -1,0 +1,350 @@
+{
+  "_comment": "Echo Realm — Global Achievement Store. Paste this object's 'earned' array value into localStorage key 'er-achievements' to unlock all achievements. Achievements are slot-independent and survive Legacy (slot deletion).",
+  "storeKey": "er-achievements",
+  "earned": [
+    "ach_first_blood",
+    "ach_10_battles",
+    "ach_no_damage",
+    "ach_perfect",
+    "ach_leave_hollow",
+    "ach_archive",
+    "ach_frost",
+    "ach_color",
+    "ach_secret_room",
+    "ach_first_item",
+    "ach_enchant",
+    "ach_rich",
+    "ach_creed_emblem",
+    "ach_challenge_slot",
+    "ach_tier_bronze",
+    "ach_tier_silver",
+    "ach_tier_gold",
+    "ach_tier_platinum",
+    "ach_tier_diamond",
+    "ach_tier_color",
+    "ach_tomes_blessing",
+    "ach_crestfall_egg",
+    "ach_ashfall_egg",
+    "ach_first_remember",
+    "ach_enter_forest",
+    "ach_city_gates",
+    "ach_all_regions",
+    "ach_boss_archivist",
+    "ach_boss_final",
+    "ach_true_ending",
+    "ach_level_5",
+    "ach_level_10",
+    "ach_level_15",
+    "ach_craft_item",
+    "ach_enchant_item",
+    "ach_full_equip",
+    "ach_all_books",
+    "ach_bestiary_full"
+  ],
+  "allAchievements": [
+    {
+      "id": "ach_first_blood",
+      "name": "First Encounter",
+      "desc": "Defeat or remember your first enemy.",
+      "icon": "⚔",
+      "source": "achievementStore.ts",
+      "trigger": "Any battle end (DEFEATED or REMEMBERED)"
+    },
+    {
+      "id": "ach_10_battles",
+      "name": "Tested in Battle",
+      "desc": "Win 10 battles.",
+      "icon": "⚔",
+      "source": "achievementStore.ts",
+      "trigger": "Cumulative battle wins"
+    },
+    {
+      "id": "ach_no_damage",
+      "name": "Untouched",
+      "desc": "Win a battle without taking any damage.",
+      "icon": "🛡",
+      "source": "achievementStore.ts",
+      "trigger": "Battle end when player hp === startHp"
+    },
+    {
+      "id": "ach_perfect",
+      "name": "Resonance",
+      "desc": "Land a PERFECT hit in the minigame.",
+      "icon": "✦",
+      "source": "achievementStore.ts",
+      "trigger": "hitType === 'PERFECT' in battle minigame"
+    },
+    {
+      "id": "ach_leave_hollow",
+      "name": "First Step",
+      "desc": "Leave Verdant Hollow for the first time.",
+      "icon": "🌿",
+      "source": "achievementStore.ts",
+      "trigger": "Exit tile from VH map"
+    },
+    {
+      "id": "ach_archive",
+      "name": "Into the Archive",
+      "desc": "Reach the Sunken Archive.",
+      "icon": "📜",
+      "source": "achievementStore.ts",
+      "trigger": "discovered_SA flag set"
+    },
+    {
+      "id": "ach_frost",
+      "name": "Frozen Path",
+      "desc": "Reach the Frost Road.",
+      "icon": "❄",
+      "source": "achievementStore.ts",
+      "trigger": "discovered_FR flag set"
+    },
+    {
+      "id": "ach_color",
+      "name": "Chromatic Reach",
+      "desc": "Discover the Color region.",
+      "icon": "🌈",
+      "source": "achievementStore.ts",
+      "trigger": "discovered_CO flag set"
+    },
+    {
+      "id": "ach_secret_room",
+      "name": "Off the Map",
+      "desc": "Discover the South Road — a hidden path few Keepers ever find.",
+      "icon": "🗝",
+      "source": "achievementStore.ts",
+      "trigger": "Player enters map SR"
+    },
+    {
+      "id": "ach_first_item",
+      "name": "Keeper's Load",
+      "desc": "Pick up your first item.",
+      "icon": "📦",
+      "source": "achievementStore.ts",
+      "trigger": "First item added to inventory"
+    },
+    {
+      "id": "ach_enchant",
+      "name": "Inscribed",
+      "desc": "Enchant an item for the first time.",
+      "icon": "🔮",
+      "source": "achievementStore.ts",
+      "trigger": "Enchant applied successfully"
+    },
+    {
+      "id": "ach_rich",
+      "name": "Echo Hoarder",
+      "desc": "Accumulate 500 Echoes at once.",
+      "icon": "💰",
+      "source": "achievementStore.ts",
+      "trigger": "Passive check: echoes >= 500"
+    },
+    {
+      "id": "ach_creed_emblem",
+      "name": "Chromatic Keeper",
+      "desc": "Obtain the Creed Emblem — the rarest challenge reward.",
+      "icon": "🌈",
+      "source": "achievementStore.ts",
+      "trigger": "ch_creed_emblem added to inventory"
+    },
+    {
+      "id": "ach_challenge_slot",
+      "name": "Trial Bearer",
+      "desc": "Equip a Challenge Board item in a gear slot for the first time.",
+      "icon": "⚡",
+      "source": "achievementStore.ts",
+      "trigger": "Any ch_* item in equipment slots (passive check)"
+    },
+    {
+      "id": "ach_tier_bronze",
+      "name": "Bronze Trial",
+      "desc": "Complete the Bronze tier challenge.",
+      "icon": "🥉",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_bronze flag + all Bronze waves cleared"
+    },
+    {
+      "id": "ach_tier_silver",
+      "name": "Silver Trial",
+      "desc": "Complete the Silver tier challenge.",
+      "icon": "🥈",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_silver flag + all Silver waves cleared"
+    },
+    {
+      "id": "ach_tier_gold",
+      "name": "Gold Trial",
+      "desc": "Complete the Gold tier challenge.",
+      "icon": "🥇",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_gold flag + all Gold waves cleared"
+    },
+    {
+      "id": "ach_tier_platinum",
+      "name": "Platinum Trial",
+      "desc": "Complete the Platinum tier challenge.",
+      "icon": "💎",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_platinum flag + all Platinum waves cleared"
+    },
+    {
+      "id": "ach_tier_diamond",
+      "name": "Diamond Trial",
+      "desc": "Complete the Diamond tier challenge.",
+      "icon": "✦",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_diamond flag + all Diamond waves cleared"
+    },
+    {
+      "id": "ach_tier_color",
+      "name": "The Color Rite",
+      "desc": "Complete the Color trial — the ultimate challenge.",
+      "icon": "🌈",
+      "source": "achievementStore.ts",
+      "trigger": "ch_claimed_color flag + all 10 Color waves cleared"
+    },
+    {
+      "id": "ach_tomes_blessing",
+      "name": "Tome's Grace",
+      "desc": "Use the Tome's Blessing to craft a custom enchantment.",
+      "icon": "📖",
+      "source": "achievementStore.ts",
+      "trigger": "tomes_blessing_used flag set during TOME_CRAFT"
+    },
+    {
+      "id": "ach_crestfall_egg",
+      "name": "City Secret",
+      "desc": "Uncover the hidden easter egg buried in Crestfall City.",
+      "icon": "🏙",
+      "source": "achievementStore.ts",
+      "trigger": "crestfall_egg_done flag set via CT dialogue"
+    },
+    {
+      "id": "ach_ashfall_egg",
+      "name": "Ring of Secrets",
+      "desc": "Complete the hidden sequence in Ashfall Ring.",
+      "icon": "🔥",
+      "source": "achievementStore.ts",
+      "trigger": "ashfall_egg_done flag set"
+    },
+    {
+      "id": "ach_first_remember",
+      "name": "Remembered",
+      "desc": "Successfully Remember an enemy.",
+      "icon": "✦",
+      "source": "achievementStore.ts",
+      "trigger": "Battle end with REMEMBERED result"
+    },
+    {
+      "id": "ach_enter_forest",
+      "name": "Into the Thornwood",
+      "desc": "Reach Thornwood Forest.",
+      "icon": "🌲",
+      "source": "achievementStore.ts",
+      "trigger": "discovered_WW flag set"
+    },
+    {
+      "id": "ach_city_gates",
+      "name": "City Gates",
+      "desc": "Arrive at Crestfall City.",
+      "icon": "🏙",
+      "source": "achievementStore.ts",
+      "trigger": "discovered_CT flag set"
+    },
+    {
+      "id": "ach_all_regions",
+      "name": "Full Cartographer",
+      "desc": "Discover every major region.",
+      "icon": "🗺",
+      "source": "achievementStore.ts",
+      "trigger": "All discovered_* flags set"
+    },
+    {
+      "id": "ach_boss_archivist",
+      "name": "Archivist Felled",
+      "desc": "Defeat The Archivist.",
+      "icon": "📜",
+      "source": "achievementStore.ts",
+      "trigger": "arch_defeated flag set"
+    },
+    {
+      "id": "ach_boss_final",
+      "name": "Memory Unbound",
+      "desc": "Defeat the Memory Wraith.",
+      "icon": "🌑",
+      "source": "achievementStore.ts",
+      "trigger": "boss_defeated flag set"
+    },
+    {
+      "id": "ach_true_ending",
+      "name": "The Long Peace",
+      "desc": "Achieve the true ending.",
+      "icon": "✨",
+      "source": "achievementStore.ts",
+      "trigger": "morthus_ending_seen flag set (TRUE_ENDING mode reached)"
+    },
+    {
+      "id": "ach_level_5",
+      "name": "Seasoned Keeper",
+      "desc": "Reach level 5.",
+      "icon": "📈",
+      "source": "achievementStore.ts",
+      "trigger": "player.level >= 5"
+    },
+    {
+      "id": "ach_level_10",
+      "name": "Veteran Keeper",
+      "desc": "Reach level 10.",
+      "icon": "🔺",
+      "source": "achievementStore.ts",
+      "trigger": "player.level >= 10"
+    },
+    {
+      "id": "ach_level_15",
+      "name": "Keeper of the Void",
+      "desc": "Reach level 15.",
+      "icon": "🔱",
+      "source": "achievementStore.ts",
+      "trigger": "player.level >= 15"
+    },
+    {
+      "id": "ach_craft_item",
+      "name": "Artisan",
+      "desc": "Craft your first item at a crafting table.",
+      "icon": "⚒",
+      "source": "achievementStore.ts",
+      "trigger": "First successful craft in ITEM_CRAFT mode"
+    },
+    {
+      "id": "ach_enchant_item",
+      "name": "The Marked Blade",
+      "desc": "Apply an enchantment to any item.",
+      "icon": "🔮",
+      "source": "achievementStore.ts",
+      "trigger": "Enchant applied via inventory or Tomes Blessing"
+    },
+    {
+      "id": "ach_full_equip",
+      "name": "Fully Armed",
+      "desc": "Have all major equipment slots filled.",
+      "icon": "🛡",
+      "source": "achievementStore.ts",
+      "trigger": "weapon, armor, helmet, gloves, pants, boots all filled"
+    },
+    {
+      "id": "ach_all_books",
+      "name": "Lore Keeper",
+      "desc": "Collect at least 8 lore books.",
+      "icon": "📚",
+      "source": "achievementStore.ts",
+      "trigger": "8+ book category items in inventory"
+    },
+    {
+      "id": "ach_bestiary_full",
+      "name": "Chronicler",
+      "desc": "Encounter every enemy type 3+ times.",
+      "icon": "👁",
+      "source": "achievementStore.ts",
+      "trigger": "All bestiary entries >= 3"
+    }
+  ]
+}
