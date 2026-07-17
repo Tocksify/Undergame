@@ -288,6 +288,7 @@ export function handleBattleInput(state: GameStateData) {
         b.enemy.hp -= dmg;
         b.actionMsg = `Dealt ${dmg} damage.${elemNote}`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
+        b.enemyHitFlash = 12;
 
         // ── Post-hit skill procs (PERFECT or GOOD only) ───────────────
         if (hitType !== 'MISS') {
@@ -369,6 +370,7 @@ export function updateBattlePhase(state: GameStateData) {
   const b = state.battle!;
   if (b.phase === 'ACTION') {
     b.timer++;
+    if (b.enemyHitFlash && b.enemyHitFlash > 0) b.enemyHitFlash--;
     if (b.timer > 60) {
       // ── Tick poison ───────────────────────────────────────────────
       if (b.poisonDmg > 0 && b.poisonTurns > 0) {
@@ -534,6 +536,7 @@ function handleAct(state: GameStateData, actId: string) {
       b.enemy.hp -= dmg;
       b.actionMsg = `Dealt ${dmg} dmg.`;
       if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
+      b.enemyHitFlash = 12;
       break;
     }
     case 'resonance':
@@ -697,6 +700,13 @@ function endBattle(state: GameStateData) {
       addInventoryItem(state, 'sovereign_edge');
       addInventoryItem(state, 'ench_iron_thorn');
       pushMessages(state, ['The Memory Wraith collapses. Its power crystallizes.', '+Voidglass Dagger', '+Voidsteel Mail', '+Sovereign Edge', '+Iron Thorn'], ITEMS['voidglass_dagger']?.tier);
+    }
+    // NG+ exclusive drops — Memory Wraith boss only in NG+ runs
+    if (b.enemy.id === 'boss' && b.endType === 'DEFEATED' && state.ngPlus && !state.player.inventory.includes('ngp_void_crown')) {
+      addInventoryItem(state, 'ngp_void_crown');
+      addInventoryItem(state, 'ngp_echo_fragment');
+      addInventoryItem(state, 'ngp_keepers_seal');
+      pushMessages(state, ['Void energy crystallizes into something new...', '+Void-Touched Crown', "+Fragment of Another", "+Keeper's Second Seal"], 'legendary');
     }
     // Named boss drops on defeat
     if (b.enemy.id === 'archivist' && b.endType === 'DEFEATED' && !state.player.inventory.includes('archivist_ward')) {

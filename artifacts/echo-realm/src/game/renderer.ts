@@ -1167,7 +1167,12 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillText(`HP ${state.player.hp}/${state.player.maxHp}`, BOX.x + 8, BOX.y + BOX.h - 6);
   } else if (b.phase === 'ACTION' || b.phase === 'END') {
     ctx.fillStyle = C.light; ctx.font = '14px monospace'; ctx.textAlign = 'center';
-    drawWrappedText(ctx, b.actionMsg || '...', W / 2, 370, BOX.w - 20, 20);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(BOX.x + 4, BOX.y + 4, BOX.w - 8, BOX.h - 8);
+    ctx.clip();
+    drawWrappedText(ctx, b.actionMsg || '...', W / 2, BOX.y + 26, BOX.w - 20, 19);
+    ctx.restore();
     if (b.phase === 'END') {
       if (Math.floor(state.frameCount / 20) % 2 === 0) {
         ctx.fillStyle = C.gray; ctx.font = '13px monospace';
@@ -1243,6 +1248,15 @@ function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, 
         ctx.fillStyle = '#1a1a2e';
         ctx.fillRect(cx - 6, cy + bob - 29, 5, 6);  // left eye
         ctx.fillRect(cx + 2, cy + bob - 29, 5, 6);  // right eye
+      }
+
+      // ── Hurt flash: white overlay when hit ──────────────────────────
+      const hitFlash = b?.enemyHitFlash ?? 0;
+      if (hitFlash > 0) {
+        ctx.globalAlpha = (hitFlash / 12) * 0.65;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - 20, cy + bob - 40, 44, 72);
+        ctx.globalAlpha = 1;
       }
     }
     return;

@@ -2531,7 +2531,7 @@ export const MAPS: Record<string, any> = {
       { id: 'vh_crafting_npc', x: 10, y: 4, color: '#8888aa', name: 'Crafting Table', type: 'CRAFT' },
     ],
     chests: [
-      { id: 'ch_vh_craft1', flag: 'ch_vh_craft1', x: 10, y: 2, item: 'empty_book' },
+      { id: 'ch_vh_craft1', flag: 'ch_vh_craft1', x: 10, y: 2, item: 'silver_ingot' },
     ],
     doors: [],
     books: [],

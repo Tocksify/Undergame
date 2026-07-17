@@ -167,6 +167,8 @@ export interface BattleState {
   burnDmg: number;      // > 0 while burning; doubles each turn (cap 32)
   // ── Passive skill cooldowns (turns remaining) ──────────────────────────────
   skillCooldowns: Record<string, number>;
+  // ── Visual hit flash (frames remaining) ───────────────────────────────────
+  enemyHitFlash?: number;
 }
 
 export interface GameStateData {
