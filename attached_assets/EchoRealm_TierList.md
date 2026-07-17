@@ -488,5 +488,3 @@ All have `category: 'book'`. Reading them adds entries to the Codex.
 | Tomes Blessing  | Mythic  | relic    | Combined with Empty Book: write any enchant from scratch   |
 
 ---
-
-*Generated for Echo Realm — includes all base, challenge-exclusive, NG+ exclusive, and enchantment items through July 2026 build.*
