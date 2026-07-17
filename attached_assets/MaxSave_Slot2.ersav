@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "name": "Max Save — Slot 2 (NG+)",
-  "summary": "Crestfall City — 999999 Echoes — All Items — All Enchants — NG+ Gen.2 — Lv.999",
+  "name": "Max Save \u2014 Slot 2 (NG+)",
+  "summary": "Crestfall City \u2014 999999 Echoes \u2014 All Items \u2014 All Enchants \u2014 NG+ Gen.2 \u2014 Lv.999",
   "savedAt": "2026-07-17T12:00:00.000Z",
   "state": {
     "version": 1,
@@ -572,7 +572,6 @@
         "discovered_SR": true,
         "arch_defeated": true,
         "void_sentinel_defeated": true,
-        "boss_defeated": true,
         "echo_warden_defeated": true,
         "ring_boss_defeated": true,
         "child_void_defeated": true,
@@ -582,7 +581,6 @@
         "ch_claimed_platinum": true,
         "ch_claimed_diamond": true,
         "ch_claimed_color": true,
-        "morthus_ending_seen": true,
         "ashfall_egg_done": true,
         "crestfall_egg_done": true,
         "tomes_blessing_used": true,
