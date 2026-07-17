@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, DialogueNode } from './types';
-import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS, MAPS } from './constants';
+import { ENEMIES, CITY_SIDE_QUESTS, pickWeightedReward, pushMessages, ITEMS, MAPS, TIER_WAVE_SEQUENCES, recomputeMaxHp } from './constants';
 import { pickNextEmblem, addEarnedEmblemId } from '../challengeStore';
 
 export function getDialogueStartNode(state: GameStateData, npcId: string): DialogueNode {
@@ -508,69 +508,106 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
-  // ── CHALLENGE KEEPER (Challenge Arena — orchestrates all five waves) ───────
+  // ── CHALLENGE KEEPER (Challenge Arena — NPC-driven wave orchestrator) ────────
   if (npcId === 'challenge_keeper') {
-    const f = state.player.flags;
-    const w1 = !!f['defeated_challenge_w1'];
-    const w2 = !!f['defeated_challenge_w2'];
-    const w3 = !!f['defeated_challenge_w3'];
-    const w4 = !!f['defeated_challenge_w4'];
-    const w5 = !!f['defeated_challenge_final'];
+    const ca = state.challengeAttempt;
 
-    if (f['challenge_won']) {
+    // No active challenge — player wandered in without starting one
+    if (!ca) {
       return {
-        text: "You have proven yourself. The emblem is yours — it will follow you into every new journey. Leave through the southern gate when you are ready.",
+        text: "You stand in the Arena without a challenge. The trials are not open to wanderers. Leave through the southern gate and speak to the Challenge Herald in Verdant Hollow to begin.",
         speaker: 'Challenge Keeper', color: '#aabbff',
       };
     }
 
-    if (w5) {
+    const waves = TIER_WAVE_SEQUENCES[ca.tierName] ?? ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final'];
+    const totalWaves = waves.length;
+    const currentWave = ca.wave;
+
+    // A battle is already queued or in progress
+    if (ca.waveLaunched) {
       return {
-        text: "The Echoing Gate falls. You are worthy. An emblem has been placed in your record — claim it at the start of your next journey.",
+        text: "A trial is already underway. Face your opponent.",
         speaker: 'Challenge Keeper', color: '#aabbff',
-        action: (s) => {
-          const emblem = pickNextEmblem();
-          addEarnedEmblemId(emblem.id);
-          s.player.flags['challenge_won'] = true;
-          s.uiMessage = `Challenge Complete! Emblem earned: ${emblem.name}`;
-          s.uiMessageTimer = 360;
-        },
       };
     }
 
-    if (!w1) {
+    // Abandon helper — restores snapshot state inline (no circular engine import)
+    const abandonAction = (s: typeof state) => {
+      if (s.challengeSnapshot) {
+        s.player = JSON.parse(JSON.stringify(s.challengeSnapshot.player));
+        s.player.targetX = s.player.x;
+        s.player.targetY = s.player.y;
+        s.mapId = s.challengeSnapshot.mapId;
+        s.challengeSnapshot = null;
+        s.challengeAttempt = null;
+        recomputeMaxHp(s);
+        s.uiMessage = "Challenge abandoned. Your previous progress has been restored.";
+        s.uiMessageTimer = 180;
+      }
+    };
+
+    // First wave — intro dialogue
+    if (currentWave === 0) {
+      const enemyName = ENEMIES[waves[0]]?.name ?? 'a Trial';
+      const tier = ca.tierName.charAt(0).toUpperCase() + ca.tierName.slice(1);
       return {
-        text: "The Challenge Arena tests those who seek to carry the past forward. Five trials await. First: face the Trial Shade.",
+        text: `Challenger. You have been stripped of everything you carried — rank, relics, and skill. What you earn here, you earn with nothing but will. ${tier} tier: ${totalWaves} trials stand before you. Your first opponent: ${enemyName}. When you are ready, step forward.`,
         speaker: 'Challenge Keeper', color: '#aabbff',
-        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w1'])); },
-      };
-    }
-    if (!w2) {
-      return {
-        text: "One trial cleared. The Trial Crawler rises to test your resolve.",
-        speaker: 'Challenge Keeper', color: '#aabbff',
-        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w2'])); },
-      };
-    }
-    if (!w3) {
-      return {
-        text: "Strength and endurance proven. Now face the Trial Specter — an echo of every Keeper who almost made it.",
-        speaker: 'Challenge Keeper', color: '#aabbff',
-        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w3'])); },
-      };
-    }
-    if (!w4) {
-      return {
-        text: "Three down. The Trial Warden has guarded this threshold since before memory. Stand your ground.",
-        speaker: 'Challenge Keeper', color: '#aabbff',
-        action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_w4'])); },
+        options: [
+          {
+            label: 'I am ready. Begin the trial.',
+            action: (s) => {
+              if (!s.challengeAttempt) return;
+              s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[waves[0]]));
+              s.challengeAttempt.waveLaunched = true;
+            },
+          },
+          {
+            label: 'I need to prepare first.',
+            // Closes dialogue — player can spend stat/skill points
+          },
+          {
+            label: 'Abandon the challenge.',
+            action: abandonAction,
+          },
+        ],
       };
     }
 
+    // Between waves — encourage and offer the next fight
+    if (currentWave < totalWaves) {
+      const enemyName = ENEMIES[waves[currentWave]]?.name ?? 'the next trial';
+      const remaining = totalWaves - currentWave;
+      const waveWord = currentWave === 1 ? 'trial' : 'trials';
+      return {
+        text: `${currentWave} ${waveWord} cleared. You are still standing — that alone is more than most. ${remaining} remain. Use the points you have earned: open your stats with [M] and your skills with [K]. When you are ready, face: ${enemyName}.`,
+        speaker: 'Challenge Keeper', color: '#aabbff',
+        options: [
+          {
+            label: `Continue — face ${enemyName}.`,
+            action: (s) => {
+              if (!s.challengeAttempt) return;
+              s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[waves[currentWave]]));
+              s.challengeAttempt.waveLaunched = true;
+            },
+          },
+          {
+            label: 'I need more time.',
+            // Closes dialogue — player allocates stats/skills
+          },
+          {
+            label: 'Abandon the challenge.',
+            action: abandonAction,
+          },
+        ],
+      };
+    }
+
+    // All waves done (shouldn't normally reach here; engine shows result modal)
     return {
-      text: "Four trials behind you. One remains. The Echoing Gate — the Arena's final question. Answer well.",
+      text: "The trials are complete. Your verdict awaits.",
       speaker: 'Challenge Keeper', color: '#aabbff',
-      action: (s) => { s.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES['challenge_final'])); },
     };
   }
 

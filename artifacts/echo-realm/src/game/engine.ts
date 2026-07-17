@@ -1,5 +1,5 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS, EQUIP_SLOTS, RECIPES } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS, EQUIP_SLOTS, RECIPES, TIER_WAVE_SEQUENCES, STARTING_STAT_POINTS, xpForLevel } from './constants';
 import { awardAchievement } from '../achievementStore';
 import { syncBestiary } from '../codexStore';
 import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
@@ -8,8 +8,39 @@ import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
 import { CHALLENGE_TIERS, getUnlockedTierIndex, addEarnedChallengeItem, pickRandomChallengeItem } from '../challengeStore';
 
-// Ordered wave sequence for challenge battles (Bronze→Color use the same 5-wave gauntlet)
-const CHALLENGE_WAVES = ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final'] as const;
+// Helper: fully strip a player back to a level-1 blank slate for challenge mode.
+function resetPlayerForChallenge(state: GameStateData) {
+  state.player.level = 1;
+  state.player.xp = 0;
+  state.player.xpToNext = xpForLevel(1);
+  state.player.statPoints = STARTING_STAT_POINTS;
+  state.player.baseStats = { str: 0, vit: 0, def: 0 };
+  state.player.inventory = [];
+  state.player.enchantedSlots = [];
+  state.player.equipment = {
+    weapon: null, armor: null, offhand: null,
+    helmet: null, gloves: null, pants: null, boots: null,
+    cloak: null, necklace: null, ring1: null, ring2: null, belt: null, trinket: null,
+  };
+  state.player.learnedSkills = [];
+  state.player.skillPoints = 0;
+  state.player.echoes = 0;
+  state.player.hp = 20;
+  recomputeMaxHp(state);
+}
+
+// Helper: restore player state from challenge snapshot and return to the world.
+export function restoreFromChallengeSnapshot(state: GameStateData) {
+  if (!state.challengeSnapshot) return;
+  const snap = state.challengeSnapshot;
+  state.player = JSON.parse(JSON.stringify(snap.player));
+  state.player.targetX = state.player.x;
+  state.player.targetY = state.player.y;
+  state.mapId = snap.mapId;
+  state.challengeSnapshot = null;
+  state.challengeAttempt = null;
+  recomputeMaxHp(state);
+}
 
 export function justPressed(state: GameStateData, key: string) {
   const k = key; const K = key.toUpperCase();
@@ -60,11 +91,25 @@ export function updateGame(state: GameStateData) {
   if (state.mode === GameMode.TITLE || state.mode === GameMode.GAME_OVER) {
     if (justPressed(state, ' ') || justPressed(state, 'Enter')) {
       if (state.mode === GameMode.GAME_OVER) {
-        state.player.hp = state.player.maxHp;
-        state.player.x = 12 * TILE_SIZE; state.player.y = 8 * TILE_SIZE;
-        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
-        state.mapId = 'VH';
-        state.challengeAttempt = null; // cancel any active challenge run on death
+        if (state.challengeSnapshot) {
+          // Died during a challenge — restore pre-challenge state
+          const snap = state.challengeSnapshot;
+          state.player = JSON.parse(JSON.stringify(snap.player));
+          state.player.targetX = state.player.x;
+          state.player.targetY = state.player.y;
+          state.mapId = snap.mapId;
+          state.challengeSnapshot = null;
+          state.challengeAttempt = null;
+          recomputeMaxHp(state);
+          state.uiMessage = "Challenge failed. Your previous progress has been restored.";
+          state.uiMessageTimer = 180;
+        } else {
+          state.player.hp = state.player.maxHp;
+          state.player.x = 12 * TILE_SIZE; state.player.y = 8 * TILE_SIZE;
+          state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+          state.mapId = 'VH';
+          state.challengeAttempt = null;
+        }
       }
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
@@ -755,10 +800,28 @@ export function updateGame(state: GameStateData) {
       if (state.player.flags[claimFlag]) {
         state.uiMessage = "Already completed this tier's challenge this journey."; state.uiMessageTimer = 150;
       } else {
-        // Start challenge: 5-wave battle gauntlet beginning with wave 1
+        // ── Snapshot current player state ──
+        state.challengeSnapshot = {
+          player: JSON.parse(JSON.stringify(state.player)),
+          mapId: state.mapId,
+        };
+        // ── Strip player to a blank level-1 slate ──
+        resetPlayerForChallenge(state);
+        // Carry quest/flag data so world-progress checks still work inside the arena
+        state.player.quests = JSON.parse(JSON.stringify(state.challengeSnapshot.player.quests));
+        state.player.questProgress = JSON.parse(JSON.stringify(state.challengeSnapshot.player.questProgress));
+        state.player.flags = JSON.parse(JSON.stringify(state.challengeSnapshot.player.flags));
+        state.player.appearance = state.challengeSnapshot.player.appearance
+          ? JSON.parse(JSON.stringify(state.challengeSnapshot.player.appearance)) : undefined;
+        state.player.bestiary = JSON.parse(JSON.stringify(state.challengeSnapshot.player.bestiary));
+        // ── Teleport to arena (never mark as discovered for teleport) ──
+        state.mapId = 'CHALLENGE_ARENA';
+        state.player.x = 9 * TILE_SIZE; state.player.y = 7 * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        // ── Start the attempt ──
         state.challengeAttempt = { tierName: csTier.name, wave: 0, waveLaunched: false, startFrame: state.frameCount };
         state.mode = GameMode.OVERWORLD;
-        state.uiMessage = "Challenge started! Defeat all five trial waves."; state.uiMessageTimer = 180;
+        state.uiMessage = `${csTier.displayName} Challenge started! Speak to the Keeper.`; state.uiMessageTimer = 210;
       }
     }
     return;
@@ -766,9 +829,43 @@ export function updateGame(state: GameStateData) {
 
   // ── CHALLENGE RESULT (post-challenge reward modal) ─────────────────
   if (state.mode === GameMode.CHALLENGE_RESULT) {
-    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'x') || justPressed(state, 'Escape')) {
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a') || justPressed(state, 'ArrowRight') || justPressed(state, 'd')) {
+      state.challengeResultMenuIndex = state.challengeResultMenuIndex === 0 ? 1 : 0;
+    }
+    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
+      const cr = state.challengeResult!;
+      if (state.challengeResultMenuIndex === 0) {
+        // ── RERUN: strip player again and restart the same tier ──
+        resetPlayerForChallenge(state);
+        if (state.challengeSnapshot) {
+          state.player.quests = JSON.parse(JSON.stringify(state.challengeSnapshot.player.quests));
+          state.player.questProgress = JSON.parse(JSON.stringify(state.challengeSnapshot.player.questProgress));
+          state.player.flags = JSON.parse(JSON.stringify(state.challengeSnapshot.player.flags));
+          state.player.appearance = state.challengeSnapshot.player.appearance
+            ? JSON.parse(JSON.stringify(state.challengeSnapshot.player.appearance)) : undefined;
+          state.player.bestiary = JSON.parse(JSON.stringify(state.challengeSnapshot.player.bestiary));
+        }
+        state.mapId = 'CHALLENGE_ARENA';
+        state.player.x = 9 * TILE_SIZE; state.player.y = 7 * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        state.challengeAttempt = { tierName: cr.tierName, wave: 0, waveLaunched: false, startFrame: state.frameCount };
+        state.challengeResult = null;
+        state.mode = GameMode.OVERWORLD;
+        state.uiMessage = 'Challenge reset — speak to the Keeper to begin.'; state.uiMessageTimer = 180;
+      } else {
+        // ── RETURN: restore pre-challenge snapshot ──
+        restoreFromChallengeSnapshot(state);
+        state.challengeResult = null;
+        state.mode = GameMode.OVERWORLD;
+        state.uiMessage = 'Welcome back, Keeper.'; state.uiMessageTimer = 120;
+      }
+    }
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) {
+      // X always returns
+      restoreFromChallengeSnapshot(state);
       state.challengeResult = null;
       state.mode = GameMode.OVERWORLD;
+      state.uiMessage = 'Welcome back, Keeper.'; state.uiMessageTimer = 120;
     }
     return;
   }
@@ -798,7 +895,14 @@ export function updateGame(state: GameStateData) {
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); return; }
   if (justPressed(state, 'q'))      { state.mode = GameMode.QUEST_LOG; markQuestsSeen(state); return; }
-  if (justPressed(state, 'n'))      { state.mode = GameMode.TELEPORT; state.teleportIndex = 0; return; }
+  if (justPressed(state, 'n')) {
+    if (state.mapId === 'CHALLENGE_ARENA') {
+      state.uiMessage = "Memory Transit is disabled inside the Challenge Arena."; state.uiMessageTimer = 120;
+    } else {
+      state.mode = GameMode.TELEPORT; state.teleportIndex = 0;
+    }
+    return;
+  }
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
   if (justPressed(state, 'b'))      { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; return; }
   if (justPressed(state, 'k'))      { state.mode = GameMode.SKILL_TREE; return; }
@@ -816,32 +920,49 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
-  // ── Challenge wave progression ────────────────────────────────────
-  // When a challenge attempt is active, automatically chain the 5-wave
-  // battle gauntlet. waveLaunched=false → set pendingEncounter (which fires
-  // below). After each battle ends we return here with waveLaunched=true,
-  // no battle, no pendingEncounter → advance to the next wave (or finish).
-  if (state.challengeAttempt && !state.battle) {
+  // ── Challenge wave progression (NPC-driven) ──────────────────────────
+  // The keeper NPC dialogue sets pendingEncounter + waveLaunched=true.
+  // After each battle ends (battle null, pendingEncounter null, waveLaunched),
+  // advance the wave counter and notify the player to speak to the Keeper again.
+  if (state.challengeAttempt && !state.battle && state.mapId === 'CHALLENGE_ARENA') {
     const ca = state.challengeAttempt;
-    if (!ca.waveLaunched) {
-      state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[CHALLENGE_WAVES[ca.wave]]));
-      ca.waveLaunched = true;
-    } else if (!state.pendingEncounter) {
-      // Battle for this wave just finished — advance or complete
+    if (ca.waveLaunched && !state.pendingEncounter) {
+      // Wave just finished — advance counter
+      const waves = TIER_WAVE_SEQUENCES[ca.tierName] ?? [];
       const nextWave = ca.wave + 1;
-      if (nextWave < CHALLENGE_WAVES.length) {
+      if (nextWave < waves.length) {
         ca.wave = nextWave;
         ca.waveLaunched = false;
+        state.uiMessage = `Wave ${nextWave} cleared! Speak to the Keeper for the next trial.`;
+        state.uiMessageTimer = 180;
       } else {
-        // All 5 waves cleared — award a random item from the selected tier
+        // All waves cleared — award item, handle duplicates via snapshot
         const tier = CHALLENGE_TIERS.find(t => t.name === ca.tierName);
         if (tier) {
           const timeSeconds = (state.frameCount - ca.startFrame) / 60;
           const itemId = pickRandomChallengeItem(tier);
-          addInventoryItem(state, itemId);
-          addEarnedChallengeItem(itemId);
+          const snapshotInv = state.challengeSnapshot?.player.inventory ?? [];
+          const isDuplicate = snapshotInv.includes(itemId);
+          if (isDuplicate) {
+            // Duplicate → grant echoes into the snapshot (returned on Return)
+            const echoVal = ITEMS[itemId]?.price ?? 50;
+            if (state.challengeSnapshot) {
+              state.challengeSnapshot.player.echoes += echoVal;
+            }
+          } else {
+            // New item — add to snapshot inventory so it's there on Return
+            if (state.challengeSnapshot) {
+              state.challengeSnapshot.player.inventory.push(itemId);
+              state.challengeSnapshot.player.enchantedSlots.push(null);
+            }
+            addEarnedChallengeItem(itemId);
+          }
           state.player.flags[`ch_claimed_${tier.name}`] = true;
-          state.challengeResult = { timeSeconds, itemId, tierName: tier.name };
+          if (state.challengeSnapshot) {
+            state.challengeSnapshot.player.flags[`ch_claimed_${tier.name}`] = true;
+          }
+          state.challengeResult = { timeSeconds, itemId, tierName: tier.name, isDuplicate };
+          state.challengeResultMenuIndex = 0;
           state.mode = GameMode.CHALLENGE_RESULT;
         }
         state.challengeAttempt = null;
@@ -890,17 +1011,25 @@ export function updateGame(state: GameStateData) {
   // handle SPACE interactions
   if (intFound && (justPressed(state, ' ') || justPressed(state, 'z'))) {
     if (intFound.type === 'EXIT') {
-      const exit = map.exits[intFound.tile];
-      if (exit) {
-        const missingItem = exit.reqItem && !state.player.inventory.includes(exit.reqItem);
-        if (exit.locked || missingItem || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
-          state.uiMessage = exit.lockMsg; state.uiMessageTimer = 120;
-        } else {
-          state.mapId = exit.mapId;
-          state.player.x = exit.x * TILE_SIZE; state.player.y = exit.y * TILE_SIZE;
-          state.player.targetX = state.player.x; state.player.targetY = state.player.y;
-          state.player.flags['discovered_' + exit.mapId] = true;
-          state.adjacentInteractable = null;
+      // Block leaving the Challenge Arena mid-challenge via the exit tile
+      if (state.mapId === 'CHALLENGE_ARENA' && state.challengeAttempt) {
+        state.uiMessage = "Speak to the Challenge Keeper to abandon the challenge."; state.uiMessageTimer = 150;
+      } else {
+        const exit = map.exits[intFound.tile];
+        if (exit) {
+          const missingItem = exit.reqItem && !state.player.inventory.includes(exit.reqItem);
+          if (exit.locked || missingItem || (exit.reqQuest && state.player.quests[exit.reqQuest] < exit.reqState)) {
+            state.uiMessage = exit.lockMsg; state.uiMessageTimer = 120;
+          } else {
+            state.mapId = exit.mapId;
+            state.player.x = exit.x * TILE_SIZE; state.player.y = exit.y * TILE_SIZE;
+            state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+            // Never register the Challenge Arena as a discovered transit point
+            if (exit.mapId !== 'CHALLENGE_ARENA') {
+              state.player.flags['discovered_' + exit.mapId] = true;
+            }
+            state.adjacentInteractable = null;
+          }
         }
       }
     } else if (intFound.type === 'DOOR') {

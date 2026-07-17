@@ -156,15 +156,13 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
   }
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[768px]">
-      <div className="relative shadow-[0_0_50px_rgba(168,85,247,0.3)] rounded-lg overflow-hidden w-full">
-        <canvas
-          ref={canvasRef}
-          width={768}
-          height={576}
-          className="block bg-[#0f0518] border-4 border-[#3a205e] w-full h-auto"
-        />
-      </div>
+    <div style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#0f0518' }}>
+      <canvas
+        ref={canvasRef}
+        width={768}
+        height={576}
+        style={{ width: '100%', height: '100%', objectFit: 'contain', imageRendering: 'pixelated', display: 'block' }}
+      />
       {isTouchDevice && <TouchControls stateRef={stateRef} />}
     </div>
   );

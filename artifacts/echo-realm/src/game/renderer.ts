@@ -2581,57 +2581,101 @@ function renderChallengeResult(ctx: CanvasRenderingContext2D, state: GameStateDa
   const cr = state.challengeResult;
   if (!cr) return;
   ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0, 0, W, H);
-  const bx = 120; const by = 100; const bw = W - 240; const bh = H - 200;
+  const bx = 100; const by = 70; const bw = W - 200; const bh = H - 140;
   pixelBox(ctx, bx, by, bw, bh, '#060611', '#9966ff', 3);
 
   // Title
   ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
-  drawRainbowText(ctx, 'CHALLENGE COMPLETE', W / 2, by + 34, state.frameCount);
+  drawRainbowText(ctx, 'CHALLENGE COMPLETE', W / 2, by + 30, state.frameCount);
 
   ctx.strokeStyle = '#2a1a44'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(bx + 20, by + 46); ctx.lineTo(bx + bw - 20, by + 46); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx + 20, by + 40); ctx.lineTo(bx + bw - 20, by + 40); ctx.stroke();
 
   // Time
   const totalSec = Math.floor(cr.timeSeconds);
   const mm = Math.floor(totalSec / 60);
   const ss = totalSec % 60;
   const timeStr = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
-  ctx.font = '13px monospace'; ctx.fillStyle = '#666688'; ctx.textAlign = 'center';
-  ctx.fillText('Time', W / 2, by + 68);
-  ctx.font = 'bold 28px monospace'; ctx.fillStyle = '#aaaacc';
-  ctx.fillText(timeStr, W / 2, by + 100);
+  ctx.font = '12px monospace'; ctx.fillStyle = '#666688'; ctx.textAlign = 'center';
+  ctx.fillText('Completion Time', W / 2, by + 58);
+  ctx.font = 'bold 26px monospace'; ctx.fillStyle = '#aaaacc';
+  ctx.fillText(timeStr, W / 2, by + 86);
 
   ctx.strokeStyle = '#221133'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(bx + 40, by + 114); ctx.lineTo(bx + bw - 40, by + 114); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(bx + 40, by + 98); ctx.lineTo(bx + bw - 40, by + 98); ctx.stroke();
 
   // Reward
-  ctx.font = '12px monospace'; ctx.fillStyle = '#554466'; ctx.textAlign = 'center';
-  ctx.fillText('Reward Earned', W / 2, by + 132);
+  const rewardLabel = cr.isDuplicate ? 'Duplicate Reward — Converted to Echoes' : 'Reward Earned';
+  ctx.font = '11px monospace'; ctx.fillStyle = cr.isDuplicate ? '#997733' : '#554466'; ctx.textAlign = 'center';
+  ctx.fillText(rewardLabel, W / 2, by + 114);
 
   const itemData = ITEMS[cr.itemId];
   if (itemData) {
     const tc = TIER_COLOR[itemData.tier] ?? '#ff77ee';
-    ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center';
     if (itemData.tier === 'mythic') {
-      drawTierText(ctx, itemData.name, W / 2, by + 156, 'mythic', state.frameCount);
+      drawTierText(ctx, itemData.name, W / 2, by + 135, 'mythic', state.frameCount);
     } else {
-      ctx.fillStyle = tc;
-      ctx.fillText(itemData.name, W / 2, by + 156);
+      ctx.fillStyle = cr.isDuplicate ? '#666655' : tc;
+      ctx.fillText(itemData.name, W / 2, by + 135);
     }
-    ctx.font = '11px monospace'; ctx.fillStyle = tc;
-    ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, W / 2, by + 174);
-    ctx.font = '11px monospace'; ctx.fillStyle = '#554466'; ctx.textAlign = 'center';
-    drawWrappedText(ctx, itemData.desc, bx + 30, by + 192, bw - 60, 16);
+    ctx.font = '10px monospace'; ctx.fillStyle = cr.isDuplicate ? '#444433' : tc;
+    ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, W / 2, by + 150);
+    // Description — truncate to single line to avoid overflow
+    const desc = itemData.desc
+      ? (itemData.desc.length > 68 ? itemData.desc.slice(0, 65) + '…' : itemData.desc)
+      : '';
+    ctx.font = '10px monospace'; ctx.fillStyle = cr.isDuplicate ? '#333328' : '#554466'; ctx.textAlign = 'center';
+    ctx.fillText(desc, W / 2, by + 165);
+    if (cr.isDuplicate) {
+      ctx.font = '11px monospace'; ctx.fillStyle = '#aa8833'; ctx.textAlign = 'center';
+      ctx.fillText(`+${itemData.price ?? 50} Echoes added to your returning inventory`, W / 2, by + 182);
+    }
   } else {
     ctx.font = '14px monospace'; ctx.fillStyle = '#bb99ff'; ctx.textAlign = 'center';
-    ctx.fillText(cr.itemId, W / 2, by + 156);
+    ctx.fillText(cr.itemId, W / 2, by + 135);
   }
 
-  // Close hint
-  ctx.font = '11px monospace'; ctx.fillStyle = '#443355'; ctx.textAlign = 'center';
+  // ── Rerun / Return buttons ───────────────────────────────────────────
+  ctx.strokeStyle = '#221133'; ctx.lineWidth = 1;
+  const divY = by + bh - 88;
+  ctx.beginPath(); ctx.moveTo(bx + 20, divY); ctx.lineTo(bx + bw - 20, divY); ctx.stroke();
+
+  const btnW = Math.floor(bw / 2) - 20;
+  const btn0X = bx + 10;
+  const btn1X = bx + bw / 2 + 10;
+  const btnY = by + bh - 70;
+  const sel = state.challengeResultMenuIndex;
+
+  // Rerun button
+  const rerunSel = sel === 0;
+  ctx.fillStyle = rerunSel ? 'rgba(140,100,255,0.18)' : 'rgba(30,20,60,0.4)';
+  ctx.fillRect(btn0X, btnY, btnW, 44);
+  ctx.strokeStyle = rerunSel ? '#9966ff' : '#2a1a44'; ctx.lineWidth = rerunSel ? 2 : 1;
+  ctx.strokeRect(btn0X, btnY, btnW, 44);
+  ctx.font = rerunSel ? 'bold 13px monospace' : '12px monospace';
+  ctx.fillStyle = rerunSel ? '#ccaaff' : '#554466'; ctx.textAlign = 'center';
+  ctx.fillText('RERUN', btn0X + btnW / 2, btnY + 18);
+  ctx.font = '10px monospace'; ctx.fillStyle = rerunSel ? '#8866bb' : '#332244';
+  ctx.fillText('same tier, no new reward', btn0X + btnW / 2, btnY + 34);
+
+  // Return button
+  const retSel = sel === 1;
+  ctx.fillStyle = retSel ? 'rgba(100,200,140,0.18)' : 'rgba(20,40,30,0.4)';
+  ctx.fillRect(btn1X, btnY, btnW, 44);
+  ctx.strokeStyle = retSel ? '#66cc99' : '#142418'; ctx.lineWidth = retSel ? 2 : 1;
+  ctx.strokeRect(btn1X, btnY, btnW, 44);
+  ctx.font = retSel ? 'bold 13px monospace' : '12px monospace';
+  ctx.fillStyle = retSel ? '#99eecc' : '#2a4434'; ctx.textAlign = 'center';
+  ctx.fillText('RETURN', btn1X + btnW / 2, btnY + 18);
+  ctx.font = '10px monospace'; ctx.fillStyle = retSel ? '#44aa77' : '#1a3022';
+  ctx.fillText('back to the world', btn1X + btnW / 2, btnY + 34);
+
+  // Navigation hint
+  ctx.font = '10px monospace'; ctx.fillStyle = '#332244'; ctx.textAlign = 'center';
   const pulse = 0.65 + 0.35 * Math.sin(state.frameCount * 0.07);
   ctx.globalAlpha = pulse;
-  ctx.fillText('[SPACE / X]  Continue', W / 2, by + bh - 20);
+  ctx.fillText('[←→] select  ·  [SPACE] confirm  ·  [X] return', W / 2, by + bh - 12);
   ctx.globalAlpha = 1;
 }
 
@@ -2855,26 +2899,35 @@ function renderItemCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   if (scrollOff > 0) { ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▲', W/2, listTop - 6); }
   if (scrollOff + maxVisible < catRecipes.length) { ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▼', W/2, listBottom + 6); }
 
-  // Selected recipe output detail
+  // ── Selected recipe output detail (anchored to box bottom, no overflow) ──
   const selRecipe = catRecipes[state.itemCraft.cursorIndex];
+  const detailAreaY = H - 148; // fixed anchor — box ends at H-60=516, so 148px from bottom leaves safe margin
+  ctx.strokeStyle = '#334433'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(100, detailAreaY); ctx.lineTo(W - 100, detailAreaY); ctx.stroke();
   if (selRecipe) {
     const outItem = ITEMS[selRecipe.outputId];
     const canCraft = selRecipe.ingredients.every(ing =>
       state.player.inventory.filter(id => id === ing.itemId).length >= ing.count
     );
-    ctx.strokeStyle = '#334433'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(100, listBottom + 12); ctx.lineTo(W - 100, listBottom + 12); ctx.stroke();
     if (outItem) {
-      ctx.font = '11px monospace'; ctx.textAlign = 'center';
-      ctx.fillStyle = '#aabb88';
-      const outLabel = `Output: ${outItem.name} × ${selRecipe.outputCount}  —  ${outItem.desc ?? ''}`;
-      drawWrappedText(ctx, outLabel, 108, listBottom + 18, W - 216, 16);
+      // Item name + tier on one line
+      const tc = TIER_COLOR[outItem.tier] ?? '#aabb88';
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = tc;
+      ctx.fillText(`${outItem.name} × ${selRecipe.outputCount}`, 108, detailAreaY + 18);
+      ctx.font = '10px monospace'; ctx.textAlign = 'right'; ctx.fillStyle = tc;
+      ctx.fillText(`[${(TIER_LABEL[outItem.tier] ?? outItem.tier).toUpperCase()}]`, W - 108, detailAreaY + 18);
+      // Description — single truncated line so it never overflows
+      const desc = outItem.desc
+        ? (outItem.desc.length > 80 ? outItem.desc.slice(0, 77) + '…' : outItem.desc)
+        : '';
+      ctx.font = '10px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#778866';
+      ctx.fillText(desc, 108, detailAreaY + 32);
     }
     ctx.font = '11px monospace'; ctx.fillStyle = canCraft ? '#88bb55' : '#774444'; ctx.textAlign = 'center';
-    ctx.fillText(canCraft ? '[SPACE] Craft  |  [←→] category  |  [X] close' : 'Missing ingredients  |  [←→] category  |  [X] close', W/2, listBottom + 44);
+    ctx.fillText(canCraft ? '[SPACE] Craft  ·  [←→] category  ·  [X] close' : 'Missing ingredients  ·  [←→] category  ·  [X] close', W / 2, detailAreaY + 52);
   } else {
     ctx.fillStyle = '#445544'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('[←→] change category  |  [X] close', W/2, H - 100);
+    ctx.fillText('[←→] change category  ·  [X] close', W / 2, detailAreaY + 52);
   }
 }
 

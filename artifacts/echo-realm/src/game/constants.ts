@@ -2875,6 +2875,18 @@ export const MAPS: Record<string, any> = {
 };
 
 // ── TELEPORT POINTS — unlocked as the player discovers each region ──
+// ── Per-tier challenge wave sequences ─────────────────────────────────────
+// Bronze=3 enemies, Silver=4, Gold=5, Platinum=6, Diamond=7, Color=8.
+// Higher tiers introduce real in-game bosses (echo_warden, ring_boss, etc.).
+export const TIER_WAVE_SEQUENCES: Record<string, string[]> = {
+  bronze:   ['challenge_w1', 'challenge_w2', 'challenge_w3'],
+  silver:   ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4'],
+  gold:     ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final'],
+  platinum: ['challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final', 'echo_warden', 'ring_boss'],
+  diamond:  ['challenge_w3', 'challenge_w4', 'challenge_final', 'archivist', 'echo_warden', 'ring_boss', 'echo_warden'],
+  color:    ['challenge_w3', 'challenge_w4', 'challenge_final', 'archivist', 'echo_warden', 'ring_boss', 'child_void_kid', 'echo_warden'],
+};
+
 export const TELEPORT_POINTS: { id: string; name: string; mapId: string; x: number; y: number }[] = [
   { id: 'VH', name: 'Verdant Hollow',   mapId: 'VH', x: 12, y: 8  },
   { id: 'WW', name: 'Whispering Woods', mapId: 'WW', x: 11, y: 1  },
@@ -2964,6 +2976,8 @@ export const INITIAL_STATE: GameStateData = {
   achievementsScroll: 0,
   challengeSelectState: { tierCursor: 0, poolCursor: 0 },
   challengeAttempt: null,
+  challengeSnapshot: null,
   challengeResult: null,
+  challengeResultMenuIndex: 0,
   extrasState: { menuIndex: 0, subScreen: 'menu' as const, codexScroll: 0 },
 };

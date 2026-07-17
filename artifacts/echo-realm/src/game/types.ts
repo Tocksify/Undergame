@@ -263,12 +263,37 @@ export interface GameStateData {
   /** Active challenge attempt: tracks which tier and wave we're currently running. */
   challengeAttempt: {
     tierName: string;
-    wave: number;        // 0–4 (0=challenge_w1 … 4=challenge_final)
-    waveLaunched: boolean; // true once pendingEncounter for this wave has been set
+    wave: number;          // next wave index to fight (0-based); equals totalWaves when all done
+    waveLaunched: boolean; // true once keeper sent the pendingEncounter for this wave
     startFrame: number;
   } | null;
+  /** Snapshot of player state taken the moment a challenge begins. Restored on Return or death. */
+  challengeSnapshot: {
+    player: {
+      x: number; y: number; targetX: number; targetY: number;
+      hp: number; maxHp: number; echoes: number;
+      inventory: string[]; enchantedSlots: (string | null)[];
+      equipment: {
+        weapon: string | null; armor: string | null; offhand: string | null;
+        helmet: string | null; gloves: string | null; pants: string | null;
+        boots: string | null; cloak: string | null; necklace: string | null;
+        ring1: string | null; ring2: string | null; belt: string | null;
+        trinket: string | null;
+      };
+      quests: Record<string, number>; questProgress: Record<string, number>;
+      flags: Record<string, boolean>; invincibility: number;
+      level: number; xp: number; xpToNext: number; statPoints: number;
+      baseStats: { str: number; vit: number; def: number };
+      appearance?: import('./npcAppearance').SpriteAppearance;
+      bestiary: Record<string, number>;
+      learnedSkills: string[]; skillPoints: number;
+    };
+    mapId: string;
+  } | null;
   /** Result shown after beating a challenge. Cleared when player dismisses the modal. */
-  challengeResult: { timeSeconds: number; itemId: string; tierName: string } | null;
+  challengeResult: { timeSeconds: number; itemId: string; tierName: string; isDuplicate: boolean } | null;
+  /** Cursor in the CHALLENGE_RESULT modal: 0=Rerun, 1=Return */
+  challengeResultMenuIndex: number;
   extrasState: { menuIndex: number; subScreen: 'menu' | 'codex'; codexScroll: number; };
   // Accumulated play-time in seconds (incremented each frame, serialized to save slot).
   playTimeSeconds: number;

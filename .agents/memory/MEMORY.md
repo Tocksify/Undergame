@@ -7,4 +7,5 @@
 - [Echo Realm GameData stores](echo-realm-gamedata-stores.md) — achievementStore/codexStore/challengeStore: global localStorage stores that survive slot deletions.
 - [Echo Realm item crafting](echo-realm-item-crafting.md) — ITEM_CRAFT mode (18): tab-based crafting table; CRAFT NPC opens it; TOME_CRAFT (enchants) still from inventory use.
 - [Echo Realm challenge board](echo-realm-challenge-board.md) — CHALLENGE_SELECT (20) + CHALLENGE_RESULT (24): informational board + 5-wave battle gauntlet; ch_claimed_X flag gates re-attempt; challengeAttempt/challengeResult state tracks wave chain and result.
+- [Echo Realm challenge redesign](echo-realm-challenge-redesign.md) — NPC-driven tier-based arena: snapshot+reset on start, keeper drives waves, Rerun/Return modal, death restores snapshot, N-key blocked in arena.
 - [Echo Realm Color tier & challenge items](echo-realm-color-tier.md) — hardest tier is color; 'chromatic' tier in constants.ts is only used on two items (ch_creed_emblem, ch_ench_chromatic_tide) and is intentionally outside ItemTier (pre-existing TS error, not a bug).
