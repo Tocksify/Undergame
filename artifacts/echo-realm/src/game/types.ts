@@ -19,10 +19,11 @@ export enum GameMode {
   SKILL_TREE,     // 17 - K key: Void/Chromatic/Echo/Ember skill tree
   ITEM_CRAFT,     // 18 - Crafting Table: craft items/gear from ingredients
   ACHIEVEMENTS,   // 19 - A key: global achievement tracker
-  CHALLENGE_SELECT,  // 20 - Challenge Board: tier reward picker (via herald NPC)
+  CHALLENGE_SELECT,  // 20 - Challenge Board: tier info + attempt launcher (via herald NPC)
   EXTRAS,            // 21 - Extras screen: achievements, challenge codex, etc.
   COLOR_SANDBOX_FADE, // 22 - Black-screen moment before sandbox respawn after Color ending
   END_LEGACY_SEQ,    // 23 - Multi-step "End Legacy" sequence: text → playtime → erase slot
+  CHALLENGE_RESULT,  // 24 - Post-challenge modal: shows time + randomly awarded item
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
@@ -259,6 +260,15 @@ export interface GameStateData {
   itemCraft: { categoryIdx: number; cursorIndex: number; };
   achievementsScroll: number;
   challengeSelectState: { tierCursor: number; poolCursor: number; };
+  /** Active challenge attempt: tracks which tier and wave we're currently running. */
+  challengeAttempt: {
+    tierName: string;
+    wave: number;        // 0–4 (0=challenge_w1 … 4=challenge_final)
+    waveLaunched: boolean; // true once pendingEncounter for this wave has been set
+    startFrame: number;
+  } | null;
+  /** Result shown after beating a challenge. Cleared when player dismisses the modal. */
+  challengeResult: { timeSeconds: number; itemId: string; tierName: string } | null;
   extrasState: { menuIndex: number; subScreen: 'menu' | 'codex'; codexScroll: number; };
   // Accumulated play-time in seconds (incremented each frame, serialized to save slot).
   playTimeSeconds: number;

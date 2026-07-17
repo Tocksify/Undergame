@@ -2963,5 +2963,7 @@ export const INITIAL_STATE: GameStateData = {
   itemCraft: { categoryIdx: 0, cursorIndex: 0 },
   achievementsScroll: 0,
   challengeSelectState: { tierCursor: 0, poolCursor: 0 },
+  challengeAttempt: null,
+  challengeResult: null,
   extrasState: { menuIndex: 0, subScreen: 'menu' as const, codexScroll: 0 },
 };

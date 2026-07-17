@@ -421,6 +421,11 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     renderChallengeSelect(ctx, state); drawScanlines(ctx); return;
   }
 
+  // ── CHALLENGE RESULT ──────────────────────────────────────────────
+  if (state.mode === GameMode.CHALLENGE_RESULT) {
+    renderChallengeResult(ctx, state); drawScanlines(ctx); return;
+  }
+
   // ── EXTRAS ────────────────────────────────────────────────────────
   if (state.mode === GameMode.EXTRAS) {
     renderExtras(ctx, state); drawScanlines(ctx); return;
@@ -611,11 +616,25 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  B Bestiary  |  M Stats  |  ESC Menu', W / 2, H - 6);
 
   if (state.uiMessage) {
-    const tw = ctx.measureText(state.uiMessage).width + 40;
-    const mx = (W - tw) / 2;
-    pixelBox(ctx, mx, 55, tw, 34, C.black, C.white, 2);
-    ctx.fillStyle = C.white; ctx.font = 'bold 14px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(state.uiMessage, W / 2, 76);
+    // Wrap notification text so long messages never overflow the canvas
+    ctx.font = 'bold 14px monospace';
+    const maxNotifInner = W - 80;
+    const words = state.uiMessage.split(' ');
+    const notifLines: string[] = [];
+    let notifCur = '';
+    for (const w of words) {
+      const test = notifCur ? notifCur + ' ' + w : w;
+      if (ctx.measureText(test).width > maxNotifInner && notifCur) { notifLines.push(notifCur); notifCur = w; }
+      else notifCur = test;
+    }
+    if (notifCur) notifLines.push(notifCur);
+    const notifLineH = 18;
+    const notifBoxH = 14 + notifLines.length * notifLineH;
+    const notifBoxW = Math.min(Math.max(...notifLines.map(l => ctx.measureText(l).width)) + 40, W - 40);
+    const nmx = (W - notifBoxW) / 2;
+    pixelBox(ctx, nmx, 52, notifBoxW, notifBoxH, C.black, C.white, 2);
+    ctx.fillStyle = C.white; ctx.textAlign = 'center';
+    notifLines.forEach((l, i) => ctx.fillText(l, W / 2, 68 + i * notifLineH));
   }
 
   // Stacked toast list — for multi-item pickups (boss loot, quest turn-ins with
@@ -2244,7 +2263,7 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = C.enchant; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
   ctx.fillText('CRAFTING TABLE', W / 2, 124);
   ctx.fillStyle = C.silver; ctx.font = '12px monospace';
-  ctx.fillText('Craft any enchantment from scratch. The Tomes Blessing and Empty Book are consumed.', W / 2, 144);
+  drawWrappedText(ctx, 'Craft any enchantment from scratch. The Tomes Blessing and Empty Book are consumed.', 140, 140, W - 280, 16);
 
   ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(150, 156); ctx.lineTo(W - 150, 156); ctx.stroke();
@@ -2393,7 +2412,25 @@ function renderBestiary(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillText('[↑↓] scroll  |  [B] or [X] close', W / 2, H - 84);
 }
 
-// ── CHALLENGE SELECT (Challenge Board — opens from Challenge Herald NPC) ──
+// Helper: draw text with an animated rainbow gradient (used for Color tier label)
+function drawRainbowText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, frame: number) {
+  const tw = ctx.measureText(text).width;
+  const align = ctx.textAlign;
+  const startX = align === 'center' ? x - tw / 2 : align === 'right' ? x - tw : x;
+  const shift = (frame * 2.5) % (tw + 80);
+  const grad = ctx.createLinearGradient(startX - 40 + shift - (tw + 80), y, startX + 40 + shift, y);
+  grad.addColorStop(0,    '#ff4488');
+  grad.addColorStop(0.17, '#ffaa33');
+  grad.addColorStop(0.33, '#ffee33');
+  grad.addColorStop(0.5,  '#44ffaa');
+  grad.addColorStop(0.67, '#33aaff');
+  grad.addColorStop(0.83, '#aa55ff');
+  grad.addColorStop(1,    '#ff4488');
+  ctx.fillStyle = grad;
+  ctx.fillText(text, x, y);
+}
+
+// ── CHALLENGE SELECT (Challenge Board — informational + attempt launcher) ──
 function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.95)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 40, 40, W - 80, H - 80, '#080814', '#9966ff', 3);
@@ -2401,22 +2438,22 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
   ctx.fillStyle = '#bb99ff'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
   ctx.fillText('CHALLENGE BOARD', W / 2, 76);
   ctx.fillStyle = '#443355'; ctx.font = '11px monospace';
-  ctx.fillText('Claim one reward from each unlocked tier  ·  One choice per tier per journey', W / 2, 94);
+  ctx.fillText('Select a tier to view possible rewards  ·  Beat all 5 trial waves to earn one at random', W / 2, 94);
   ctx.strokeStyle = '#2a1a44'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(60, 103); ctx.lineTo(W - 60, 103); ctx.stroke();
 
   const unlockedIdx = getUnlockedTierIndex();
   const tiers = CHALLENGE_TIERS;
-  const { tierCursor, poolCursor } = state.challengeSelectState;
+  const { tierCursor } = state.challengeSelectState;
 
   // ── Left panel: tier list ──
-  const tpX = 60; const tpW = 210;
-  const tierListTop = 114; const tierRowH = 50;
+  const tpX = 60; const tpW = 200;
+  const tierListTop = 114; const tierRowH = 48;
 
   tiers.forEach((tier, i) => {
     const isUnlocked = i <= unlockedIdx;
     const isSel = tierCursor === i;
-    const isClaimed = !!state.player.flags[`ch_claimed_${tier.name}`];
+    const isDone = !!state.player.flags[`ch_claimed_${tier.name}`];
     const ty = tierListTop + i * tierRowH;
 
     if (isSel) {
@@ -2426,19 +2463,21 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
       ctx.strokeRect(tpX - 2, ty, tpW + 4, tierRowH - 2);
     }
 
+    // Tier name — Color tier gets rainbow gradient
     ctx.font = isSel ? 'bold 14px monospace' : '13px monospace'; ctx.textAlign = 'left';
-    ctx.fillStyle = isUnlocked ? tier.color : '#2a2040';
-    ctx.fillText((isSel ? '► ' : '  ') + tier.displayName, tpX + 6, ty + 20);
+    const nameText = (isSel ? '► ' : '  ') + tier.displayName;
+    if (isUnlocked && tier.name === 'color') {
+      ctx.fillStyle = tier.color; ctx.fillText('  ', tpX + 6, ty + 20); // prefix space (no gradient)
+      drawRainbowText(ctx, nameText, tpX + 6, ty + 20, state.frameCount);
+    } else {
+      ctx.fillStyle = isUnlocked ? tier.color : '#2a2040';
+      ctx.fillText(nameText, tpX + 6, ty + 20);
+    }
 
     ctx.font = '10px monospace'; ctx.textAlign = 'right';
-    if (!isUnlocked) { ctx.fillStyle = '#2a2040'; ctx.fillText('LOCKED', tpX + tpW - 4, ty + 20); }
-    else if (isClaimed) { ctx.fillStyle = '#557744'; ctx.fillText('✓ CLAIMED', tpX + tpW - 4, ty + 20); }
-    else { ctx.fillStyle = '#887733'; ctx.fillText('AVAILABLE', tpX + tpW - 4, ty + 20); }
-
-    ctx.font = '10px monospace'; ctx.textAlign = 'left';
-    ctx.fillStyle = isUnlocked ? '#443355' : '#1a1030';
-    const dSlice = tier.desc.slice(0, 28) + (tier.desc.length > 28 ? '…' : '');
-    ctx.fillText(dSlice, tpX + 6, ty + 38);
+    if (!isUnlocked)  { ctx.fillStyle = '#2a2040'; ctx.fillText('LOCKED',    tpX + tpW - 4, ty + 20); }
+    else if (isDone)  { ctx.fillStyle = '#557744'; ctx.fillText('✓ COMPLETE', tpX + tpW - 4, ty + 20); }
+    else              { ctx.fillStyle = '#887733'; ctx.fillText('AVAILABLE',  tpX + tpW - 4, ty + 20); }
   });
 
   // ── Divider ──
@@ -2446,7 +2485,7 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
   ctx.strokeStyle = '#1a0e33'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(divX, 108); ctx.lineTo(divX, H - 72); ctx.stroke();
 
-  // ── Right panel: pool items ──
+  // ── Right panel: possible rewards (informational) ──
   const poolX = divX + 12; const poolW = W - poolX - 52;
   const selTier = tiers[tierCursor];
   const isUnlocked = tierCursor <= unlockedIdx;
@@ -2456,63 +2495,144 @@ function renderChallengeSelect(ctx: CanvasRenderingContext2D, state: GameStateDa
     const midX = poolX + poolW / 2;
     ctx.fillText('LOCKED', midX, 200);
     ctx.fillStyle = '#1a0e28'; ctx.font = '11px monospace';
-    ctx.fillText('Complete the Challenge Arena to unlock.', midX, 224);
-    ctx.fillText('Talk to the Challenge Keeper to begin.', midX, 242);
+    ctx.fillText('All tiers are currently available.', midX, 222);
   } else if (selTier) {
-    const tierClaimed = !!state.player.flags[`ch_claimed_${selTier.name}`];
+    const isDone = !!state.player.flags[`ch_claimed_${selTier.name}`];
 
-    ctx.font = 'bold 13px monospace'; ctx.textAlign = 'left';
-    ctx.fillStyle = selTier.color;
-    ctx.fillText(`${selTier.displayName} Tier Rewards`, poolX, 126);
-    ctx.font = '10px monospace'; ctx.fillStyle = tierClaimed ? '#334433' : '#443355';
-    ctx.fillText(tierClaimed
-      ? "You've already claimed this tier's reward on this journey."
-      : 'Select a reward and press [SPACE] to claim. Choose wisely — one per tier.',
-      poolX, 141);
+    // Tier name header (Color = rainbow)
+    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left';
+    if (selTier.name === 'color') {
+      drawRainbowText(ctx, `${selTier.displayName} Tier`, poolX, 122, state.frameCount);
+    } else {
+      ctx.fillStyle = selTier.color;
+      ctx.fillText(`${selTier.displayName} Tier`, poolX, 122);
+    }
 
-    const poolRowH = 68;
+    ctx.font = '10px monospace'; ctx.fillStyle = isDone ? '#334433' : '#554466';
+    const subLine = isDone
+      ? "You've completed this tier's challenge this journey."
+      : 'Beat all 5 trial waves — you earn one reward at random based on the chances below.';
+    drawWrappedText(ctx, subLine, poolX, 136, poolW, 14);
+
+    // Pool items list
+    const poolRowH = 62;
+    const poolTop = 164;
+    const totalChance = selTier.pool.reduce((s, p) => s + p.chance, 0);
+
     selTier.pool.forEach((item, pi) => {
-      const isSel = poolCursor === pi;
       const itemData = ITEMS[item.itemId];
-      const py = 154 + pi * poolRowH;
-
-      if (isSel) {
-        ctx.fillStyle = tierClaimed ? 'rgba(20,20,40,0.1)' : 'rgba(130,80,255,0.1)';
-        ctx.fillRect(poolX - 4, py, poolW + 8, poolRowH - 4);
-        ctx.strokeStyle = tierClaimed ? '#222235' : '#7755bb'; ctx.lineWidth = 1;
-        ctx.strokeRect(poolX - 4, py, poolW + 8, poolRowH - 4);
-      }
-
+      const py = poolTop + pi * poolRowH;
+      const pct = Math.round((item.chance / totalChance) * 100);
       const tc = TIER_COLOR[itemData?.tier ?? 'common'] ?? '#888';
-      ctx.font = isSel ? 'bold 13px monospace' : '13px monospace'; ctx.textAlign = 'left';
-      ctx.fillStyle = tierClaimed ? '#2a2a3a' : (isSel ? '#ddccff' : '#8877aa');
-      ctx.fillText((isSel ? '> ' : '  ') + item.label, poolX + 2, py + 18);
 
+      // Item row background
+      ctx.fillStyle = isDone ? 'rgba(20,20,40,0.05)' : 'rgba(80,50,150,0.06)';
+      ctx.fillRect(poolX - 4, py, poolW + 8, poolRowH - 4);
+      ctx.strokeStyle = isDone ? '#1a1a2a' : '#332244'; ctx.lineWidth = 1;
+      ctx.strokeRect(poolX - 4, py, poolW + 8, poolRowH - 4);
+
+      // Item name
+      ctx.font = '13px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = isDone ? '#3a3a4a' : '#ccbbee';
+      ctx.fillText(item.label, poolX + 2, py + 16);
+
+      // Tier tag
       if (itemData) {
-        ctx.font = '10px monospace'; ctx.textAlign = 'right'; ctx.fillStyle = tc;
-        ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, poolX + poolW - 4, py + 18);
+        ctx.font = '10px monospace'; ctx.textAlign = 'right';
+        ctx.fillStyle = isDone ? '#2a2a36' : tc;
+        ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, poolX + poolW - 4, py + 16);
       }
 
+      // Chance
+      ctx.font = 'bold 11px monospace'; ctx.textAlign = 'right';
+      ctx.fillStyle = isDone ? '#2a3a2a' : '#88dd66';
+      ctx.fillText(`${pct}%`, poolX + poolW - 4, py + 32);
+
+      // Description (wrapped)
       ctx.font = '10px monospace'; ctx.textAlign = 'left';
-      ctx.fillStyle = tierClaimed ? '#1e1e2a' : (isSel ? '#776688' : '#443355');
-      ctx.fillText(item.desc, poolX + 2, py + 34);
-
-      if (itemData) {
-        ctx.fillStyle = tierClaimed ? '#1a1a26' : '#2a1a3a';
-        ctx.fillText(itemData.category.toUpperCase(), poolX + 2, py + 50);
-      }
-
-      ctx.textAlign = 'right';
-      if (tierClaimed) { ctx.fillStyle = '#335533'; ctx.font = '10px monospace'; ctx.fillText('TIER CLAIMED', poolX + poolW - 4, py + 50); }
-      else if (isSel) { ctx.fillStyle = '#997722'; ctx.font = 'bold 10px monospace'; ctx.fillText('[SPACE] CLAIM', poolX + poolW - 4, py + 50); }
+      ctx.fillStyle = isDone ? '#252530' : '#665577';
+      drawWrappedText(ctx, item.desc, poolX + 2, py + 32, poolW - 40, 14);
     });
+
+    // Attempt / done CTA
+    const ctaY = poolTop + selTier.pool.length * poolRowH + 10;
+    if (isDone) {
+      ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillStyle = '#445544';
+      ctx.fillText('Challenge complete for this journey  ·  [X] close', poolX + poolW / 2, Math.min(ctaY, H - 80));
+    } else {
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+      const pulse = 0.65 + 0.35 * Math.sin(state.frameCount * 0.07);
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#bb99ff';
+      ctx.fillText('[SPACE] Attempt Challenge', poolX + poolW / 2, Math.min(ctaY, H - 80));
+      ctx.globalAlpha = 1;
+    }
   }
 
   // ── Footer ──
   ctx.strokeStyle = '#1a0e33'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(60, H - 66); ctx.lineTo(W - 60, H - 66); ctx.stroke();
   ctx.fillStyle = '#3a2a55'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('[↑↓] select tier  ·  [←→] browse rewards  ·  [SPACE] claim  ·  [X] close', W / 2, H - 48);
+  ctx.fillText('[↑↓] select tier  ·  [SPACE] attempt  ·  [X] close', W / 2, H - 48);
+}
+
+// ── CHALLENGE RESULT (post-challenge reward modal) ────────────────────
+function renderChallengeResult(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  const cr = state.challengeResult;
+  if (!cr) return;
+  ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0, 0, W, H);
+  const bx = 120; const by = 100; const bw = W - 240; const bh = H - 200;
+  pixelBox(ctx, bx, by, bw, bh, '#060611', '#9966ff', 3);
+
+  // Title
+  ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+  drawRainbowText(ctx, 'CHALLENGE COMPLETE', W / 2, by + 34, state.frameCount);
+
+  ctx.strokeStyle = '#2a1a44'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bx + 20, by + 46); ctx.lineTo(bx + bw - 20, by + 46); ctx.stroke();
+
+  // Time
+  const totalSec = Math.floor(cr.timeSeconds);
+  const mm = Math.floor(totalSec / 60);
+  const ss = totalSec % 60;
+  const timeStr = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  ctx.font = '13px monospace'; ctx.fillStyle = '#666688'; ctx.textAlign = 'center';
+  ctx.fillText('Time', W / 2, by + 68);
+  ctx.font = 'bold 28px monospace'; ctx.fillStyle = '#aaaacc';
+  ctx.fillText(timeStr, W / 2, by + 100);
+
+  ctx.strokeStyle = '#221133'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(bx + 40, by + 114); ctx.lineTo(bx + bw - 40, by + 114); ctx.stroke();
+
+  // Reward
+  ctx.font = '12px monospace'; ctx.fillStyle = '#554466'; ctx.textAlign = 'center';
+  ctx.fillText('Reward Earned', W / 2, by + 132);
+
+  const itemData = ITEMS[cr.itemId];
+  if (itemData) {
+    const tc = TIER_COLOR[itemData.tier] ?? '#ff77ee';
+    ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+    if (itemData.tier === 'mythic') {
+      drawTierText(ctx, itemData.name, W / 2, by + 156, 'mythic', state.frameCount);
+    } else {
+      ctx.fillStyle = tc;
+      ctx.fillText(itemData.name, W / 2, by + 156);
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = tc;
+    ctx.fillText(`[${(TIER_LABEL[itemData.tier] ?? itemData.tier).toUpperCase()}]`, W / 2, by + 174);
+    ctx.font = '11px monospace'; ctx.fillStyle = '#554466'; ctx.textAlign = 'center';
+    drawWrappedText(ctx, itemData.desc, bx + 30, by + 192, bw - 60, 16);
+  } else {
+    ctx.font = '14px monospace'; ctx.fillStyle = '#bb99ff'; ctx.textAlign = 'center';
+    ctx.fillText(cr.itemId, W / 2, by + 156);
+  }
+
+  // Close hint
+  ctx.font = '11px monospace'; ctx.fillStyle = '#443355'; ctx.textAlign = 'center';
+  const pulse = 0.65 + 0.35 * Math.sin(state.frameCount * 0.07);
+  ctx.globalAlpha = pulse;
+  ctx.fillText('[SPACE / X]  Continue', W / 2, by + bh - 20);
+  ctx.globalAlpha = 1;
 }
 
 // ── EXTRAS ────────────────────────────────────────────────────────────
@@ -2747,7 +2867,8 @@ function renderItemCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
     if (outItem) {
       ctx.font = '11px monospace'; ctx.textAlign = 'center';
       ctx.fillStyle = '#aabb88';
-      ctx.fillText(`Output: ${outItem.name} × ${selRecipe.outputCount}  —  ${outItem.desc ?? ''}`, W/2, listBottom + 28);
+      const outLabel = `Output: ${outItem.name} × ${selRecipe.outputCount}  —  ${outItem.desc ?? ''}`;
+      drawWrappedText(ctx, outLabel, 108, listBottom + 18, W - 216, 16);
     }
     ctx.font = '11px monospace'; ctx.fillStyle = canCraft ? '#88bb55' : '#774444'; ctx.textAlign = 'center';
     ctx.fillText(canCraft ? '[SPACE] Craft  |  [←→] category  |  [X] close' : 'Missing ingredients  |  [←→] category  |  [X] close', W/2, listBottom + 44);

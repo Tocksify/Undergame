@@ -10,6 +10,18 @@ export interface ChallengeTierItem {
   itemId: string;   // item ID from the ITEMS registry
   label: string;    // display name for the item picker
   desc: string;     // short benefit description
+  chance: number;   // relative weight (e.g. 50 = 50 out of total)
+}
+
+/** Weighted-random pick from a tier's item pool based on each item's chance weight. */
+export function pickRandomChallengeItem(tier: ChallengeTier): string {
+  const total = tier.pool.reduce((s, p) => s + p.chance, 0);
+  let r = Math.random() * total;
+  for (const p of tier.pool) {
+    r -= p.chance;
+    if (r <= 0) return p.itemId;
+  }
+  return tier.pool[tier.pool.length - 1].itemId;
 }
 
 export interface ChallengeTier {
@@ -27,9 +39,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#cd7f32',
     desc: 'The first rite of challenge. A modest boon to begin the journey.',
     pool: [
-      { itemId: 'ch_wisp_lantern',   label: 'Wisp Lantern',   desc: 'Trinket: +1 ATK, +5 HP — challenge-exclusive' },
-      { itemId: 'ch_hollow_draught', label: 'Hollow Draught', desc: 'Consumable: heal 15 HP, clear confusion — challenge-exclusive' },
-      { itemId: 'carved_stake',      label: 'Carved Stake',   desc: 'Weapon: +2 ATK' },
+      { itemId: 'ch_wisp_lantern',   label: 'Wisp Lantern',   desc: 'Trinket: +1 ATK, +5 HP — challenge-exclusive',          chance: 50 },
+      { itemId: 'ch_hollow_draught', label: 'Hollow Draught', desc: 'Consumable: heal 15 HP, clear confusion — challenge-exclusive', chance: 30 },
+      { itemId: 'carved_stake',      label: 'Carved Stake',   desc: 'Weapon: +2 ATK',                                        chance: 20 },
     ],
   },
   {
@@ -38,9 +50,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#c0c0c0',
     desc: 'Proven once. The silver reward cuts sharper.',
     pool: [
-      { itemId: 'ch_resonance_fork', label: 'Resonance Fork', desc: 'Weapon: +5 ATK — challenge-exclusive' },
-      { itemId: 'ch_echo_tonic',     label: 'Echo Tonic',     desc: 'Consumable: heal 22 HP — challenge-exclusive' },
-      { itemId: 'void_needle',       label: 'Void Needle',    desc: 'Weapon: +3 ATK' },
+      { itemId: 'ch_resonance_fork', label: 'Resonance Fork', desc: 'Weapon: +5 ATK — challenge-exclusive',    chance: 40 },
+      { itemId: 'ch_echo_tonic',     label: 'Echo Tonic',     desc: 'Consumable: heal 22 HP — challenge-exclusive', chance: 35 },
+      { itemId: 'void_needle',       label: 'Void Needle',    desc: 'Weapon: +3 ATK',                          chance: 25 },
     ],
   },
   {
@@ -49,9 +61,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#ffd700',
     desc: "A champion's boon. Rare gear to start the fight right.",
     pool: [
-      { itemId: 'ch_keeper_sigil',   label: "Keeper's Sigil",   desc: 'Trinket: +2 ATK, +2 DEF, +5 HP — challenge-exclusive' },
-      { itemId: 'ch_archive_blade',  label: 'Archive Blade',    desc: 'Weapon: +9 ATK — challenge-exclusive' },
-      { itemId: 'ench_hollow_edge',  label: 'Hollow Edge Tome', desc: 'Weapon enchant: weaken enemy ATK' },
+      { itemId: 'ch_keeper_sigil',   label: "Keeper's Sigil",   desc: 'Trinket: +2 ATK, +2 DEF, +5 HP — challenge-exclusive', chance: 45 },
+      { itemId: 'ch_archive_blade',  label: 'Archive Blade',    desc: 'Weapon: +9 ATK — challenge-exclusive',                 chance: 35 },
+      { itemId: 'ench_hollow_edge',  label: 'Hollow Edge Tome', desc: 'Weapon enchant: weaken enemy ATK',                    chance: 20 },
     ],
   },
   {
@@ -60,9 +72,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#e5e4e2',
     desc: 'Forged in hardship. The platinum reward is rare indeed.',
     pool: [
-      { itemId: 'ch_void_shard_edge', label: 'Void Shard Edge', desc: 'Weapon: +12 ATK — challenge-exclusive' },
-      { itemId: 'ch_echo_bulwark',    label: 'Echo Bulwark',    desc: 'Shield: blocks 10 flat dmg — challenge-exclusive' },
-      { itemId: 'phoenix_ash',        label: 'Phoenix Ash',     desc: 'Consumable: full heal, clear all effects' },
+      { itemId: 'ch_void_shard_edge', label: 'Void Shard Edge', desc: 'Weapon: +12 ATK — challenge-exclusive',     chance: 40 },
+      { itemId: 'ch_echo_bulwark',    label: 'Echo Bulwark',    desc: 'Shield: blocks 10 flat dmg — challenge-exclusive', chance: 35 },
+      { itemId: 'phoenix_ash',        label: 'Phoenix Ash',     desc: 'Consumable: full heal, clear all effects', chance: 25 },
     ],
   },
   {
@@ -71,9 +83,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#b9f2ff',
     desc: 'Diamond tier — the boons of legends.',
     pool: [
-      { itemId: 'ch_nexus_crown',   label: 'Nexus Crown',   desc: 'Helmet: +5 DEF, +15 HP — challenge-exclusive' },
-      { itemId: 'ch_oblivion_fang', label: 'Oblivion Fang', desc: 'Weapon: +16 ATK — challenge-exclusive' },
-      { itemId: 'ench_cursed_brand', label: 'Cursed Brand', desc: 'Weapon enchant: poison + burn + silence' },
+      { itemId: 'ch_nexus_crown',    label: 'Nexus Crown',   desc: 'Helmet: +5 DEF, +15 HP — challenge-exclusive',    chance: 40 },
+      { itemId: 'ch_oblivion_fang',  label: 'Oblivion Fang', desc: 'Weapon: +16 ATK — challenge-exclusive',           chance: 35 },
+      { itemId: 'ench_cursed_brand', label: 'Cursed Brand',  desc: 'Weapon enchant: poison + burn + silence',        chance: 25 },
     ],
   },
   {
@@ -82,9 +94,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
     color: '#ff77ee',
     desc: 'The final rite. Those who see all colours at once. Chromatic and Mortus-tier rewards await.',
     pool: [
-      { itemId: 'ch_creed_emblem',         label: 'Creed Emblem',      desc: 'Trinket: +4 ATK, +3 DEF, +10 HP — scales with Chromatic skills. Chromatic tier, challenge-exclusive.' },
-      { itemId: 'ch_ench_chromatic_tide',  label: 'Chromatic Tide',    desc: 'Weapon enchant: +8 ATK, confuse + freeze + weaken on hit. Chromatic tier, challenge-exclusive.' },
-      { itemId: 'ch_ench_mortus_verdict',  label: "Mortus' Verdict",   desc: 'Weapon enchant: +15 ATK, drain 8 HP + silence on hit. Mortus tier, challenge-exclusive.' },
+      { itemId: 'ch_creed_emblem',        label: 'Creed Emblem',    desc: 'Trinket: +4 ATK, +3 DEF, +10 HP — scales with Chromatic skills. Chromatic tier, challenge-exclusive.',   chance: 45 },
+      { itemId: 'ch_ench_chromatic_tide', label: 'Chromatic Tide',  desc: 'Weapon enchant: +8 ATK, confuse + freeze + weaken on hit. Chromatic tier, challenge-exclusive.',         chance: 35 },
+      { itemId: 'ch_ench_mortus_verdict', label: "Mortus' Verdict", desc: 'Weapon enchant: +15 ATK, drain 8 HP + silence on hit. Mortus tier, challenge-exclusive.',               chance: 20 },
     ],
   },
 ];

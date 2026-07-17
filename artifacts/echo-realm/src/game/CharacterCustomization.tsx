@@ -162,7 +162,7 @@ export default function CharacterCustomization({ onConfirm, onBack }: Props) {
           <Section title="STARTING CHALLENGE ITEM">
             {earnedChallengeItems.length === 0 ? (
               <p className="text-xs text-[#555] leading-relaxed">
-                No challenge items earned yet. Visit the Challenge Herald NPC and claim a board reward to unlock items here.
+                Run challenges to earn challenge items.
               </p>
             ) : (
               <>

@@ -6,7 +6,10 @@ import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
 import { updateBattlePhase, handleBattleInput } from './battle';
-import { CHALLENGE_TIERS, getUnlockedTierIndex, addEarnedChallengeItem } from '../challengeStore';
+import { CHALLENGE_TIERS, getUnlockedTierIndex, addEarnedChallengeItem, pickRandomChallengeItem } from '../challengeStore';
+
+// Ordered wave sequence for challenge battles (Bronze→Color use the same 5-wave gauntlet)
+const CHALLENGE_WAVES = ['challenge_w1', 'challenge_w2', 'challenge_w3', 'challenge_w4', 'challenge_final'] as const;
 
 export function justPressed(state: GameStateData, key: string) {
   const k = key; const K = key.toUpperCase();
@@ -61,6 +64,7 @@ export function updateGame(state: GameStateData) {
         state.player.x = 12 * TILE_SIZE; state.player.y = 8 * TILE_SIZE;
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
         state.mapId = 'VH';
+        state.challengeAttempt = null; // cancel any active challenge run on death
       }
       state.mode = state.battle ? GameMode.BATTLE : GameMode.OVERWORLD;
     }
@@ -734,36 +738,37 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
-  // ── CHALLENGE SELECT (Challenge Board) ────────────────────────────
+  // ── CHALLENGE SELECT (Challenge Board — informational + attempt launcher) ──
   if (state.mode === GameMode.CHALLENGE_SELECT) {
     const unlockedIdx = getUnlockedTierIndex();
-    if (justPressed(state, 'Escape') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'b')) { state.mode = GameMode.OVERWORLD; return; }
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
       state.challengeSelectState.tierCursor = Math.max(0, state.challengeSelectState.tierCursor - 1);
-      state.challengeSelectState.poolCursor = 0;
     }
     if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
       state.challengeSelectState.tierCursor = Math.min(CHALLENGE_TIERS.length - 1, state.challengeSelectState.tierCursor + 1);
-      state.challengeSelectState.poolCursor = 0;
     }
     const csTier = CHALLENGE_TIERS[state.challengeSelectState.tierCursor];
     const csUnlocked = state.challengeSelectState.tierCursor <= unlockedIdx;
-    if (csUnlocked && csTier) {
-      if (justPressed(state, 'ArrowLeft')  || justPressed(state, 'a')) state.challengeSelectState.poolCursor = Math.max(0, state.challengeSelectState.poolCursor - 1);
-      if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) state.challengeSelectState.poolCursor = Math.min(csTier.pool.length - 1, state.challengeSelectState.poolCursor + 1);
-      if (justPressed(state, ' ') || justPressed(state, 'z')) {
-        const claimFlag = `ch_claimed_${csTier.name}`;
-        if (!state.player.flags[claimFlag]) {
-          const chosen = csTier.pool[state.challengeSelectState.poolCursor];
-          addInventoryItem(state, chosen.itemId);
-          addEarnedChallengeItem(chosen.itemId);
-          state.player.flags[claimFlag] = true;
-          const itemName = ITEMS[chosen.itemId]?.name ?? chosen.label;
-          state.uiMessage = `Claimed: ${itemName}!`; state.uiMessageTimer = 240;
-        } else {
-          state.uiMessage = "You've already claimed this tier's reward on this journey."; state.uiMessageTimer = 150;
-        }
+    if (csUnlocked && csTier && (justPressed(state, ' ') || justPressed(state, 'z'))) {
+      const claimFlag = `ch_claimed_${csTier.name}`;
+      if (state.player.flags[claimFlag]) {
+        state.uiMessage = "Already completed this tier's challenge this journey."; state.uiMessageTimer = 150;
+      } else {
+        // Start challenge: 5-wave battle gauntlet beginning with wave 1
+        state.challengeAttempt = { tierName: csTier.name, wave: 0, waveLaunched: false, startFrame: state.frameCount };
+        state.mode = GameMode.OVERWORLD;
+        state.uiMessage = "Challenge started! Defeat all five trial waves."; state.uiMessageTimer = 180;
       }
+    }
+    return;
+  }
+
+  // ── CHALLENGE RESULT (post-challenge reward modal) ─────────────────
+  if (state.mode === GameMode.CHALLENGE_RESULT) {
+    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'x') || justPressed(state, 'Escape')) {
+      state.challengeResult = null;
+      state.mode = GameMode.OVERWORLD;
     }
     return;
   }
@@ -809,6 +814,39 @@ export function updateGame(state: GameStateData) {
     if (state.player.y < state.player.targetY) state.player.y = Math.min(state.player.targetY, state.player.y + spd);
     else if (state.player.y > state.player.targetY) state.player.y = Math.max(state.player.targetY, state.player.y - spd);
     return;
+  }
+
+  // ── Challenge wave progression ────────────────────────────────────
+  // When a challenge attempt is active, automatically chain the 5-wave
+  // battle gauntlet. waveLaunched=false → set pendingEncounter (which fires
+  // below). After each battle ends we return here with waveLaunched=true,
+  // no battle, no pendingEncounter → advance to the next wave (or finish).
+  if (state.challengeAttempt && !state.battle) {
+    const ca = state.challengeAttempt;
+    if (!ca.waveLaunched) {
+      state.pendingEncounter = JSON.parse(JSON.stringify(ENEMIES[CHALLENGE_WAVES[ca.wave]]));
+      ca.waveLaunched = true;
+    } else if (!state.pendingEncounter) {
+      // Battle for this wave just finished — advance or complete
+      const nextWave = ca.wave + 1;
+      if (nextWave < CHALLENGE_WAVES.length) {
+        ca.wave = nextWave;
+        ca.waveLaunched = false;
+      } else {
+        // All 5 waves cleared — award a random item from the selected tier
+        const tier = CHALLENGE_TIERS.find(t => t.name === ca.tierName);
+        if (tier) {
+          const timeSeconds = (state.frameCount - ca.startFrame) / 60;
+          const itemId = pickRandomChallengeItem(tier);
+          addInventoryItem(state, itemId);
+          addEarnedChallengeItem(itemId);
+          state.player.flags[`ch_claimed_${tier.name}`] = true;
+          state.challengeResult = { timeSeconds, itemId, tierName: tier.name };
+          state.mode = GameMode.CHALLENGE_RESULT;
+        }
+        state.challengeAttempt = null;
+      }
+    }
   }
 
   if (state.pendingEncounter) {
