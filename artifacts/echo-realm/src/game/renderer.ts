@@ -506,12 +506,65 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   // NPCs
   for (const npc of map.npcs) {
     if (npc.hideFlag && state.player.flags[npc.hideFlag]) continue;
-    drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, getNpcAppearance(npc.id, npc.color), npc.id === 'maren');
+    if (npc.id === 'boss') {
+      // Memory Wraith appears as a dark grey void entity — not a normal human sprite
+      const bossApp: SpriteAppearance = {
+        cloth: '#1a1a28', skin: '#2d2d40', hair: '#0a0a18',
+        hairStyle: 'bald', eye: '#8888cc', bodyW: 18, bodyH: 18, headSize: 14, accessory: 'none',
+      };
+      drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, bossApp);
+    } else {
+      drawSprite(ctx, npc.x * TILE_SIZE, npc.y * TILE_SIZE, getNpcAppearance(npc.id, npc.color), npc.id === 'maren');
+    }
+  }
+
+  // VN Portal — rendered at boss's former position after defeat
+  if (state.mapId === 'VN' && state.player.flags['boss_defeated']) {
+    const px = 9 * TILE_SIZE; const py = 2 * TILE_SIZE;
+    const t = state.frameCount;
+    // Dark swirling void center
+    ctx.fillStyle = '#08080f'; ctx.fillRect(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+    // Pulsing inner glow
+    const glow = 0.35 + 0.25 * Math.sin(t * 0.09);
+    ctx.fillStyle = `rgba(90, 60, 200, ${glow})`; ctx.fillRect(px + 10, py + 10, TILE_SIZE - 20, TILE_SIZE - 20);
+    // Rotating colored border blocks
+    const colors = ['#ff5555', '#ff9933', '#ffff33', '#55ff55', '#33aaff', '#bb55ff'];
+    const blocks: [number, number][] = [
+      [px - 6, py + 4], [px - 6, py + 20],         // left
+      [px + TILE_SIZE - 2, py + 4], [px + TILE_SIZE - 2, py + 20], // right
+      [px + 4, py - 6], [px + 20, py - 6],          // top
+      [px + 4, py + TILE_SIZE - 2], [px + 20, py + TILE_SIZE - 2], // bottom
+    ];
+    blocks.forEach(([bx, by], i) => {
+      ctx.fillStyle = colors[(i + Math.floor(t / 7)) % colors.length];
+      ctx.fillRect(bx, by, 8, 8);
+    });
+    // Travel prompt
+    const bob = Math.round(Math.sin(t * 0.12) * 3);
+    const label = '[SPACE] - Enter Portal';
+    ctx.font = 'bold 11px monospace';
+    const tw = ctx.measureText(label).width;
+    const bw = tw + 16; const bh = 20;
+    const bx = px + TILE_SIZE / 2 - bw / 2; const by = py - 32 + bob;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+    ctx.fillStyle = '#000000'; ctx.textAlign = 'center';
+    ctx.fillText(label, px + TILE_SIZE / 2, by + 14);
   }
 
   // player
   if (state.player.invincibility <= 0 || Math.floor(state.frameCount / 4) % 2 === 0) {
     drawSprite(ctx, state.player.x, state.player.y, state.player.appearance ?? PLAYER_APPEARANCE);
+  }
+
+  // Follower NPC — trails the player one tile behind
+  if (state.follower) {
+    drawSprite(ctx, state.follower.x, state.follower.y, getNpcAppearance(state.follower.npcId, state.follower.color));
+    // Name label above follower
+    const fx = state.follower.x + TILE_SIZE / 2; const fy = state.follower.y - 4;
+    ctx.font = '9px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(fx - 28, fy - 10, 56, 12);
+    ctx.fillStyle = '#d8d8f8'; ctx.fillText(state.follower.name, fx, fy);
   }
 
   // interaction prompt

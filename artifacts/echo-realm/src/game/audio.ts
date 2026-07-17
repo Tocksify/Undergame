@@ -163,6 +163,17 @@ const TRACKS: Record<string, TrackDef> = {
     lead: [f('E5'), f('A4'), f('D#5'), f('A4'), f('E5'), f('A4'), f('D#5'), f('E5'), f('F5'), f('A4'), f('C5'), f('A4'), f('F5'), f('A4'), f('C5'), f('F5')],
     leadWave: 'square',
   },
+  // ── Wraith Room — haunting, slow, echoing grief. A-minor pad with long silences ──
+  wraith_room: {
+    bpm: 38, chordWave: 'sine', filterFreq: 480, volume: 0.22,
+    chord: [f('A3'), f('C4'), f('E4')],
+    chordAlt: [f('F3'), f('A3'), f('C4')],
+    bass: [f('A2'), null, null, null, null, null, null, null, f('G2'), null, null, null, null, null, null, null],
+    bassWave: 'sine',
+    lead: [null, null, null, null, f('E5'), null, null, null, null, null, null, null, f('C5'), null, null, null],
+    leadAlt: [null, null, null, null, f('C5'), null, null, null, null, null, null, null, f('A4'), null, null, null],
+    leadWave: 'sine',
+  },
   // ── Child void — melancholy A-minor, slow, for the kid fight ──
   child_void: {
     bpm: 72, chordWave: 'sine', filterFreq: 800, volume: 0.32,
@@ -192,6 +203,7 @@ function trackForMap(mapId: string): string {
   if (TOWN_TRACKS[mapId]) return TOWN_TRACKS[mapId];
   if (DEEP_DUNGEON_MAPS.has(mapId)) return 'dungeon_deep';
   if (DUNGEON_MAPS.has(mapId)) return 'dungeon';
+  if (mapId === 'WR') return 'wraith_room';
   if (mapId === 'SR') return 'south_road';
   if (OVERWORLD_MAPS.has(mapId)) return 'overworld';
   if (mapId.startsWith('CT_') || mapId.startsWith('AR_')) return 'interior'; // house/building interiors

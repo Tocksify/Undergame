@@ -307,6 +307,8 @@ export interface GameStateData {
   extrasState: { menuIndex: number; subScreen: 'menu' | 'codex'; codexScroll: number; };
   // Accumulated play-time in seconds (incremented each frame, serialized to save slot).
   playTimeSeconds: number;
+  // Follower NPC — an NPC that trails the player one tile behind until delivered.
+  follower?: { npcId: string; x: number; y: number; targetX: number; targetY: number; name: string; color: string; } | null;
   // Step index for the END_LEGACY_SEQ mode: 0=message, 1=playtime, 2=erase-confirm.
   endLegacyStep: number;
   // Set by engine when the player confirms slot erasure; Game.tsx calls onDeleteLegacy.

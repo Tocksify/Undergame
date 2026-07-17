@@ -958,6 +958,17 @@ export function updateGame(state: GameStateData) {
 
   const map = MAPS[state.mapId];
 
+  // ── Eldan follower: keep in sync with flag ───────────────────────────
+  if (state.player.flags['eldan_following'] && !state.follower) {
+    state.follower = {
+      npcId: 'eldan', color: '#c8c8d8', name: 'The First Keeper',
+      x: state.player.x, y: state.player.y + TILE_SIZE,
+      targetX: state.player.x, targetY: state.player.y + TILE_SIZE,
+    };
+  } else if (!state.player.flags['eldan_following'] && state.follower) {
+    state.follower = null;
+  }
+
   // smooth movement
   if (state.player.x !== state.player.targetX || state.player.y !== state.player.targetY) {
     const spd = 6;
@@ -965,6 +976,13 @@ export function updateGame(state: GameStateData) {
     else if (state.player.x > state.player.targetX) state.player.x = Math.max(state.player.targetX, state.player.x - spd);
     if (state.player.y < state.player.targetY) state.player.y = Math.min(state.player.targetY, state.player.y + spd);
     else if (state.player.y > state.player.targetY) state.player.y = Math.max(state.player.targetY, state.player.y - spd);
+    // Follower lerps alongside player movement
+    if (state.follower) {
+      if (state.follower.x < state.follower.targetX) state.follower.x = Math.min(state.follower.targetX, state.follower.x + spd);
+      else if (state.follower.x > state.follower.targetX) state.follower.x = Math.max(state.follower.targetX, state.follower.x - spd);
+      if (state.follower.y < state.follower.targetY) state.follower.y = Math.min(state.follower.targetY, state.follower.y + spd);
+      else if (state.follower.y > state.follower.targetY) state.follower.y = Math.max(state.follower.targetY, state.follower.y - spd);
+    }
     return;
   }
 
@@ -1073,6 +1091,10 @@ export function updateGame(state: GameStateData) {
   if (isExitTile(curTile)) {
     intFound = { type: 'EXIT', tile: curTile, x: tx, y: ty };
   }
+  // VN portal: after boss defeated, standing at (9,2) opens the Wraith Room portal
+  if (state.mapId === 'VN' && state.player.flags['boss_defeated'] && tx === 9 && ty === 2) {
+    intFound = { type: 'EXIT', tile: '@', x: 9, y: 2 };
+  }
   state.adjacentInteractable = intFound;
 
   // handle SPACE interactions
@@ -1081,6 +1103,9 @@ export function updateGame(state: GameStateData) {
       // Block leaving the Challenge Arena mid-challenge via the exit tile
       if (state.mapId === 'CHALLENGE_ARENA' && state.challengeAttempt) {
         state.uiMessage = "Speak to the Challenge Keeper to abandon the challenge."; state.uiMessageTimer = 150;
+      } else if (state.mapId === 'VN' && state.player.flags['boss_defeated'] && intFound.tile === '<') {
+        // VN back exit sealed after boss defeated — portal is now the only way
+        state.uiMessage = "The passage has collapsed behind you. The portal above is the only way forward."; state.uiMessageTimer = 150;
       } else {
         const exit = map.exits[intFound.tile];
         if (exit) {
@@ -1091,6 +1116,11 @@ export function updateGame(state: GameStateData) {
             state.mapId = exit.mapId;
             state.player.x = exit.x * TILE_SIZE; state.player.y = exit.y * TILE_SIZE;
             state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+            // Snap follower to new map position
+            if (state.follower) {
+              state.follower.x = state.player.x; state.follower.y = state.player.y + TILE_SIZE;
+              state.follower.targetX = state.follower.x; state.follower.targetY = state.follower.y;
+            }
             // Never register the Challenge Arena as a discovered transit point
             if (exit.mapId !== 'CHALLENGE_ARENA') {
               state.player.flags['discovered_' + exit.mapId] = true;
@@ -1112,6 +1142,11 @@ export function updateGame(state: GameStateData) {
         state.mapId = door.targetMapId;
         state.player.x = door.targetX * TILE_SIZE; state.player.y = door.targetY * TILE_SIZE;
         state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        // Snap follower to new map position
+        if (state.follower) {
+          state.follower.x = state.player.x; state.follower.y = state.player.y + TILE_SIZE;
+          state.follower.targetX = state.follower.x; state.follower.targetY = state.follower.y;
+        }
         state.player.flags['discovered_' + door.targetMapId] = true;
         state.adjacentInteractable = null;
       }
@@ -1158,6 +1193,11 @@ export function updateGame(state: GameStateData) {
         const npcBlocking = visibleNpcs.find((n: any) => n.x === ntx && n.y === nty);
         const impassable = tile === 'W' || tile === 'T' || tile === 'H' || tile === 'CW' || tile === 'CH' || npcBlocking;
         if (!impassable) {
+          // Follower trails to where the player currently stands before each step
+          if (state.follower) {
+            state.follower.targetX = state.player.x;
+            state.follower.targetY = state.player.y;
+          }
           state.player.targetX = ntx * TILE_SIZE;
           state.player.targetY = nty * TILE_SIZE;
           if (tile === 'V') {

@@ -1460,6 +1460,15 @@ function buildAD(): string[][] {
   return L;
 }
 
+// ── WRAITH ROOM (8 × 8) — the pocket dimension behind the boss portal
+function buildWR(): string[][] {
+  const W = 8, H = 8;
+  const L = buildMap(W, H, 'V');
+  rect(L, 1, 1, W - 2, H - 2, 'P');
+  poke(L, 4, H - 2, '<'); // exit at bottom-center, returns to VN
+  return L;
+}
+
 // ── VOID NEXUS (20 × 16) — final cathedral arena
 function buildVN(): string[][] {
   const W = 20, H = 16;
@@ -2049,6 +2058,7 @@ const msLayout = buildMS();
 const saLayout = buildSA();
 const frLayout = buildFR();
 const adLayout = buildAD();
+const wrLayout = buildWR();
 const vnLayout = buildVN();
 const tfLayout = buildTF();
 const ctBuild = buildCTFull();
@@ -2458,7 +2468,7 @@ export const MAPS: Record<string, any> = {
     id: 'VN', name: 'Void Nexus', width: 20, height: 16,
     layout: vnLayout,
     npcs: [
-      { id: 'boss', x: 9, y: 2, color: '#ffffff', name: 'Memory Wraith', type: 'BOSS' }
+      { id: 'boss', x: 9, y: 2, color: '#2a2a3a', name: 'Memory Wraith', type: 'BOSS', hideFlag: 'boss_defeated' }
     ],
     chests: [
       { id: 'ch_vn1', flag: 'ch_vn1', x: 2,  y: 4,  item: 'voidglass_dagger' },
@@ -2471,7 +2481,24 @@ export const MAPS: Record<string, any> = {
     books: [],
     encounterPool: ['void_sentinel'],
     exits: {
-      '<': { mapId: 'AD', x: 10, y: 1 }
+      '<': { mapId: 'AD', x: 10, y: 1 },
+      '@': { mapId: 'WR', x: 4, y: 5 }
+    }
+  },
+
+  // ── WRAITH ROOM (8 × 8) — pocket dimension behind the boss portal ──
+  'WR': {
+    id: 'WR', name: "Memory's End", width: 8, height: 8,
+    layout: wrLayout,
+    npcs: [
+      { id: 'eldan', x: 3, y: 3, color: '#c8c8d8', name: 'The First Keeper', type: 'TALK', hideFlag: 'eldan_left' }
+    ],
+    chests: [],
+    doors: [],
+    books: [],
+    encounterPool: [],
+    exits: {
+      '<': { mapId: 'VN', x: 9, y: 3 }
     }
   },
 

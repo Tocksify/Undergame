@@ -328,6 +328,21 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
+  // ── ELDAN — The First Keeper, found in the Wraith Room after boss defeat ──
+  if (npcId === 'eldan') {
+    if (state.player.flags['eldan_delivered']) {
+      return { text: "I remember Color now. I had forgotten what warm felt like. Thank you, Keeper.", speaker: 'The First Keeper', color: '#c8c8d8' };
+    }
+    if (state.player.flags['eldan_following']) {
+      return { text: "I remember the path, though I do not deserve to return on it. Lead on, Keeper.", speaker: 'The First Keeper', color: '#c8c8d8' };
+    }
+    return {
+      text: "You... you can hear me. I have not been heard in a very long time.",
+      speaker: 'The First Keeper', color: '#c8c8d8',
+      nextId: 'eldan_1',
+    };
+  }
+
   // ── MEMORY WRAITH (Void Nexus final boss) ─────────────────────────
   if (npcId === 'boss') {
     if (state.player.flags['boss_defeated']) {
@@ -430,6 +445,13 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
 
   // ── MORTHUS (Color) — speaking with him triggers the true ending cutscene ──
   if (npcId === 'morthus') {
+    if (state.player.flags['eldan_following']) {
+      return {
+        text: "I see you brought someone. I... I know you.",
+        speaker: 'Morthus', color: '#7fd68a',
+        nextId: 'morthus_eldan_1',
+      };
+    }
     if (state.player.flags['morthus_ending_seen']) {
       const postEndingLines = [
         "The Void was never the world's enemy. It was its grief. You gave it somewhere to go.",
@@ -726,6 +748,86 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
     return {
       text: "I'm... fine. I found a letter in that house over there, from a child to her father. I read it three times. I don't know why I kept reading it. I think I needed to remember that people like that existed.",
       speaker: 'A Survivor', color: '#cccccc'
+    };
+  }
+
+  // ── ELDAN CHAIN — the First Keeper's story inside the Wraith Room ──
+  if (nextId === 'eldan_1') {
+    return {
+      text: "I was a Memory Keeper. Like you. I walked the paths between the fading places, trying to hold things together. I don't remember when I stopped knowing why.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_2',
+    };
+  }
+  if (nextId === 'eldan_2') {
+    return {
+      text: "The hunger just... kept growing. Every void entity I absorbed gave me something — strength, maybe. Or the memory of strength. I kept eating because I had forgotten the reason not to.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_3',
+    };
+  }
+  if (nextId === 'eldan_3') {
+    return {
+      text: "I walked and ate and grew until I had walked all the way here — to the end of what I could reach. And then I just... stayed. There was nowhere left to go that I hadn't already consumed.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_4',
+    };
+  }
+  if (nextId === 'eldan_4') {
+    return {
+      text: "I remember Color. I remember what the world looked like before the grey crept in. I think I made the grey, in the end. I walked so far from Color that the world followed me into the dark.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_5',
+    };
+  }
+  if (nextId === 'eldan_5') {
+    return {
+      text: "And then you came. A Modern Keeper. Small, compared to what I became. And you reminded me that I was a person, once. That I had a home.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_6',
+    };
+  }
+  if (nextId === 'eldan_6') {
+    return {
+      text: "I can feel the weight leaving. Whatever I was holding onto — I think it's gone now. I don't know if I deserve to go back. But I remember the way.",
+      speaker: 'The First Keeper', color: '#c8c8d8', nextId: 'eldan_choice',
+    };
+  }
+  if (nextId === 'eldan_choice') {
+    return {
+      text: "Will you bring me home?",
+      speaker: 'The First Keeper', color: '#c8c8d8',
+      options: [
+        {
+          label: "Take my hand.",
+          action: (s) => {
+            s.player.flags['eldan_following'] = true;
+            s.player.flags['eldan_left'] = true;
+          },
+        },
+        { label: "Not yet." },
+      ],
+    };
+  }
+
+  // ── MORTHUS / ELDAN HANDOFF — Morthus receives the First Keeper ──
+  if (nextId === 'morthus_eldan_1') {
+    return {
+      text: "The First Keeper. I've read your name only in the oldest records. We thought you had simply... walked until there was no walking left.",
+      speaker: 'Morthus', color: '#7fd68a', nextId: 'morthus_eldan_2',
+    };
+  }
+  if (nextId === 'morthus_eldan_2') {
+    return {
+      text: "He doesn't say much, does he? That's alright. Color has always been patient.",
+      speaker: 'Morthus', color: '#7fd68a', nextId: 'morthus_eldan_3',
+    };
+  }
+  if (nextId === 'morthus_eldan_3') {
+    return {
+      text: "Leave him here, Keeper. Color takes care of its own. That's what it's always done.",
+      speaker: 'Morthus', color: '#7fd68a',
+      action: (s) => {
+        s.player.flags['eldan_following'] = false;
+        s.player.flags['eldan_delivered'] = true;
+        s.follower = null;
+      },
+      nextId: 'co_cutscene_1',
     };
   }
 
