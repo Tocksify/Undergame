@@ -17,11 +17,14 @@ interface GameProps {
   onSave: (state: GameStateData) => Promise<void> | void;
   onExit: () => void;
   // Called when the player chooses "End Legacy" on the true-ending screen —
-  // App.tsx deletes the active save slot, then exits back to the slot list.
+  // App.tsx exits back to the slot list (no deletion).
   onEndLegacy: () => void;
+  // Called when the player confirms slot erasure at the end of END_LEGACY_SEQ —
+  // App.tsx deletes the active save slot and returns to the main menu.
+  onDeleteLegacy: () => void;
 }
 
-export default function Game({ initialState, onSave, onExit, onEndLegacy }: GameProps) {
+export default function Game({ initialState, onSave, onExit, onEndLegacy, onDeleteLegacy }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameStateData>(initialState);
   const savingRef = useRef(false);
@@ -115,6 +118,11 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy }: Game
         onEndLegacy();
         return; // parent will unmount this component
       }
+      if (state.deleteSlotRequested) {
+        state.deleteSlotRequested = false;
+        onDeleteLegacy();
+        return; // parent will unmount this component
+      }
 
       renderGame(ctx, state);
       state.prevKeys = { ...state.keys };
@@ -130,7 +138,7 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy }: Game
       // Stop procedural music so it doesn't bleed over the menu MP3.
       audio.stop();
     };
-  }, [onSave, onExit, onEndLegacy]);
+  }, [onSave, onExit, onEndLegacy, onDeleteLegacy]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-[768px]">

@@ -19,8 +19,10 @@ export enum GameMode {
   SKILL_TREE,     // 17 - K key: Void/Chromatic/Echo/Ember skill tree
   ITEM_CRAFT,     // 18 - Crafting Table: craft items/gear from ingredients
   ACHIEVEMENTS,   // 19 - A key: global achievement tracker
-  CHALLENGE_SELECT, // 20 - Challenge Board: tier reward picker (via herald NPC)
-  EXTRAS,           // 21 - Extras screen: achievements, challenge codex, etc.
+  CHALLENGE_SELECT,  // 20 - Challenge Board: tier reward picker (via herald NPC)
+  EXTRAS,            // 21 - Extras screen: achievements, challenge codex, etc.
+  COLOR_SANDBOX_FADE, // 22 - Black-screen moment before sandbox respawn after Color ending
+  END_LEGACY_SEQ,    // 23 - Multi-step "End Legacy" sequence: text → playtime → erase slot
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
@@ -258,6 +260,12 @@ export interface GameStateData {
   achievementsScroll: number;
   challengeSelectState: { tierCursor: number; poolCursor: number; };
   extrasState: { menuIndex: number; subScreen: 'menu' | 'codex'; codexScroll: number; };
+  // Accumulated play-time in seconds (incremented each frame, serialized to save slot).
+  playTimeSeconds: number;
+  // Step index for the END_LEGACY_SEQ mode: 0=message, 1=playtime, 2=erase-confirm.
+  endLegacyStep: number;
+  // Set by engine when the player confirms slot erasure; Game.tsx calls onDeleteLegacy.
+  deleteSlotRequested: boolean;
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player

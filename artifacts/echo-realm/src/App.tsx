@@ -8,7 +8,7 @@ import { SpriteAppearance } from './game/npcAppearance';
 import { ITEMS } from './game/constants';
 import {
   ErsavFile, LocalSlot,
-  createSlot, updateSlot, getSlotById,
+  createSlot, updateSlot, getSlotById, deleteSlotById,
 } from './ersav';
 import MainMenu from './MainMenu';
 import SaveSlots from './SaveSlots';
@@ -119,6 +119,12 @@ function App() {
     setInitialState(null); setActiveSlotId(null); setScreen('menu');
   }, []);
 
+  const onDeleteLegacy = useCallback(() => {
+    const id = activeSlotId;
+    setInitialState(null); setActiveSlotId(null); setScreen('menu');
+    if (id) deleteSlotById(id).catch(() => {});
+  }, [activeSlotId]);
+
   // ── Screens ──────────────────────────────────────────────────────
   if (screen === 'menu') {
     return (
@@ -162,6 +168,7 @@ function App() {
           onSave={onSave}
           onExit={onExit}
           onEndLegacy={onEndLegacy}
+          onDeleteLegacy={onDeleteLegacy}
         />
       </div>
     );

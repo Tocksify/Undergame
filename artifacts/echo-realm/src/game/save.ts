@@ -46,6 +46,7 @@ export interface SavedGameState {
     resonance: number;
     flags: Record<string, boolean>;
   };
+  playTimeSeconds?: number;
 }
 
 export function serializeGameState(state: GameStateData): SavedGameState {
@@ -80,6 +81,7 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       resonance: state.battle.resonance,
       flags: { ...state.battle.flags },
     } : undefined,
+    playTimeSeconds: state.playTimeSeconds,
   };
 }
 
@@ -136,6 +138,7 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.appearance = saved.player.appearance ? { ...saved.player.appearance } : undefined;
     state.player.learnedSkills = saved.player.learnedSkills ? [...saved.player.learnedSkills] : [];
     state.player.skillPoints = saved.player.skillPoints ?? 0;
+    state.playTimeSeconds = saved.playTimeSeconds ?? 0;
     recomputeMaxHp(state);
     // Baseline the notification badges to the loaded save so pre-existing
     // items/quest progress don't show up as "new" the moment the game loads.

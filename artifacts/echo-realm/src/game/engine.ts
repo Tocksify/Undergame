@@ -43,6 +43,7 @@ export function markQuestsSeen(state: GameStateData) {
 
 export function updateGame(state: GameStateData) {
   state.frameCount++;
+  state.playTimeSeconds += 1 / 60;
   if (state.player.invincibility > 0) state.player.invincibility--;
   if (state.uiMessageTimer > 0) {
     state.uiMessageTimer--;
@@ -73,17 +74,38 @@ export function updateGame(state: GameStateData) {
     }
     if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
       if (state.trueEndingMenuIndex === 0) {
-        // Enter Sandbox Mode — respawn near Morthus's grove and keep playing.
-        state.mode = GameMode.OVERWORLD;
-        state.mapId = 'CO';
-        state.player.hp = state.player.maxHp;
-        state.player.x = 22 * TILE_SIZE; state.player.y = 32 * TILE_SIZE;
-        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
-        state.player.flags['sandbox_mode'] = true;
-        state.uiMessage = "Sandbox Mode: your legacy endures. Fight on, at your own pace.";
-        state.uiMessageTimer = 240;
+        // Sandbox — brief black-screen transition, then respawn at Verdant Hollow.
+        state.mode = GameMode.COLOR_SANDBOX_FADE;
       } else {
-        state.endLegacyRequested = true;
+        // End Legacy — multi-step farewell sequence before slot erasure.
+        state.mode = GameMode.END_LEGACY_SEQ;
+        state.endLegacyStep = 0;
+      }
+    }
+    return;
+  }
+
+  if (state.mode === GameMode.COLOR_SANDBOX_FADE) {
+    if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
+      state.mode = GameMode.OVERWORLD;
+      state.mapId = 'VH';
+      state.player.hp = state.player.maxHp;
+      state.player.x = 12 * TILE_SIZE; state.player.y = 8 * TILE_SIZE;
+      state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+      state.player.flags['sandbox_mode'] = true;
+      state.uiMessage = "Sandbox Mode: your undead form endures. Explore freely.";
+      state.uiMessageTimer = 240;
+    }
+    return;
+  }
+
+  if (state.mode === GameMode.END_LEGACY_SEQ) {
+    if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
+      if (state.endLegacyStep < 2) {
+        state.endLegacyStep++;
+      } else {
+        // Step 2 confirmed — request slot deletion, Game.tsx will handle it.
+        state.deleteSlotRequested = true;
       }
     }
     return;

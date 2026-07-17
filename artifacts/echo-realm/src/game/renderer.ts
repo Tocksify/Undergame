@@ -307,6 +307,71 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     drawScanlines(ctx); return;
   }
 
+  // ── COLOR_SANDBOX_FADE ──────────────────────────────────────────────
+  if (state.mode === GameMode.COLOR_SANDBOX_FADE) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    // Dim pink glow behind the text
+    const glow = ctx.createRadialGradient(W / 2, H / 2, 10, W / 2, H / 2, 280);
+    glow.addColorStop(0, 'rgba(180,60,200,0.18)'); glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#dd88ff'; ctx.font = 'bold 20px monospace';
+    ctx.fillText('You feel your undead form evolve.', W / 2, H / 2 - 14);
+    if (Math.floor(state.frameCount / 28) % 2 === 0) {
+      ctx.fillStyle = '#885599'; ctx.font = '12px monospace';
+      ctx.fillText('[ SPACE ] continue', W / 2, H / 2 + 30);
+    }
+    drawScanlines(ctx); return;
+  }
+
+  // ── END_LEGACY_SEQ ──────────────────────────────────────────────────
+  if (state.mode === GameMode.END_LEGACY_SEQ) {
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    const step = state.endLegacyStep;
+
+    if (step === 0) {
+      // Message
+      ctx.fillStyle = '#999'; ctx.font = '14px monospace';
+      const lines = [
+        'Your mortal body destroyed,',
+        'you feel your corpse disintegrate.',
+        '',
+        'This undead form,',
+        'you feel it start to evolve.',
+        '',
+        'Endure.',
+      ];
+      lines.forEach((l, i) => {
+        ctx.fillText(l, W / 2, 200 + i * 26);
+      });
+    } else if (step === 1) {
+      // Playtime
+      const totalSec = Math.floor(state.playTimeSeconds);
+      const hh = Math.floor(totalSec / 3600);
+      const mm = Math.floor((totalSec % 3600) / 60);
+      const ss = totalSec % 60;
+      const timeStr = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+      ctx.fillStyle = '#888'; ctx.font = '13px monospace';
+      ctx.fillText('Time played:', W / 2, H / 2 - 28);
+      ctx.fillStyle = '#ccbbdd'; ctx.font = 'bold 32px monospace';
+      ctx.fillText(timeStr, W / 2, H / 2 + 14);
+    } else {
+      // Erase confirm
+      ctx.fillStyle = '#663333'; ctx.font = '14px monospace';
+      ctx.fillText('This save will be erased.', W / 2, H / 2 - 18);
+      ctx.fillStyle = '#884444'; ctx.font = '12px monospace';
+      ctx.fillText('There is no going back.', W / 2, H / 2 + 10);
+    }
+
+    if (Math.floor(state.frameCount / 28) % 2 === 0) {
+      ctx.fillStyle = step === 2 ? '#882222' : '#555566';
+      ctx.font = '12px monospace';
+      ctx.fillText(step === 2 ? '[ SPACE ] erase legacy' : '[ SPACE ] continue', W / 2, H - 60);
+    }
+    drawScanlines(ctx); return;
+  }
+
   if (state.mode === GameMode.BATTLE && state.battle) {
     renderBattle(ctx, state); drawScanlines(ctx); return;
   }
