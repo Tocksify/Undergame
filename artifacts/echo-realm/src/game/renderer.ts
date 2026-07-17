@@ -530,26 +530,35 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     // Rotating colored border blocks
     const colors = ['#ff5555', '#ff9933', '#ffff33', '#55ff55', '#33aaff', '#bb55ff'];
     const blocks: [number, number][] = [
-      [px - 6, py + 4], [px - 6, py + 20],         // left
-      [px + TILE_SIZE - 2, py + 4], [px + TILE_SIZE - 2, py + 20], // right
-      [px + 4, py - 6], [px + 20, py - 6],          // top
-      [px + 4, py + TILE_SIZE - 2], [px + 20, py + TILE_SIZE - 2], // bottom
+      [px - 6, py + 4], [px - 6, py + 20],
+      [px + TILE_SIZE - 2, py + 4], [px + TILE_SIZE - 2, py + 20],
+      [px + 4, py - 6], [px + 20, py - 6],
+      [px + 4, py + TILE_SIZE - 2], [px + 20, py + TILE_SIZE - 2],
     ];
     blocks.forEach(([bx, by], i) => {
       ctx.fillStyle = colors[(i + Math.floor(t / 7)) % colors.length];
       ctx.fillRect(bx, by, 8, 8);
     });
-    // Travel prompt
-    const bob = Math.round(Math.sin(t * 0.12) * 3);
-    const label = '[SPACE] - Enter Portal';
-    ctx.font = 'bold 11px monospace';
-    const tw = ctx.measureText(label).width;
-    const bw = tw + 16; const bh = 20;
-    const bx = px + TILE_SIZE / 2 - bw / 2; const by = py - 32 + bob;
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
-    ctx.fillStyle = '#000000'; ctx.textAlign = 'center';
-    ctx.fillText(label, px + TILE_SIZE / 2, by + 14);
+    // Two-tier flavor prompt: adjacent = approach text, on-tile = enter text
+    const ptx = Math.round(state.player.x / TILE_SIZE);
+    const pty = Math.round(state.player.y / TILE_SIZE);
+    const onPortal   = ptx === 9 && pty === 2;
+    const nearPortal = !onPortal && Math.abs(ptx - 9) + Math.abs(pty - 2) === 1;
+    if (onPortal || nearPortal) {
+      const bob = Math.round(Math.sin(t * 0.12) * 3);
+      const label = onPortal
+        ? '[SPACE] - Step Through'
+        : 'The void pulses. Something remembers.';
+      ctx.font = 'bold 11px monospace';
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 16; const bh = 20;
+      const bx = px + TILE_SIZE / 2 - bw / 2; const by = py - 32 + bob;
+      ctx.fillStyle = onPortal ? '#ffffff' : '#d0c8ff';
+      ctx.fillRect(bx, by, bw, bh);
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 2; ctx.strokeRect(bx, by, bw, bh);
+      ctx.fillStyle = '#000000'; ctx.textAlign = 'center';
+      ctx.fillText(label, px + TILE_SIZE / 2, by + 14);
+    }
   }
 
   // player

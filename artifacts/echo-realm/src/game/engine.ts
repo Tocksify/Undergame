@@ -1106,6 +1106,29 @@ export function updateGame(state: GameStateData) {
       } else if (state.mapId === 'VN' && state.player.flags['boss_defeated'] && intFound.tile === '<') {
         // VN back exit sealed after boss defeated — portal is now the only way
         state.uiMessage = "The passage has collapsed behind you. The portal above is the only way forward."; state.uiMessageTimer = 150;
+      } else if (state.mapId === 'WR' && state.player.flags['eldan_following'] && intFound.tile === '<') {
+        // Eldan's first steps back tear them out somewhere unexpected
+        const ejections: { mapId: string; x: number; y: number }[] = [
+          { mapId: 'VH', x: 12, y: 8 },
+          { mapId: 'CT', x: 20, y: 18 },
+          { mapId: 'CR', x: 28, y: 28 },
+          { mapId: 'WW', x: 14, y: 14 },
+          { mapId: 'MS', x: 10, y: 10 },
+          { mapId: 'SA', x: 18, y: 22 },
+          { mapId: 'FR', x: 24, y: 16 },
+          { mapId: 'TF', x: 40, y: 40 },
+        ];
+        const dest = ejections[Math.floor(Math.random() * ejections.length)];
+        state.mapId = dest.mapId;
+        state.player.x = dest.x * TILE_SIZE; state.player.y = dest.y * TILE_SIZE;
+        state.player.targetX = state.player.x; state.player.targetY = state.player.y;
+        if (state.follower) {
+          state.follower.x = state.player.x; state.follower.y = state.player.y + TILE_SIZE;
+          state.follower.targetX = state.follower.x; state.follower.targetY = state.follower.y;
+        }
+        state.player.flags['discovered_' + dest.mapId] = true;
+        state.uiMessage = "The portal tears and spits you out somewhere else entirely."; state.uiMessageTimer = 200;
+        state.adjacentInteractable = null;
       } else {
         const exit = map.exits[intFound.tile];
         if (exit) {
