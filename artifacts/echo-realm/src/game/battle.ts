@@ -237,10 +237,11 @@ export function handleBattleInput(state: GameStateData) {
             b.actionMsg += ' +3 HP (Resonant Prism)';
           }
         } else if (hitType === 'GOOD') {
-          // chroma_touch: GOOD hits also build resonance
-          if (_skills.includes('chroma_touch')) {
+          // chroma_touch: GOOD hits also build resonance (CD 1 turn)
+          if (_skills.includes('chroma_touch') && !b.skillCooldowns['chroma_touch']) {
             b.resonance += 1;
             b.actionMsg = "Good connection. +1 Resonance (Prismatic Touch)";
+            b.skillCooldowns['chroma_touch'] = 1;
           } else {
             b.actionMsg = "Good connection.";
           }

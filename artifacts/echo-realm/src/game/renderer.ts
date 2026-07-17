@@ -1082,28 +1082,41 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     });
   }
 
-  // ── Passive skill cooldown display (top-right) ──────────────────────────
+  // ── Passive skill cooldown display (top-right, on-cooldown only) ────────
   {
     const _pSkills = state.player.learnedSkills ?? [];
+    // path → color function (chroma uses per-entry hue shift for rainbow effect)
+    const _pathColor = (id: string, idx: number): string => {
+      if (id.startsWith('void_'))   return '#aa77ff';
+      if (id.startsWith('echo_'))   return '#55aaff';
+      if (id.startsWith('ember_'))  return '#ff7722';
+      // chroma: cycle hue per entry + time
+      const hue = (state.frameCount * 4 + idx * 55) % 360;
+      return `hsl(${hue},90%,68%)`;
+    };
     const _cdDefs = [
-      { id: 'void_drain',    label: 'V.Drain'  },
-      { id: 'void_strike',   label: 'V.Strike' },
-      { id: 'void_herald',   label: 'V.Herald' },
-      { id: 'chroma_strike', label: 'C.Strike' },
-      { id: 'echo_armor',    label: 'E.Armor'  },
-      { id: 'chroma_veil',   label: 'C.Veil'   },
-    ].filter(cs => _pSkills.includes(cs.id));
+      { id: 'void_drain',    label: 'V.Drain'    },
+      { id: 'void_strike',   label: 'V.Strike'   },
+      { id: 'void_herald',   label: 'V.Herald'   },
+      { id: 'chroma_touch',  label: 'Prismatic'  },
+      { id: 'chroma_strike', label: 'C.Strike'   },
+      { id: 'chroma_veil',   label: 'C.Veil'     },
+      { id: 'echo_armor',    label: 'E.Armor'    },
+    ]
+      .filter(cs => _pSkills.includes(cs.id))
+      .map(cs => ({ ...cs, cd: b.skillCooldowns?.[cs.id] ?? 0 }))
+      .filter(cs => cs.cd > 0);                          // only show when cooling down
+
     if (_cdDefs.length > 0) {
       ctx.font = 'bold 9px monospace'; ctx.textAlign = 'right';
       let cdY = 36;
-      ctx.fillStyle = '#332244';
-      ctx.fillText('PASSIVES', W - 6, cdY); cdY += 13;
-      for (const cs of _cdDefs) {
-        const cd = b.skillCooldowns?.[cs.id] ?? 0;
-        ctx.fillStyle = cd === 0 ? '#33bb55' : '#cc7722';
-        ctx.fillText(`${cs.label}: ${cd === 0 ? 'READY' : `${cd}t`}`, W - 6, cdY);
-        cdY += 12;
-      }
+      ctx.fillStyle = '#442255';
+      ctx.fillText('ON COOLDOWN', W - 6, cdY); cdY += 13;
+      _cdDefs.forEach((cs, i) => {
+        ctx.fillStyle = _pathColor(cs.id, i);
+        ctx.fillText(`${cs.label}  ${cs.cd}t`, W - 6, cdY);
+        cdY += 13;
+      });
     }
   }
 
