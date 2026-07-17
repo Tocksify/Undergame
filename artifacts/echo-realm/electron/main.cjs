@@ -32,13 +32,16 @@ function gamedataDir() {
     : path.join(__dirname, '..', 'gamedata');
 }
 
-/** Ensure the gamedata folder exists. If gamedata.json is missing, seed it
- *  with an empty object so the folder is never blank. */
+/** Ensure the gamedata folder exists. Seeds any missing files with an empty
+ *  object so the folder is never blank and the game always has something to read. */
 function ensureGamedata() {
   const d = gamedataDir();
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-  const f = path.join(d, 'gamedata.json');
-  if (!fs.existsSync(f)) fs.writeFileSync(f, '{}', 'utf8');
+  const files = ['Achievements.json', 'ChallengeItems.json'];
+  for (const name of files) {
+    const f = path.join(d, name);
+    if (!fs.existsSync(f)) fs.writeFileSync(f, '{}', 'utf8');
+  }
   return d;
 }
 
