@@ -20,6 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportErsav: (slot)         => ipcRenderer.invoke('er-export-ersav', slot),
   importErsav: ()             => ipcRenderer.invoke('er-import-ersav'),
 
+  // ── Global game data (Achievements + Challenge Items) ─────────────
+  readGamedataAchievements:   () => ipcRenderer.invoke('er-read-gamedata-achievements'),
+  readGamedataChallengeItems: () => ipcRenderer.invoke('er-read-gamedata-challenge-items'),
+
   // ── App control ───────────────────────────────────────────────────
   quit: ()                    => ipcRenderer.send('er-quit'),
 });

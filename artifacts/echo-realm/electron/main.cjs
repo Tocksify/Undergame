@@ -125,6 +125,25 @@ app.on('activate', () => {
 });
 
 // ═════════════════════════════════════════════════════════════════════
+//  IPC — Global Game Data (Achievements + Challenge Items)
+// ═════════════════════════════════════════════════════════════════════
+
+/** Read the 'earned' array from a gamedata JSON file, or [] if missing/empty. */
+function readEarnedFromGamedata(filename) {
+  const f = path.join(gamedataDir(), filename);
+  if (!fs.existsSync(f)) return [];
+  try {
+    const parsed = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return Array.isArray(parsed.earned) ? parsed.earned : [];
+  } catch {
+    return [];
+  }
+}
+
+ipcMain.handle('er-read-gamedata-achievements',    () => readEarnedFromGamedata('Achievements.json'));
+ipcMain.handle('er-read-gamedata-challenge-items', () => readEarnedFromGamedata('ChallengeItems.json'));
+
+// ═════════════════════════════════════════════════════════════════════
 //  IPC — Save Slot File System
 // ═════════════════════════════════════════════════════════════════════
 
