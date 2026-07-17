@@ -68,6 +68,8 @@ export function awardAchievement(id: string): boolean {
   if (earned.includes(id)) return false;
   earned.push(id);
   try { localStorage.setItem(STORE_KEY, JSON.stringify(earned)); } catch { /* noop */ }
+  // Write back to Achievements.json in the Electron desktop build.
+  try { (window as any).electronAPI?.writeGamedataAchievements?.(earned); } catch { /* noop */ }
   return true;
 }
 

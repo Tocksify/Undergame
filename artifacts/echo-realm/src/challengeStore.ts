@@ -119,6 +119,8 @@ export function addEarnedChallengeItem(itemId: string): void {
   if (!earned.includes(itemId)) {
     earned.push(itemId);
     try { localStorage.setItem(EARNED_ITEMS_KEY, JSON.stringify(earned)); } catch { /* storage full */ }
+    // Write back to ChallengeItems.json in the Electron desktop build.
+    try { (window as any).electronAPI?.writeGamedataChallengeItems?.(earned); } catch { /* noop */ }
   }
 }
 

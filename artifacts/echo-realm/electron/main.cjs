@@ -143,6 +143,16 @@ function readEarnedFromGamedata(filename) {
 ipcMain.handle('er-read-gamedata-achievements',    () => readEarnedFromGamedata('Achievements.json'));
 ipcMain.handle('er-read-gamedata-challenge-items', () => readEarnedFromGamedata('ChallengeItems.json'));
 
+/** Write the earned array back to a gamedata JSON file. */
+function writeEarnedToGamedata(filename, earned) {
+  ensureGamedata();
+  const f = path.join(gamedataDir(), filename);
+  fs.writeFileSync(f, JSON.stringify({ earned }, null, 2), 'utf8');
+}
+
+ipcMain.handle('er-write-gamedata-achievements',    (_, earned) => writeEarnedToGamedata('Achievements.json',    earned));
+ipcMain.handle('er-write-gamedata-challenge-items', (_, earned) => writeEarnedToGamedata('ChallengeItems.json', earned));
+
 // ═════════════════════════════════════════════════════════════════════
 //  IPC — Save Slot File System
 // ═════════════════════════════════════════════════════════════════════

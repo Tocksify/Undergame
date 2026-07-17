@@ -13,8 +13,10 @@ declare global {
   interface Window {
     electronAPI?: {
       isElectron: boolean;
-      readGamedataAchievements: () => Promise<string[]>;
-      readGamedataChallengeItems: () => Promise<string[]>;
+      readGamedataAchievements:    () => Promise<string[]>;
+      readGamedataChallengeItems:  () => Promise<string[]>;
+      writeGamedataAchievements:   (earned: string[]) => Promise<void>;
+      writeGamedataChallengeItems: (earned: string[]) => Promise<void>;
     };
   }
 }
