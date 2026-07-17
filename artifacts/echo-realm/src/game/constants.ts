@@ -1,4 +1,4 @@
-import { BookData, EnemyData, EquipSlot, EquipSlotId, GameMode, GameStateData, Item, ItemCategory, ItemTier } from './types';
+import { BookData, CraftRecipe, EnemyData, EquipSlot, EquipSlotId, GameMode, GameStateData, Item, ItemCategory, ItemTier } from './types';
 
 export const TILE_SIZE = 48;
 export const BASE_MAX_HP = 20;
@@ -268,12 +268,16 @@ export const ITEMS: Record<string, Item> = {
   'echo_helm':         { name: 'Echo Helm',            desc: 'Forged in resonance. Memories leave less of a mark.',                              price: 0,   tier: 'epic',      category: 'helmet', def: 4, maxHp: 10 },
   'voidsteel_helm':    { name: 'Voidsteel Helm',       desc: 'The helm of something that never slept.',                                          price: 0,   tier: 'legendary', category: 'helmet', def: 5, maxHp: 12 },
 
-  // ── SHOULDER ARMOR ──
-  'padded_shoulder':   { name: 'Padded Shoulder',      desc: 'Stitched cloth padding. Keeps the joint from aching on long marches.',             price: 30,  tier: 'common',    category: 'shoulder', def: 1 },
-  'leather_spaulder':  { name: 'Leather Spaulder',     desc: 'Hardened leather strapped at the shoulder. Light, purposeful.',                    price: 100, tier: 'uncommon',  category: 'shoulder', atk: 1, def: 1 },
-  'iron_pauldron':     { name: 'Iron Pauldron',        desc: 'Iron shoulder guards, notched from old battles. Comfortable in a rough way.',      price: 0,   tier: 'rare',      category: 'shoulder', atk: 1, def: 3 },
-  'void_spaulder':     { name: 'Void Spaulder',        desc: 'Void-forged shoulder armor. Heavier than regret. Faster than doubt.',              price: 0,   tier: 'epic',      category: 'shoulder', atk: 2, def: 3 },
-  'sovereign_pauldron':{ name: 'Sovereign Pauldron',   desc: 'Shoulders that once bore the weight of a city. The weight is still in the metal.', price: 0,   tier: 'legendary', category: 'shoulder', atk: 3, def: 4 },
+  // ── CRAFTING INGREDIENTS ──
+  'iron_dust':    { name: 'Iron Dust',       desc: 'Powdered iron scraped from ruins. Foundation of most metal crafts.',          price: 5,  tier: 'common',   category: 'ingredient' },
+  'silver_ingot': { name: 'Silver Ingot',    desc: 'Refined from iron dust. Holds void energy better than raw iron.',             price: 40, tier: 'uncommon', category: 'ingredient' },
+  'wood_plank':   { name: 'Wood Plank',      desc: 'Hewn from thornwood. Dense and reliable as a handle.',                        price: 5,  tier: 'common',   category: 'ingredient' },
+  'cloth_scrap':  { name: 'Cloth Scrap',     desc: 'Salvaged from old garments. Still serviceable.',                              price: 5,  tier: 'common',   category: 'ingredient' },
+  'leather_hide': { name: 'Leather Hide',    desc: 'Cured hide from forest creatures. Tough and supple.',                         price: 8,  tier: 'common',   category: 'ingredient' },
+  'void_dust':    { name: 'Void Dust',       desc: 'Residue left by void creatures. Faintly luminous. Unstable in large amounts.', price: 15, tier: 'uncommon', category: 'ingredient' },
+  'herb_bundle':  { name: 'Herb Bundle',     desc: 'Dried herbs from the forest floor. Known for their healing properties.',      price: 10, tier: 'common',   category: 'ingredient' },
+  // ── CRAFTED GEAR (primarily obtained by crafting) ──
+  'iron_band':    { name: 'Iron Band',       desc: 'A plain iron ring, smoothed at the forge. Modest protection.',                price: 0, tier: 'common',   category: 'ring', def: 1 },
 
   // ── GLOVES ──
   'worn_gloves':       { name: 'Worn Gloves',          desc: 'Old leather gloves. The grip is still good, if not the look.',                     price: 25,  tier: 'common',    category: 'gloves', atk: 1 },
@@ -651,7 +655,6 @@ export function pickWeightedReward(pool: { itemId: string; chance: number }[]): 
 export const EQUIP_SLOTS: EquipSlot[] = [
   { id: 'helmet',   label: 'HELMET',   categories: ['helmet'] },
   { id: 'necklace', label: 'NECKLACE', categories: ['necklace'] },
-  { id: 'shoulder', label: 'SHOULDER', categories: ['shoulder'] },
   { id: 'armor',    label: 'CHEST',    categories: ['armor'] },
   { id: 'cloak',    label: 'CLOAK',    categories: ['cloak'] },
   { id: 'gloves',   label: 'GLOVES',   categories: ['gloves'] },
@@ -1043,7 +1046,86 @@ export const ENEMIES: Record<string, EnemyData> = {
     ],
     resistances: { poison: 0.5, burn: 0.5, freeze: 0.5, silence: 0.5 },
   },
+  // ── Forest enemies (Thornwood Forest encounter pool) ───────────────────
+  'thorn_wraith': {
+    id: 'thorn_wraith', name: 'Thorn Wraith', hp: 20, maxHp: 20, atk: 5, color: '#556644',
+    flavor: 'The forest made this from old pain and sharpened wood. It does not know why it hurts.',
+    rememberText: 'You name the ache it was made from. The thorns soften. It settles back into the bark.',
+    echoes: 28, acts: [
+      { id: 'pierce', name: 'Pierce', effect: 'damage', power: 3 },
+      { id: 'root',   name: 'Root',   effect: 'weaken', power: 1 },
+    ],
+    resistances: { burn: 2 }, // wood — fire hits it hard
+  },
+  'shadow_stalker': {
+    id: 'shadow_stalker', name: 'Shadow Stalker', hp: 16, maxHp: 16, atk: 6, color: '#335544',
+    flavor: 'It learned to hunt by following things that were already lost.',
+    rememberText: 'It stops stalking. Looks at its own shadow. Sits down. The forest is quieter for it.',
+    echoes: 32, acts: [
+      { id: 'ambush',  name: 'Ambush',  effect: 'damage', power: 4 },
+      { id: 'observe', name: 'Observe', effect: 'confuse', magic: true },
+    ],
+  },
+  'bark_guardian': {
+    id: 'bark_guardian', name: 'Bark Guardian', hp: 38, maxHp: 38, atk: 7, color: '#7a6030',
+    flavor: 'Something very old decided to stand guard over a clearing. It has not moved in a long time.',
+    rememberText: 'You show it that the clearing is still there. Still safe. It nods — the deepest nod — and rests.',
+    echoes: 55, acts: [
+      { id: 'slam',  name: 'Slam',  effect: 'damage', power: 5 },
+      { id: 'sway',  name: 'Sway',  effect: 'resonance', power: 1 },
+    ],
+    resistances: { burn: 2, freeze: 0.5 }, // living wood: fire crumbles it, ice barely cracks bark
+  },
+  'briar_specter': {
+    id: 'briar_specter', name: 'Briar Specter', hp: 26, maxHp: 26, atk: 5, color: '#664422',
+    flavor: 'A ghost that chose a thornbush as a body when its first one wore out.',
+    rememberText: 'The thorns unwind. Something small and soft floats free. It remembers being small.',
+    echoes: 38, acts: [
+      { id: 'entangle', name: 'Entangle', effect: 'weaken',    power: 2 },
+      { id: 'listen',   name: 'Listen',   effect: 'resonance', power: 1 },
+    ],
+    resistances: { freeze: 2, poison: 0 }, // spectral plant: ice shatters the hosting thorns; immune to own nature
+  },
 };
+
+// ── CRAFTING RECIPES ─────────────────────────────────────────────────────
+// Used by the Item Crafting Table (GameMode.ITEM_CRAFT).
+// Ingredients are consumed; the output item is added to the player's inventory.
+export const RECIPES: CraftRecipe[] = [
+  // ── MATERIALS ──
+  { id: 'r_silver_ingot', name: 'Silver Ingot',     outputId: 'silver_ingot',  outputCount: 1, category: 'material',
+    ingredients: [{ itemId: 'iron_dust', count: 5 }] },
+  // ── WEAPONS ──
+  { id: 'r_iron_blade',   name: 'Iron Fragment',     outputId: 'iron_fragment', outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'iron_dust', count: 3 }, { itemId: 'wood_plank', count: 1 }] },
+  { id: 'r_carved_stake', name: 'Carved Stake',      outputId: 'carved_stake',  outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'wood_plank', count: 2 }, { itemId: 'cloth_scrap', count: 1 }] },
+  { id: 'r_bone_edge',    name: 'Bone Edge',         outputId: 'bone_edge',     outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'iron_dust', count: 4 }, { itemId: 'void_dust', count: 1 }] },
+  { id: 'r_resonance_blade', name: 'Resonance Blade', outputId: 'resonance_blade', outputCount: 1, category: 'weapon',
+    ingredients: [{ itemId: 'silver_ingot', count: 2 }, { itemId: 'void_dust', count: 2 }] },
+  // ── ARMOR ──
+  { id: 'r_cloth_wrap',   name: 'Cloth Wrap',        outputId: 'cloth_wrap',    outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'cloth_scrap', count: 3 }] },
+  { id: 'r_hide_wrap',    name: 'Hide Wrap',          outputId: 'hide_wrap',     outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'leather_hide', count: 3 }, { itemId: 'cloth_scrap', count: 1 }] },
+  { id: 'r_woven_leather', name: 'Woven Leather',    outputId: 'woven_leather', outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'leather_hide', count: 4 }, { itemId: 'iron_dust', count: 1 }] },
+  { id: 'r_leather_cap',  name: 'Leather Cap',        outputId: 'leather_cap',   outputCount: 1, category: 'armor',
+    ingredients: [{ itemId: 'leather_hide', count: 2 }, { itemId: 'cloth_scrap', count: 2 }] },
+  // ── TRINKETS ──
+  { id: 'r_iron_band',    name: 'Iron Band (Ring)',   outputId: 'iron_band',     outputCount: 1, category: 'trinket',
+    ingredients: [{ itemId: 'iron_dust', count: 2 }, { itemId: 'cloth_scrap', count: 1 }] },
+  { id: 'r_void_token',   name: 'Void Token',         outputId: 'void_token',    outputCount: 1, category: 'trinket',
+    ingredients: [{ itemId: 'silver_ingot', count: 1 }, { itemId: 'void_dust', count: 2 }] },
+  // ── CONSUMABLES ──
+  { id: 'r_crystal',      name: 'Memory Crystal',     outputId: 'crystal',       outputCount: 1, category: 'consumable',
+    ingredients: [{ itemId: 'herb_bundle', count: 2 }] },
+  { id: 'r_tonic',        name: 'Hollow Tonic',       outputId: 'tonic',         outputCount: 2, category: 'consumable',
+    ingredients: [{ itemId: 'herb_bundle', count: 1 }, { itemId: 'cloth_scrap', count: 1 }] },
+  { id: 'r_elixir',       name: 'Void Elixir',        outputId: 'elixir',        outputCount: 1, category: 'consumable',
+    ingredients: [{ itemId: 'herb_bundle', count: 3 }, { itemId: 'void_dust', count: 1 }] },
+];
 
 // ── MAP BUILDER HELPERS ─────────────────────────────────────────────
 // All overworld maps below are built programmatically and verified for
@@ -2288,7 +2370,12 @@ export const MAPS: Record<string, any> = {
   'TF': {
     id: 'TF', name: 'Thornwood Forest', width: 80, height: 80,
     layout: tfLayout,
-    npcs: [],
+    npcs: [
+      // Waystone — central path guide, offers fast travel back to VH
+      { id: 'tf_waystone', x: 40, y: 39, color: '#88bb88', name: 'Waystone',         type: 'TALK' },
+      // Hermit — forest lore NPC deep in the grove area
+      { id: 'tf_hermit',   x: 20, y: 37, color: '#998866', name: 'Thornwood Hermit', type: 'TALK' },
+    ],
     chests: [
       // Sentinel Clearing (Fork A north dead end)
       { id: 'ch_tf_01', flag: 'ch_tf_01', x: 62, y: 7,  item: 'ench_memory_mark' },
@@ -2319,7 +2406,7 @@ export const MAPS: Record<string, any> = {
       { id: 'door_tf_crafting', x: 16, y: 40, targetMapId: 'TF_CRAFTING', targetX: 7, targetY: 6, label: 'Forest Crafting Hut' },
     ],
     books: [],
-    encounterPool: [],
+    encounterPool: ['thorn_wraith', 'shadow_stalker', 'bark_guardian', 'briar_specter', 'wisp', 'specter'],
     exits: {
       '<': { mapId: 'VH', x: 1, y: 8 },
       '!': { mapId: 'TF_HIDDEN', x: 5, y: 3 }
@@ -2740,7 +2827,7 @@ export const INITIAL_STATE: GameStateData = {
       weapon: null, armor: null, offhand: null,
       helmet: null, gloves: null, pants: null, boots: null,
       cloak: null, necklace: null, ring1: null, ring2: null,
-      belt: null, shoulder: null, trinket: null,
+      belt: null, trinket: null,
     },
     bestiary: {},
     learnedSkills: [],
@@ -2792,4 +2879,6 @@ export const INITIAL_STATE: GameStateData = {
   trueEndingMenuIndex: 0,
   endLegacyRequested: false,
   skillLearnedFlash: null,
+  itemCraft: { categoryIdx: 0, cursorIndex: 0 },
+  achievementsScroll: 0,
 };

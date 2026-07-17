@@ -17,6 +17,8 @@ export enum GameMode {
   TRUE_ENDING,    // 15 - the peaceful death ending, reached via Morthus's cutscene in Color
   BESTIARY,       // 16 - B key: enemy bestiary with revealed resistances
   SKILL_TREE,     // 17 - K key: Void/Chromatic/Echo/Ember skill tree
+  ITEM_CRAFT,     // 18 - Crafting Table: craft items/gear from ingredients
+  ACHIEVEMENTS,   // 19 - A key: global achievement tracker
 }
 
 export type TileType = 'G' | 'S' | 'W' | 'P' | 'T' | 'V' | 'M' | 'H' | 'D' | 'ST' | 'E_N' | 'E_S' | 'B_D' | 'CHEST' | 'CG';
@@ -25,10 +27,19 @@ import type { SpriteAppearance } from './npcAppearance';
 
 export type ItemTier = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type ItemCategory = 'consumable' | 'weapon' | 'armor' | 'shield' | 'key' | 'book' | 'enchanted_book' | 'relic'
-  | 'helmet' | 'gloves' | 'pants' | 'boots' | 'cloak' | 'necklace' | 'ring' | 'belt' | 'shoulder' | 'trinket';
+  | 'helmet' | 'gloves' | 'pants' | 'boots' | 'cloak' | 'necklace' | 'ring' | 'belt' | 'trinket' | 'ingredient';
 
 export type EquipSlotId = 'weapon' | 'armor' | 'offhand' | 'helmet' | 'gloves' | 'pants' | 'boots'
-  | 'cloak' | 'necklace' | 'ring1' | 'ring2' | 'belt' | 'shoulder' | 'trinket';
+  | 'cloak' | 'necklace' | 'ring1' | 'ring2' | 'belt' | 'trinket';
+
+export interface CraftRecipe {
+  id: string;
+  name: string;
+  outputId: string;
+  outputCount: number;
+  ingredients: { itemId: string; count: number }[];
+  category: 'material' | 'weapon' | 'armor' | 'trinket' | 'consumable';
+}
 
 export interface EquipSlot {
   id: EquipSlotId;
@@ -163,7 +174,7 @@ export interface GameStateData {
       helmet: string | null; gloves: string | null; pants: string | null;
       boots: string | null; cloak: string | null; necklace: string | null;
       ring1: string | null; ring2: string | null; belt: string | null;
-      shoulder: string | null; trinket: string | null;
+      trinket: string | null;
     };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
@@ -240,6 +251,9 @@ export interface GameStateData {
   endLegacyRequested: boolean;
   // Set by skill tree engine when a skill is newly learned (clears after one frame).
   skillLearnedFlash: string | null;
+  // Crafting Table (item/gear crafting, ITEM_CRAFT mode)
+  itemCraft: { categoryIdx: number; cursorIndex: number; };
+  achievementsScroll: number;
   // Header notification badges (Quest/Stats/Inventory). Transient UI state —
   // not persisted in save slots. itemsBaseline/questsBaseline are the
   // inventory length / quest-stage snapshot as of the last time the player

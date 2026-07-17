@@ -1,5 +1,7 @@
 import { GameStateData, GameMode, EnemyData } from './types';
-import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS, EQUIP_SLOTS } from './constants';
+import { MAPS, ENEMIES, ITEMS, SHOPS, BOOKS, TILE_SIZE, recomputeMaxHp, CRAFTABLE_ENCHANTS, TELEPORT_POINTS, EQUIP_SLOTS, RECIPES } from './constants';
+import { awardAchievement } from '../achievementStore';
+import { syncBestiary } from '../codexStore';
 import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, canLearnSkill } from './skillTree';
 import { QUESTS } from './quests';
 import { getDialogueStartNode, getDialogueNode } from './dialogue';
@@ -448,9 +450,6 @@ export function updateGame(state: GameStateData) {
       } else if (item.category === 'belt') {
         eq.belt = eq.belt === id ? null : id; recomputeMaxHp(state);
         state.uiMessage = eq.belt === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
-      } else if (item.category === 'shoulder') {
-        eq.shoulder = eq.shoulder === id ? null : id; recomputeMaxHp(state);
-        state.uiMessage = eq.shoulder === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
       } else if (item.category === 'trinket') {
         eq.trinket = eq.trinket === id ? null : id; recomputeMaxHp(state);
         state.uiMessage = eq.trinket === id ? `Equipped ${item.name}` : `Unequipped ${item.name}`; state.uiMessageTimer = 90; handled = true;
@@ -644,6 +643,72 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
+  // ── ITEM CRAFT (Crafting Table) ────────────────────────────────────
+  if (state.mode === GameMode.ITEM_CRAFT) {
+    const CRAFT_CATS: Array<'material' | 'weapon' | 'armor' | 'trinket' | 'consumable'> =
+      ['material', 'weapon', 'armor', 'trinket', 'consumable'];
+    const catRecipes = RECIPES.filter(r => r.category === CRAFT_CATS[state.itemCraft.categoryIdx]);
+    if (justPressed(state, 'Escape') || justPressed(state, 'x')) { state.mode = GameMode.OVERWORLD; return; }
+    if (justPressed(state, 'ArrowLeft') || justPressed(state, 'a')) {
+      state.itemCraft.categoryIdx = Math.max(0, state.itemCraft.categoryIdx - 1);
+      state.itemCraft.cursorIndex = 0; return;
+    }
+    if (justPressed(state, 'ArrowRight') || justPressed(state, 'd')) {
+      state.itemCraft.categoryIdx = Math.min(CRAFT_CATS.length - 1, state.itemCraft.categoryIdx + 1);
+      state.itemCraft.cursorIndex = 0; return;
+    }
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
+      state.itemCraft.cursorIndex = Math.max(0, state.itemCraft.cursorIndex - 1); return;
+    }
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
+      state.itemCraft.cursorIndex = Math.min(catRecipes.length - 1, state.itemCraft.cursorIndex + 1); return;
+    }
+    if (justPressed(state, ' ') || justPressed(state, 'z') || justPressed(state, 'Enter')) {
+      const recipe = catRecipes[state.itemCraft.cursorIndex];
+      if (!recipe) return;
+      const canCraft = recipe.ingredients.every(ing => {
+        const have = state.player.inventory.filter(id => id === ing.itemId).length;
+        return have >= ing.count;
+      });
+      if (canCraft) {
+        // Remove ingredients (iterate backwards to preserve indices)
+        for (const ing of recipe.ingredients) {
+          let rem = ing.count;
+          for (let i = state.player.inventory.length - 1; i >= 0 && rem > 0; i--) {
+            if (state.player.inventory[i] === ing.itemId) {
+              removeInventoryItem(state, i);
+              rem--;
+            }
+          }
+        }
+        // Add output items
+        for (let i = 0; i < recipe.outputCount; i++) addInventoryItem(state, recipe.outputId);
+        const outName = ITEMS[recipe.outputId]?.name ?? recipe.outputId;
+        state.uiMessage = `Crafted: ${outName}!`;
+        state.uiMessageTimer = 120;
+        state.itemCraft.cursorIndex = Math.max(0, Math.min(state.itemCraft.cursorIndex, catRecipes.length - 2));
+        // Achievement
+        if (awardAchievement('ach_craft_item')) {
+          state.messageStack.push({ text: '🏆 Achievement: Artisan', timer: 180 });
+        }
+      } else {
+        state.uiMessage = 'Missing ingredients!';
+        state.uiMessageTimer = 80;
+      }
+    }
+    return;
+  }
+
+  // ── ACHIEVEMENTS (A key) ───────────────────────────────────────────
+  if (state.mode === GameMode.ACHIEVEMENTS) {
+    if (justPressed(state, 'Escape') || justPressed(state, 'x') || justPressed(state, 'a')) {
+      state.mode = GameMode.OVERWORLD; return;
+    }
+    if (justPressed(state, 'ArrowUp')   || justPressed(state, 'w')) state.achievementsScroll = Math.max(0, state.achievementsScroll - 1);
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) state.achievementsScroll++;
+    return;
+  }
+
   // ── OVERWORLD ─────────────────────────────────────────────────────
   if (justPressed(state, 'Escape')) { state.mode = GameMode.MENU; state.menuIndex = 0; return; }
   if (justPressed(state, 'i'))      { state.mode = GameMode.INVENTORY; state.inventoryIndex = 0; markInventorySeen(state); return; }
@@ -652,6 +717,7 @@ export function updateGame(state: GameStateData) {
   if (justPressed(state, 'm'))      { state.mode = GameMode.STAT_ALLOCATION; state.statAllocIndex = 0; return; }
   if (justPressed(state, 'b'))      { state.mode = GameMode.BESTIARY; state.bestiaryScroll = 0; return; }
   if (justPressed(state, 'k'))      { state.mode = GameMode.SKILL_TREE; return; }
+  if (justPressed(state, 'a'))      { state.mode = GameMode.ACHIEVEMENTS; state.achievementsScroll = 0; return; }
 
   const map = MAPS[state.mapId];
 
@@ -735,9 +801,9 @@ export function updateGame(state: GameStateData) {
       if (intFound.npc.type === 'SHOP') {
         state.mode = GameMode.SHOP; state.shopIndex = 0; state.shopNpcId = intFound.npc.id;
       } else if (intFound.npc.type === 'CRAFT') {
-        // Open the Crafting Table UI directly (same as using Tomes Blessing from inventory)
-        state.tomeCraft = { cursorIndex: 0, chosenEnchantId: null };
-        state.mode = GameMode.TOME_CRAFT;
+        // Open the Item Crafting Table UI
+        state.itemCraft = { categoryIdx: 0, cursorIndex: 0 };
+        state.mode = GameMode.ITEM_CRAFT;
       } else {
         state.dialogue.currentNode = getDialogueStartNode(state, intFound.npc.id);
         state.dialogue.charIndex = 0; state.dialogue.selectedOption = 0;

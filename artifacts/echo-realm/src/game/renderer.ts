@@ -1,5 +1,7 @@
 import { GameStateData, GameMode } from './types';
-import { MAPS, ITEMS, ENEMIES, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT, EQUIP_SLOTS, getWeaponAtkBonus, getArmorDefBonus } from './constants';
+import { MAPS, ITEMS, ENEMIES, SHOPS, BOOKS, TILE_SIZE, TIER_COLOR, TIER_LABEL, CRAFTABLE_ENCHANTS, getHighestTier, TELEPORT_POINTS, STR_ATK_PER_POINT, VIT_HP_PER_POINT, DEF_DEF_PER_POINT, EQUIP_SLOTS, getWeaponAtkBonus, getArmorDefBonus, RECIPES } from './constants';
+import { ACHIEVEMENTS as ACH_DEFS, getEarnedAchievementIds } from '../achievementStore';
+import { getGlobalCodex } from '../codexStore';
 import { QUESTS } from './quests';
 import { getNpcAppearance, PLAYER_APPEARANCE, SpriteAppearance, drawHair, drawSprite } from './npcAppearance';
 import { PATH_ORDER, PATH_DEFS, SKILL_DEFS, HYBRID_BONUSES, getActiveHybrids, canLearnSkill, CHROMA_HUES } from './skillTree';
@@ -319,6 +321,16 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
   // ── SKILL TREE ────────────────────────────────────────────────────
   if (state.mode === GameMode.SKILL_TREE) {
     renderSkillTree(ctx, state); drawScanlines(ctx); return;
+  }
+
+  // ── ITEM CRAFT ────────────────────────────────────────────────────
+  if (state.mode === GameMode.ITEM_CRAFT) {
+    renderItemCraft(ctx, state); drawScanlines(ctx); return;
+  }
+
+  // ── ACHIEVEMENTS ──────────────────────────────────────────────────
+  if (state.mode === GameMode.ACHIEVEMENTS) {
+    renderAchievements(ctx, state); drawScanlines(ctx); return;
   }
 
   // ── OVERWORLD ──────────────────────────────────────────────────────
@@ -1236,7 +1248,6 @@ function renderEquipmentPanel(ctx: CanvasRenderingContext2D, state: GameStateDat
   const SLOT_RECTS: Record<string, Rect[]> = {
     helmet:   [S_HEAD],
     necklace: [S_NECK],
-    shoulder: [S_SHOULDER, S_L_ARM, S_R_ARM],
     armor:    [S_TORSO],
     cloak:    [S_TORSO, S_L_ARM, S_R_ARM],
     gloves:   [S_L_HAND, S_R_HAND],
@@ -1253,7 +1264,6 @@ function renderEquipmentPanel(ctx: CanvasRenderingContext2D, state: GameStateDat
   const SLOT_CENTERS: Record<string, [number, number]> = {
     helmet:   [CX,      CY + 22],
     necklace: [CX,      CY + 50],
-    shoulder: [CX,      CY + 68],
     armor:    [CX,      CY + 115],
     cloak:    [CX + 12, CY + 115],
     gloves:   [CX + 62, CY + 135],
@@ -1303,7 +1313,7 @@ function renderEquipmentPanel(ctx: CanvasRenderingContext2D, state: GameStateDat
 
   // Small slot abbreviation labels on the silhouette
   const ABBREV: Record<string, string> = {
-    helmet:'H', necklace:'N', shoulder:'SH', armor:'C', cloak:'CL',
+    helmet:'H', necklace:'N', armor:'C', cloak:'CL',
     gloves:'G', belt:'BL', pants:'P', boots:'BT',
     weapon:'W', offhand:'OH', ring1:'R1', ring2:'R2', trinket:'T',
   };
@@ -1632,7 +1642,7 @@ function renderItemsList(ctx: CanvasRenderingContext2D, state: GameStateData) {
         ctx.fillText(`✦ ENCHANTED — ${enchItem?.enchantData?.atk ? `+${enchItem.enchantData.atk} ATK` : ''}${enchItem?.enchantData?.def ? `+${enchItem.enchantData.def} DEF` : ''}${enchItem?.enchantData?.maxHp ? `+${enchItem.enchantData.maxHp} HP` : ''}`, W / 2, divY + 16);
       }
 
-      const equipCats = new Set(['weapon','armor','shield','helmet','gloves','pants','boots','cloak','necklace','ring','belt','shoulder','trinket']);
+      const equipCats = new Set(['weapon','armor','shield','helmet','gloves','pants','boots','cloak','necklace','ring','belt','trinket']);
       let actionLabel = '[X] close';
       if (cur.category === 'weapon') {
         const mainEq = state.player.equipment.weapon === curId;
@@ -2191,101 +2201,291 @@ function renderTomeCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillText('[UP/DOWN] select  |  [SPACE] forge & enchant  |  [X] cancel', W / 2, H - 96);
 }
 
-// ── BESTIARY (B key) ─────────────────────────────────────────────────
+// ── BESTIARY / CODEX (B key) — 3-column grid layout ──────────────────
 function renderBestiary(ctx: CanvasRenderingContext2D, state: GameStateData) {
   ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0, 0, W, H);
   pixelBox(ctx, 60, 50, W - 120, H - 100, '#050510', '#8888cc', 3);
 
+  // Title
   ctx.fillStyle = '#aaaaee'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
-  ctx.fillText('BESTIARY', W / 2, 86);
+  ctx.fillText('CODEX', W / 2, 86);
   ctx.fillStyle = '#444466'; ctx.font = '11px monospace';
-  ctx.fillText('Encounter an enemy 3 times to reveal its resistances', W / 2, 104);
+  ctx.fillText('3 encounters unlock an enemy\'s traits  ·  Global — persists across all characters', W / 2, 104);
   ctx.strokeStyle = '#333355'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(80, 114); ctx.lineTo(W - 80, 114); ctx.stroke();
 
-  const enemyIds = Object.keys(ENEMIES);
-  const rowH = 54;
-  const listTop = 130;
-  const listBottom = H - 100;
-  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
-  const maxScroll = Math.max(0, enemyIds.length - maxVisible);
-  const scrollOffset = Math.min(maxScroll, state.bestiaryScroll);
+  // Merge global codex into view (read-only — actual merge happens on load)
+  const globalCodex = getGlobalCodex();
+  const getKills = (id: string) => Math.max(state.player.bestiary[id] ?? 0, globalCodex[id] ?? 0);
 
-  // Clamp scroll to bounds
+  const enemyIds = Object.keys(ENEMIES);
+  const COLS = 3;
+  const cellW = Math.floor((W - 140) / COLS);
+  const cellH = 60;
+  const gridLeft = 80;
+  const listTop = 126;
+  const listBottom = H - 116;
+  const maxRows = Math.floor((listBottom - listTop) / cellH);
+  const totalRows = Math.ceil(enemyIds.length / COLS);
+  const maxScroll = Math.max(0, totalRows - maxRows);
   state.bestiaryScroll = Math.min(maxScroll, Math.max(0, state.bestiaryScroll));
+  const rowOffset = state.bestiaryScroll;
+
+  // ── Selected enemy detail panel at bottom ─
+  const selId = enemyIds[state.bestiaryScroll * COLS] ?? null; // first visible row, col 0 — not a cursor, just lore
 
   ctx.save();
-  ctx.beginPath(); ctx.rect(60, listTop - 4, W - 120, listBottom - (listTop - 4)); ctx.clip();
+  ctx.beginPath(); ctx.rect(gridLeft - 4, listTop - 2, W - 140 + 8, listBottom - listTop + 4); ctx.clip();
 
-  enemyIds.slice(scrollOffset, scrollOffset + maxVisible).forEach((id, vi) => {
-    const enemy = ENEMIES[id];
-    const kills = state.player.bestiary[id] ?? 0;
-    const encountered = kills > 0;
-    const revealed = kills >= 3;
-    const ey = listTop + vi * rowH;
+  for (let row = 0; row < maxRows; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const idx = (rowOffset + row) * COLS + col;
+      if (idx >= enemyIds.length) break;
+      const id = enemyIds[idx];
+      const enemy = ENEMIES[id];
+      const kills = getKills(id);
+      const encountered = kills > 0;
+      const revealed = kills >= 3;
 
-    // Row background for alternating rows
-    if (vi % 2 === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.02)';
-      ctx.fillRect(80, ey - 2, W - 160, rowH - 4);
-    }
+      const cx = gridLeft + col * cellW;
+      const cy = listTop + row * cellH;
 
-    // Enemy name + kill count
-    ctx.font = 'bold 14px monospace'; ctx.textAlign = 'left';
-    ctx.fillStyle = encountered ? '#ccccee' : '#444455';
-    ctx.fillText(encountered ? enemy.name : '???', 96, ey + 16);
+      // Cell background
+      ctx.fillStyle = encountered ? (revealed ? 'rgba(100,100,180,0.08)' : 'rgba(80,80,120,0.06)') : 'rgba(0,0,0,0)';
+      ctx.fillRect(cx, cy + 1, cellW - 4, cellH - 4);
+      ctx.strokeStyle = encountered ? '#2a2a44' : '#151520';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx, cy + 1, cellW - 4, cellH - 4);
 
-    // Kill count badge
-    ctx.font = '11px monospace'; ctx.fillStyle = kills >= 3 ? '#88cc99' : '#555577';
-    ctx.fillText(`${kills} encounter${kills !== 1 ? 's' : ''}`, 96, ey + 32);
+      // Enemy name
+      ctx.font = 'bold 12px monospace'; ctx.textAlign = 'left';
+      ctx.fillStyle = revealed ? '#ccccee' : (encountered ? '#888899' : '#333344');
+      ctx.fillText(encountered ? enemy.name : '??? ??? ???', cx + 6, cy + 18);
 
-    // Resistances (revealed at 3+)
-    if (revealed && enemy.resistances) {
-      const resEntries = Object.entries(enemy.resistances);
-      if (resEntries.length > 0) {
-        ctx.font = '11px monospace'; ctx.textAlign = 'left';
-        let rx = 280;
-        ctx.fillStyle = '#555577'; ctx.fillText('Traits:', rx, ey + 16); rx += 60;
-        for (const [type, val] of resEntries) {
-          if (val === 0)      { ctx.fillStyle = '#4488ff'; ctx.fillText(`IMMUNE to ${type}`, rx, ey + 16); }
-          else if (val < 1)   { ctx.fillStyle = '#88aacc'; ctx.fillText(`resists ${type}`, rx, ey + 16); }
-          else if (val >= 2)  { ctx.fillStyle = '#ff7744'; ctx.fillText(`WEAK to ${type}`, rx, ey + 16); }
-          rx += 140;
-        }
-      } else {
-        ctx.font = '11px monospace'; ctx.fillStyle = '#555577'; ctx.textAlign = 'left';
-        ctx.fillText('No special resistances.', 280, ey + 16);
+      // Kill count
+      ctx.font = '10px monospace';
+      ctx.fillStyle = revealed ? '#88cc99' : (encountered ? '#445566' : '#222233');
+      ctx.fillText(encountered ? `${kills}× encountered` : 'not yet seen', cx + 6, cy + 33);
+
+      // Traits summary (one line if revealed)
+      if (revealed && enemy.resistances) {
+        const parts = Object.entries(enemy.resistances).map(([t, v]) =>
+          v === 0 ? `IMM:${t}` : v >= 2 ? `WEAK:${t}` : `RES:${t}`
+        ).join('  ');
+        ctx.font = '9px monospace'; ctx.fillStyle = '#554466';
+        let trait = parts.slice(0, 28) + (parts.length > 28 ? '…' : '');
+        ctx.fillText(trait, cx + 6, cy + 47);
+      } else if (revealed) {
+        ctx.font = '9px monospace'; ctx.fillStyle = '#334433';
+        ctx.fillText('no special traits', cx + 6, cy + 47);
       }
-    } else if (revealed) {
-      ctx.font = '11px monospace'; ctx.fillStyle = '#555577'; ctx.textAlign = 'left';
-      ctx.fillText('No special resistances.', 280, ey + 16);
-    } else if (encountered) {
-      ctx.font = '11px monospace'; ctx.fillStyle = '#333355'; ctx.textAlign = 'left';
-      ctx.fillText(`Encounter ${3 - kills} more time${3 - kills !== 1 ? 's' : ''} to reveal traits.`, 280, ey + 16);
-    } else {
-      ctx.font = '11px monospace'; ctx.fillStyle = '#222233'; ctx.textAlign = 'left';
-      ctx.fillText('Not yet encountered.', 280, ey + 16);
+    }
+  }
+  ctx.restore();
+
+  // Scroll indicators
+  if (rowOffset > 0) {
+    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▲', W / 2, listTop - 6);
+  }
+  if (rowOffset + maxRows < totalRows) {
+    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
+    ctx.fillText('▼', W / 2, listBottom + 8);
+  }
+
+  // Stats footer
+  const totalSeen = enemyIds.filter(id => getKills(id) >= 3).length;
+  ctx.fillStyle = '#33335a'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
+  ctx.fillText(`${totalSeen} / ${enemyIds.length} fully catalogued`, W / 2, H - 100);
+  ctx.fillStyle = '#2a2a44'; ctx.font = '11px monospace';
+  ctx.fillText('[↑↓/WS] scroll  |  [B] or [X] close', W / 2, H - 82);
+}
+
+// ── ITEM CRAFT (Crafting Table — GameMode.ITEM_CRAFT) ─────────────────
+function renderItemCraft(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.9)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 80, 60, W - 160, H - 120, '#060611', '#aabb88', 3);
+
+  ctx.fillStyle = '#aabb88'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('CRAFTING TABLE', W / 2, 94);
+
+  // Category tabs
+  const CATS: Array<{ key: string; label: string }> = [
+    { key: 'material',   label: 'MATERIALS' },
+    { key: 'weapon',     label: 'WEAPONS'   },
+    { key: 'armor',      label: 'ARMOR'     },
+    { key: 'trinket',    label: 'TRINKETS'  },
+    { key: 'consumable', label: 'CONSUMABLES'},
+  ];
+  const tabW = Math.floor((W - 200) / CATS.length);
+  const tabY = 110;
+  CATS.forEach((cat, i) => {
+    const tx = 100 + i * tabW;
+    const sel = state.itemCraft.categoryIdx === i;
+    ctx.fillStyle = sel ? '#1c2e10' : '#0d0d0d';
+    ctx.fillRect(tx, tabY, tabW - 2, 22);
+    ctx.strokeStyle = sel ? '#aabb88' : '#334433';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(tx, tabY, tabW - 2, 22);
+    ctx.font = sel ? 'bold 11px monospace' : '11px monospace';
+    ctx.fillStyle = sel ? '#ccdd99' : '#445544';
+    ctx.textAlign = 'center';
+    ctx.fillText(cat.label, tx + tabW / 2 - 1, tabY + 15);
+  });
+  ctx.strokeStyle = '#334433'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(100, 134); ctx.lineTo(W - 100, 134); ctx.stroke();
+
+  const catKey = CATS[state.itemCraft.categoryIdx].key as 'material'|'weapon'|'armor'|'trinket'|'consumable';
+  const catRecipes = RECIPES.filter(r => r.category === catKey);
+
+  if (catRecipes.length === 0) {
+    ctx.fillStyle = '#333344'; ctx.font = '13px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('No recipes in this category.', W / 2, 200);
+  }
+
+  const rowH = 38;
+  const listTop = 148;
+  const listBottom = H - 150;
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const scrollOff = Math.max(0, state.itemCraft.cursorIndex - maxVisible + 1);
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(90, listTop - 4, W - 180, listBottom - listTop + 8); ctx.clip();
+
+  catRecipes.slice(scrollOff, scrollOff + maxVisible).forEach((recipe, vi) => {
+    const i = scrollOff + vi;
+    const sel = state.itemCraft.cursorIndex === i;
+    const ry = listTop + vi * rowH;
+    const outItem = ITEMS[recipe.outputId];
+
+    // Check if craftable
+    const canCraft = recipe.ingredients.every(ing =>
+      state.player.inventory.filter(id => id === ing.itemId).length >= ing.count
+    );
+
+    if (sel) {
+      ctx.fillStyle = '#121f0a'; ctx.fillRect(100, ry, W - 200, rowH - 2);
+      ctx.strokeStyle = canCraft ? '#88bb55' : '#555544'; ctx.lineWidth = 1;
+      ctx.strokeRect(100, ry, W - 200, rowH - 2);
     }
 
-    // Flavor line (only if encountered)
-    if (encountered) {
-      ctx.font = '10px monospace'; ctx.fillStyle = '#3a3a5a'; ctx.textAlign = 'left';
-      const flavorShort = enemy.flavor.replace(/\n/g, ' ').slice(0, 70) + (enemy.flavor.length > 70 ? '…' : '');
-      ctx.fillText(flavorShort, 96, ey + 46);
+    // Recipe name + output tier
+    ctx.font = sel ? 'bold 13px monospace' : '13px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = sel ? (canCraft ? '#ccdd88' : '#887766') : '#667755';
+    ctx.fillText((sel ? '► ' : '  ') + recipe.name, 108, ry + 16);
+
+    if (outItem) {
+      const tc = TIER_COLOR[outItem.tier] ?? '#888888';
+      ctx.font = '10px monospace'; ctx.fillStyle = tc;
+      ctx.textAlign = 'right';
+      ctx.fillText(`[${(TIER_LABEL[outItem.tier] ?? outItem.tier).toUpperCase()}]`, W - 108, ry + 16);
+    }
+
+    // Ingredient list (abbreviated)
+    ctx.font = '10px monospace'; ctx.textAlign = 'left';
+    let ix = 108;
+    recipe.ingredients.forEach((ing, idx2) => {
+      const have = state.player.inventory.filter(id => id === ing.itemId).length;
+      const ok = have >= ing.count;
+      const ingName = ITEMS[ing.itemId]?.name ?? ing.itemId;
+      ctx.fillStyle = ok ? '#558844' : '#774444';
+      const label = `${have}/${ing.count} ${ingName}`;
+      ctx.fillText(label, ix, ry + 30);
+      ix += ctx.measureText(label).width + 16;
+    });
+  });
+  ctx.restore();
+
+  if (scrollOff > 0) { ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▲', W/2, listTop - 6); }
+  if (scrollOff + maxVisible < catRecipes.length) { ctx.fillStyle = C.dim; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▼', W/2, listBottom + 6); }
+
+  // Selected recipe output detail
+  const selRecipe = catRecipes[state.itemCraft.cursorIndex];
+  if (selRecipe) {
+    const outItem = ITEMS[selRecipe.outputId];
+    const canCraft = selRecipe.ingredients.every(ing =>
+      state.player.inventory.filter(id => id === ing.itemId).length >= ing.count
+    );
+    ctx.strokeStyle = '#334433'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(100, listBottom + 12); ctx.lineTo(W - 100, listBottom + 12); ctx.stroke();
+    if (outItem) {
+      ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#aabb88';
+      ctx.fillText(`Output: ${outItem.name} × ${selRecipe.outputCount}  —  ${outItem.desc ?? ''}`, W/2, listBottom + 28);
+    }
+    ctx.font = '11px monospace'; ctx.fillStyle = canCraft ? '#88bb55' : '#774444'; ctx.textAlign = 'center';
+    ctx.fillText(canCraft ? '[SPACE] Craft  |  [←→] category  |  [X] close' : 'Missing ingredients  |  [←→] category  |  [X] close', W/2, listBottom + 44);
+  } else {
+    ctx.fillStyle = '#445544'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+    ctx.fillText('[←→] change category  |  [X] close', W/2, H - 100);
+  }
+}
+
+// ── ACHIEVEMENTS (A key) ──────────────────────────────────────────────
+function renderAchievements(ctx: CanvasRenderingContext2D, state: GameStateData) {
+  ctx.fillStyle = 'rgba(0,0,0,0.92)'; ctx.fillRect(0, 0, W, H);
+  pixelBox(ctx, 80, 60, W - 160, H - 120, '#080810', '#ccaa55', 3);
+
+  ctx.fillStyle = '#ccaa55'; ctx.font = 'bold 18px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('ACHIEVEMENTS', W / 2, 96);
+
+  const earnedIds = getEarnedAchievementIds();
+  const total = ACH_DEFS.length;
+  const earned = earnedIds.length;
+
+  ctx.fillStyle = '#777755'; ctx.font = '12px monospace';
+  ctx.fillText(`${earned} / ${total} earned`, W / 2, 114);
+  ctx.strokeStyle = '#443300'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(100, 124); ctx.lineTo(W - 100, 124); ctx.stroke();
+
+  const rowH = 40;
+  const listTop = 136;
+  const listBottom = H - 110;
+  const maxVisible = Math.max(1, Math.floor((listBottom - listTop) / rowH));
+  const maxScroll = Math.max(0, total - maxVisible);
+  state.achievementsScroll = Math.min(maxScroll, Math.max(0, state.achievementsScroll));
+  const scrollOff = state.achievementsScroll;
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(90, listTop - 2, W - 180, listBottom - listTop + 4); ctx.clip();
+
+  ACH_DEFS.slice(scrollOff, scrollOff + maxVisible).forEach((ach, vi) => {
+    const isEarned = earnedIds.includes(ach.id);
+    const ay = listTop + vi * rowH;
+
+    // Row bg
+    if (isEarned) {
+      ctx.fillStyle = 'rgba(180,150,30,0.07)';
+      ctx.fillRect(100, ay, W - 200, rowH - 4);
+    }
+
+    // Icon
+    ctx.font = '18px monospace'; ctx.textAlign = 'center';
+    ctx.fillStyle = isEarned ? '#ffcc44' : '#333322';
+    ctx.fillText(ach.icon, 122, ay + 26);
+
+    // Name
+    ctx.font = isEarned ? 'bold 13px monospace' : '13px monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = isEarned ? '#ddcc77' : '#444433';
+    ctx.fillText(ach.name, 140, ay + 18);
+
+    // Description
+    ctx.font = '10px monospace';
+    ctx.fillStyle = isEarned ? '#88774d' : '#2a2a22';
+    ctx.fillText(ach.desc, 140, ay + 33);
+
+    // Earned badge
+    if (isEarned) {
+      ctx.font = '10px monospace'; ctx.textAlign = 'right';
+      ctx.fillStyle = '#886633';
+      ctx.fillText('✓ EARNED', W - 108, ay + 18);
     }
   });
   ctx.restore();
 
-  // Scroll indicators
-  if (scrollOffset > 0) {
-    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
-    ctx.fillText('▲', W / 2, listTop - 8);
-  }
-  if (scrollOffset + maxVisible < enemyIds.length) {
-    ctx.fillStyle = '#555577'; ctx.textAlign = 'center'; ctx.font = '12px monospace';
-    ctx.fillText('▼', W / 2, listBottom + 6);
-  }
+  if (scrollOff > 0) { ctx.fillStyle = '#555533'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▲', W/2, listTop - 6); }
+  if (scrollOff + maxVisible < total) { ctx.fillStyle = '#555533'; ctx.textAlign = 'center'; ctx.font = '12px monospace'; ctx.fillText('▼', W/2, listBottom + 6); }
 
-  ctx.fillStyle = '#333355'; ctx.textAlign = 'center'; ctx.font = '11px monospace';
-  ctx.fillText('[↑↓/WS] scroll  |  [B] or [X] close', W / 2, H - 70);
+  ctx.fillStyle = '#443300'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+  ctx.fillText('[↑↓] scroll  |  [A] or [X] close', W/2, H - 86);
 }

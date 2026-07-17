@@ -4,3 +4,5 @@
 - [Echo Realm combat depth](echo-realm-combat-depth.md) — status effects (poison/burn/freeze/silence), dual wield/shields (offhand slot), enemy resistances, Bestiary screen — full architecture.
 - [Echo Realm equipment system](echo-realm-equipment.md) — 14-slot paperdoll: EQUIP_SLOTS in constants, sumEquipStat helper, two-page inventory (page 0 = paperdoll, page 1 = items list).
 - [Echo Realm skill tree](echo-realm-skill-tree.md) — 4 paths (Void/Chromatic/Echo/Ember), 16 skills, 6 hybrids, K key, integration across constants/engine/battle/renderer/save.
+- [Echo Realm GameData stores](echo-realm-gamedata-stores.md) — achievementStore/codexStore/challengeStore: global localStorage stores that survive slot deletions.
+- [Echo Realm item crafting](echo-realm-item-crafting.md) — ITEM_CRAFT mode (18): tab-based crafting table; CRAFT NPC opens it; TOME_CRAFT (enchants) still from inventory use.

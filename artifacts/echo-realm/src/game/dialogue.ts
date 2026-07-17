@@ -473,6 +473,41 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
     };
   }
 
+  // ── TF WAYSTONE (center of Thornwood Forest — guides lost explorers) ────────
+  if (npcId === 'tf_waystone') {
+    return {
+      text: "A moss-covered waystone, warm against the cold. An etched arrow points east — back toward the hollow. The roots around it pulse faintly, as if the forest remembers the way out.",
+      speaker: 'Waystone', color: '#88bb88',
+      options: [
+        {
+          label: 'Return to Verdant Hollow',
+          action: (s) => {
+            s.mapId = 'VH'; s.player.x = 1 * 24; s.player.y = 8 * 24;
+            s.player.targetX = s.player.x; s.player.targetY = s.player.y;
+            s.mode = GameMode.OVERWORLD;
+            s.uiMessage = 'Returned to Verdant Hollow.'; s.uiMessageTimer = 120;
+          },
+        },
+        { label: 'Stay in the forest.' },
+      ],
+    };
+  }
+
+  // ── TF HERMIT (deep in Thornwood Forest, near the grove) ─────────────────
+  if (npcId === 'tf_hermit') {
+    return {
+      text: "You startled me. I've lived in this forest long enough to forget the city — and it's done me good, I think. The trees don't forget anything. They just... hold it quietly.",
+      speaker: 'Thornwood Hermit', color: '#998866',
+      options: [
+        { label: "What can you tell me about this forest?",
+          nextId: 'hermit_forest' },
+        { label: "Is there a way out?",
+          nextId: 'hermit_exit' },
+        { label: "Farewell, hermit." },
+      ],
+    };
+  }
+
   // ── CHALLENGE KEEPER (Challenge Arena — orchestrates all five waves) ───────
   if (npcId === 'challenge_keeper') {
     const f = state.player.flags;
@@ -612,6 +647,29 @@ export function getDialogueNode(state: GameStateData, nextId: string): DialogueN
         { label: "Show me your wares.", action: (s) => { s.mode = GameMode.SHOP; s.shopIndex = 0; s.shopNpcId = 'relic_broker'; } },
         { label: "Good to know." }
       ]
+    };
+  }
+  if (nextId === 'hermit_forest') {
+    return {
+      text: "Thornwood is old. Older than any of the cities. The creatures here — the wisps, the shadow-stalkers — they aren't void-corrupted, not exactly. They are things the forest has always held. The Void just... agitated them.",
+      speaker: 'Thornwood Hermit', color: '#998866',
+      options: [
+        { label: "Is there anything worth finding out there?",
+          nextId: 'hermit_treasure' },
+        { label: "Farewell." },
+      ],
+    };
+  }
+  if (nextId === 'hermit_treasure') {
+    return {
+      text: "The clearings hold memory — old chests from before the Void. And there is a waystone near the center of the main path, if you ever need to find your way home quickly.",
+      speaker: 'Thornwood Hermit', color: '#998866',
+    };
+  }
+  if (nextId === 'hermit_exit') {
+    return {
+      text: "The path runs east. Follow it to where the trees thin and you'll see light from the hollow. Takes about ten minutes at a walk. Or — there is a waystone at the heart of the main trail. It knows the way, if you ask it.",
+      speaker: 'Thornwood Hermit', color: '#998866',
     };
   }
   if (nextId === 'survivor_ok') {

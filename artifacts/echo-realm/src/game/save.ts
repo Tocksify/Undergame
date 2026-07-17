@@ -26,7 +26,7 @@ export interface SavedGameState {
       helmet?: string | null; gloves?: string | null; pants?: string | null;
       boots?: string | null; cloak?: string | null; necklace?: string | null;
       ring1?: string | null; ring2?: string | null; belt?: string | null;
-      shoulder?: string | null; trinket?: string | null;
+      trinket?: string | null;
     };
     quests: Record<string, number>;
     questProgress: Record<string, number>;
@@ -120,7 +120,6 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
       ring1:    saved.player.equipment.ring1     ?? null,
       ring2:    saved.player.equipment.ring2     ?? null,
       belt:     saved.player.equipment.belt      ?? null,
-      shoulder: saved.player.equipment.shoulder  ?? null,
       trinket:  saved.player.equipment.trinket   ?? null,
     };
     state.player.bestiary = saved.player.bestiary ? { ...saved.player.bestiary } : {};
