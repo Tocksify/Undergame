@@ -159,7 +159,7 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
   // ── Mobile (touch device): canvas shrinks to give room for buttons ──
   if (isTouchDevice) {
     return (
-      <div style={{ width: '100vw', height: '100dvh', display: 'flex', flexDirection: 'column', background: '#000', overflow: 'hidden' }}>
+      <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: '#000', overflow: 'hidden' }}>
         {/* Canvas area: flex:1 + minHeight:0 means it fills space above the buttons */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <canvas

@@ -55,8 +55,8 @@ export default function TouchControls({ stateRef }: TouchControlsProps) {
 
   return (
     <div
-      className="w-full max-w-[768px] mt-3 flex items-center justify-between px-2 select-none"
-      style={{ touchAction: 'none' }}
+      className="w-full flex items-center justify-between px-2 select-none"
+      style={{ touchAction: 'none', flexShrink: 0, paddingBottom: 'env(safe-area-inset-bottom, 4px)', paddingTop: '4px' }}
     >
       {/* D-pad */}
       <div className="grid grid-cols-3 grid-rows-3 gap-1 w-36 h-36">
