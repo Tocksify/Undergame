@@ -1963,14 +1963,16 @@ function renderSkillTree(ctx: CanvasRenderingContext2D, state: GameStateData) {
   });
 
   // ── Top bar ───────────────────────────────────────────────────────
-  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 50);
+  ctx.fillStyle = 'rgba(0,0,0,0.75)'; ctx.fillRect(0, 0, W, 60);
   ctx.strokeStyle = '#1a1a26'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, 50); ctx.lineTo(W, 50); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, 60); ctx.lineTo(W, 60); ctx.stroke();
 
   ctx.textAlign = 'center'; ctx.font = 'bold 20px monospace'; ctx.fillStyle = '#dde8dd';
-  ctx.fillText('SKILL TREE', W / 2, 28);
+  ctx.fillText('SKILL TREE', W / 2, 22);
   ctx.font = '11px monospace'; ctx.fillStyle = '#2a3a2a';
-  ctx.fillText('[K / ESC]  Close     [← →]  Path     [↑ ↓]  Skill     [Z]  Learn', W / 2, 44);
+  ctx.fillText('[K / ESC]  Close     [← →]  Path     [↑ ↓]  Skill     [Z]  Learn', W / 2, 37);
+  ctx.fillStyle = '#1a2a1a';
+  ctx.fillText('All skills are passive — they activate automatically during battle based on your timing', W / 2, 52);
 
   ctx.textAlign = 'right'; ctx.font = 'bold 15px monospace';
   ctx.fillStyle = sp > 0 ? '#ffdd44' : '#2a2a2a';

@@ -89,21 +89,9 @@ export const CHALLENGE_TIERS: ChallengeTier[] = [
   },
 ];
 
-const TIER_KEY = 'er-challenge-tier'; // stores highest unlocked tier index (0–5)
-
-export function getUnlockedTierIndex(): number {
-  try {
-    const v = parseInt(localStorage.getItem(TIER_KEY) ?? '0', 10);
-    return isNaN(v) ? 0 : Math.max(0, Math.min(5, v));
-  } catch { return 0; }
-}
-
-export function unlockChallengeTier(tierIndex: number): void {
-  const current = getUnlockedTierIndex();
-  if (tierIndex > current) {
-    try { localStorage.setItem(TIER_KEY, String(tierIndex)); } catch { /* noop */ }
-  }
-}
+// All tiers are permanently unlocked — no earning required.
+export function getUnlockedTierIndex(): number { return 5; }
+export function unlockChallengeTier(_tierIndex: number): void { /* all tiers already unlocked */ }
 
 export function getUnlockedTier(): ChallengeTier {
   return CHALLENGE_TIERS[getUnlockedTierIndex()];

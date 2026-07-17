@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Game from './game/Game';
 import CharacterCustomization from './game/CharacterCustomization';
-import { GameStateData, GameMode } from './game/types';
+import { GameStateData } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState } from './game/save';
-import { TILE_SIZE } from './game/constants';
 import { audio } from './game/audio';
 import { SpriteAppearance } from './game/npcAppearance';
 import { CHALLENGE_EMBLEMS } from './challengeStore';
@@ -17,7 +16,7 @@ import Options from './Options';
 import Extras from './Extras';
 import './index.css';
 
-type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras' | 'challenge';
+type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras';
 
 function App() {
   const [screen, setScreen]             = useState<Screen>('menu');
@@ -73,23 +72,6 @@ function App() {
     setScreen('game');
   }, []);
 
-  // ── Challenge Mode ───────────────────────────────────────────────
-  const handleChallenge = useCallback(() => {
-    const state = buildInitialState(null, false);
-    state.mapId = 'CHALLENGE_ARENA';
-    state.player.x = 9 * TILE_SIZE;
-    state.player.y = 9 * TILE_SIZE;
-    state.player.targetX = 9 * TILE_SIZE;
-    state.player.targetY = 9 * TILE_SIZE;
-    state.player.hp = 40;
-    state.player.maxHp = 40;
-    state.player.inventory.push('tonic');
-    state.player.enchantedSlots.push(null);
-    state.mode = GameMode.OVERWORLD;
-    setActiveSlotId(null);
-    setInitialState(state);
-    setScreen('challenge');
-  }, []);
 
   // ── Customization done → create slot with initial state ──────────
   const confirmCustomization = useCallback(async (appearance: SpriteAppearance, emblemId?: string) => {
@@ -140,11 +122,6 @@ function App() {
     setInitialState(null); setActiveSlotId(null); setScreen('slots');
   }, []);
 
-  // ── Exit challenge mode ──────────────────────────────────────────
-  const onChallengeExit = useCallback(() => {
-    setInitialState(null); setActiveSlotId(null); setScreen('menu');
-  }, []);
-
   const onEndLegacy = useCallback(() => {
     setInitialState(null); setActiveSlotId(null); setScreen('menu');
   }, []);
@@ -154,7 +131,6 @@ function App() {
     return (
       <MainMenu
         onPlay={() => setScreen('slots')}
-        onChallenge={handleChallenge}
         onOptions={() => setScreen('options')}
         onExtras={() => setScreen('extras')}
         onQuit={() => {
@@ -193,19 +169,6 @@ function App() {
           onSave={onSave}
           onExit={onExit}
           onEndLegacy={onEndLegacy}
-        />
-      </div>
-    );
-  }
-
-  if (screen === 'challenge' && initialState) {
-    return (
-      <div className="fullscreen-black">
-        <Game
-          initialState={initialState}
-          onSave={onSave}
-          onExit={onChallengeExit}
-          onEndLegacy={onChallengeExit}
         />
       </div>
     );

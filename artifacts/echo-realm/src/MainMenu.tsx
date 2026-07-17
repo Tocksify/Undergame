@@ -3,7 +3,6 @@ import { audio } from './game/audio';
 
 interface Props {
   onPlay: () => void;
-  onChallenge: () => void;
   onOptions: () => void;
   onExtras: () => void;
   onQuit: () => void;
@@ -12,23 +11,21 @@ interface Props {
 type Item = { label: string; key: string };
 
 const ITEMS: Item[] = [
-  { label: 'PLAY',      key: 'play'      },
-  { label: 'CHALLENGE', key: 'challenge' },
-  { label: 'OPTIONS',   key: 'options'   },
-  { label: 'EXTRAS',    key: 'extras'    },
-  { label: 'QUIT',      key: 'quit'      },
+  { label: 'PLAY',    key: 'play'    },
+  { label: 'OPTIONS', key: 'options' },
+  { label: 'EXTRAS',  key: 'extras'  },
+  { label: 'QUIT',    key: 'quit'    },
 ];
 
-export default function MainMenu({ onPlay, onChallenge, onOptions, onExtras, onQuit }: Props) {
+export default function MainMenu({ onPlay, onOptions, onExtras, onQuit }: Props) {
   const [hovered, setHovered] = useState<string | null>(null);
 
   function handle(key: string) {
     audio.playSfx('click');
-    if (key === 'play')      onPlay();
-    if (key === 'challenge') onChallenge();
-    if (key === 'options')   onOptions();
-    if (key === 'extras')    onExtras();
-    if (key === 'quit')      onQuit();
+    if (key === 'play')    onPlay();
+    if (key === 'options') onOptions();
+    if (key === 'extras')  onExtras();
+    if (key === 'quit')    onQuit();
   }
 
   return (

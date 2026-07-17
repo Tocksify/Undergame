@@ -282,6 +282,14 @@ export const ITEMS: Record<string, Item> = {
   'ember_coal':   { name: 'Ember Coal',     desc: 'Coal from the Ashfall Ring that never fully cooled. Still radiates heat.',       price: 8,  tier: 'common',   category: 'ingredient' },
   'silver_thread':{ name: 'Silver Thread',  desc: 'Spun from void-silver. Essential for high-quality textile crafts.',              price: 35, tier: 'uncommon', category: 'ingredient' },
   'memory_dust':  { name: 'Memory Dust',    desc: 'Ground from memory crystals. Potent base for advanced alchemical recipes.',      price: 50, tier: 'rare',     category: 'ingredient' },
+  'dried_mushroom':{ name: 'Dried Mushroom', desc: 'A forest mushroom dried over ember-coal. Mild alchemical properties.',             price: 6,  tier: 'common',   category: 'ingredient' },
+  'void_essence': { name: 'Void Essence',   desc: 'Distilled void energy in liquid form. Reacts strongly with memory-infused metals.', price: 45, tier: 'rare',     category: 'ingredient' },
+  'resonance_dust':{ name: 'Resonance Dust', desc: 'Fine powder from shattered echo shards. Amplifies enchantment effects.',          price: 35, tier: 'uncommon', category: 'ingredient' },
+  'rusted_chain': { name: 'Rusted Chain',   desc: 'A salvaged chain from the ruins. Still holds despite the corrosion.',              price: 4,  tier: 'common',   category: 'ingredient' },
+  'beast_claw':   { name: 'Beast Claw',     desc: 'A claw from a thornwood predator. Hard as iron, light as bone.',                   price: 9,  tier: 'common',   category: 'ingredient' },
+  'clear_quartz': { name: 'Clear Quartz',   desc: 'A smooth quartz stone found near void pockets. Excellent for channelling.',        price: 20, tier: 'uncommon', category: 'ingredient' },
+  'ancient_bark': { name: 'Ancient Bark',   desc: 'Bark stripped from the oldest thornwood trees. Harder than most metals.',          price: 12, tier: 'common',   category: 'ingredient' },
+  'ghost_salt':   { name: 'Ghost Salt',     desc: 'Salt crystallised from void-hollow remains. Preserves and purifies.',              price: 18, tier: 'uncommon', category: 'ingredient' },
   // ── CRAFTED GEAR (primarily obtained by crafting) ──
   'iron_band':    { name: 'Iron Band',       desc: 'A plain iron ring, smoothed at the forge. Modest protection.',                price: 0, tier: 'common',   category: 'ring', def: 1 },
 
@@ -2475,7 +2483,7 @@ export const MAPS: Record<string, any> = {
       { id: 'tf_crafting_npc', x: 10, y: 4, color: '#88aa88', name: 'Crafting Table', type: 'CRAFT' },
     ],
     chests: [
-      { id: 'ch_tf_craft1', flag: 'ch_tf_craft1', x: 10, y: 2, item: 'tomes_blessing' },
+      { id: 'ch_tf_craft1', flag: 'ch_tf_craft1', x: 10, y: 2, item: 'memory_dust' },
     ],
     doors: [],
     books: [],

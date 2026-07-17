@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { audio } from './game/audio';
-import { CHALLENGE_EMBLEMS, getEarnedEmblemIds } from './challengeStore';
+import { CHALLENGE_TIERS } from './challengeStore';
+import { ACHIEVEMENTS, getEarnedAchievementIds } from './achievementStore';
 
 interface Props { onBack: () => void; }
 
-type Tab = 'credits' | 'sound' | 'lore' | 'codex';
+type Tab = 'credits' | 'sound' | 'lore' | 'codex' | 'achievements';
 
 const SOUND_TRACKS: { key: string; label: string }[] = [
   { key: 'title',        label: 'Title Theme'        },
@@ -72,6 +73,12 @@ const CREDITS: { heading: string; lines: string[] }[] = [
   { heading: 'SPECIAL THANKS', lines: ['To everyone who remembers.'] },
 ];
 
+// Tier colors matching the canvas renderer
+const TIER_CLR: Record<string, string> = {
+  bronze: '#cd7f32', silver: '#c0c0c0', gold: '#ffd700',
+  platinum: '#e5e4e2', diamond: '#b9f2ff', void: '#9966ff',
+};
+
 export default function Extras({ onBack }: Props) {
   const [tab,       setTab]       = useState<Tab>('credits');
   const [playing,   setPlaying]   = useState<string | null>(null);
@@ -99,11 +106,15 @@ export default function Extras({ onBack }: Props) {
   }
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: 'credits', label: 'CREDITS'    },
-    { id: 'sound',   label: 'SOUND TEST' },
-    { id: 'lore',    label: 'LORE'       },
-    { id: 'codex',   label: 'CODEX'      },
+    { id: 'credits',      label: 'CREDITS'      },
+    { id: 'sound',        label: 'SOUND TEST'   },
+    { id: 'lore',         label: 'LORE'         },
+    { id: 'achievements', label: 'ACHIEVEMENTS' },
+    { id: 'codex',        label: 'CODEX'        },
   ];
+
+  // Achievements rendering
+  const earnedIds = getEarnedAchievementIds();
 
   return (
     <div className="menu-root">
@@ -192,52 +203,97 @@ export default function Extras({ onBack }: Props) {
               </div>
             )}
 
-            {/* ── CODEX ── */}
-            {tab === 'codex' && (() => {
-              const earnedIds = getEarnedEmblemIds();
-              return (
-                <div className="extras-lore">
-                  <p className="text-xs text-[#555] mb-4 leading-relaxed">
-                    Emblems are earned by completing Challenge Mode. Each run awards a new emblem.
-                    Earned emblems grant starting buffs on new characters.
-                  </p>
-                  {CHALLENGE_EMBLEMS.map((emblem) => {
-                    const earned = earnedIds.includes(emblem.id);
-                    return (
-                      <div
-                        key={emblem.id}
-                        className="extras-lore-entry"
-                        style={{
-                          borderLeft: `3px solid ${earned ? emblem.color : '#333'}`,
-                          paddingLeft: '12px',
-                          marginBottom: '10px',
-                        }}
-                      >
+            {/* ── ACHIEVEMENTS ── */}
+            {tab === 'achievements' && (
+              <div>
+                <p className="text-xs mb-3 leading-relaxed" style={{ color: '#555' }}>
+                  {earnedIds.length} / {ACHIEVEMENTS.length} achievements earned — persists across all characters
+                </p>
+                {ACHIEVEMENTS.map((ach) => {
+                  const earned = earnedIds.includes(ach.id);
+                  return (
+                    <div
+                      key={ach.id}
+                      className="extras-lore-entry"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                        borderLeft: `3px solid ${earned ? '#ccaa55' : '#222'}`,
+                        paddingLeft: '10px',
+                        marginBottom: '8px',
+                        paddingTop: '4px',
+                        paddingBottom: '4px',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.1rem', minWidth: '24px', color: earned ? '#ffcc44' : '#2a2a22' }}>
+                        {earned ? ach.icon : '?'}
+                      </span>
+                      <div>
                         <div
                           className="text-sm font-bold tracking-wider mb-1"
-                          style={{ color: earned ? emblem.color : '#444' }}
+                          style={{ color: earned ? '#ddcc77' : '#333' }}
                         >
-                          {earned ? emblem.name : '???'}
+                          {earned ? ach.name : '???'}
                         </div>
-                        <div className="text-xs" style={{ color: earned ? '#aaa' : '#333' }}>
-                          {earned ? emblem.desc : 'Complete Challenge Mode to reveal this emblem.'}
+                        <div className="text-xs" style={{ color: earned ? '#887755' : '#2a2a2a' }}>
+                          {earned ? ach.desc : '???'}
                         </div>
                       </div>
-                    );
-                  })}
-                  {earnedIds.length === 0 && (
-                    <p className="text-xs text-[#444] mt-2 italic">
-                      No emblems earned yet. Select CHALLENGE from the main menu to begin.
-                    </p>
-                  )}
-                  {earnedIds.length > 0 && (
-                    <p className="text-xs text-[#555] mt-3">
-                      {earnedIds.length} / {CHALLENGE_EMBLEMS.length} emblems earned.
-                    </p>
-                  )}
-                </div>
-              );
-            })()}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── CODEX ── */}
+            {tab === 'codex' && (
+              <div>
+                <p className="text-xs mb-3 leading-relaxed" style={{ color: '#555' }}>
+                  Items claimable exclusively through the Challenge Board — find the Challenge Herald NPC to begin
+                </p>
+                {CHALLENGE_TIERS.map((tier) => (
+                  <div key={tier.name} style={{ marginBottom: '18px' }}>
+                    {/* Tier header */}
+                    <div
+                      className="text-xs font-bold tracking-widest mb-2"
+                      style={{
+                        color: TIER_CLR[tier.name] ?? '#888',
+                        borderBottom: `1px solid ${TIER_CLR[tier.name] ?? '#333'}33`,
+                        paddingBottom: '4px',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {tier.displayName} Tier
+                    </div>
+                    {/* Item rows */}
+                    {tier.pool.map((poolItem) => (
+                      <div
+                        key={poolItem.itemId}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          borderLeft: `3px solid ${TIER_CLR[tier.name] ?? '#333'}`,
+                          paddingLeft: '10px',
+                          marginBottom: '6px',
+                          paddingTop: '3px',
+                          paddingBottom: '3px',
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div className="text-sm font-bold tracking-wider" style={{ color: '#9977cc' }}>
+                            {poolItem.label}
+                          </div>
+                          <div className="text-xs" style={{ color: '#443355' }}>
+                            {poolItem.desc}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
 
           </div>
 
