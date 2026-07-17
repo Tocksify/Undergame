@@ -133,6 +133,31 @@ export default function DifficultyPicker({ onConfirm, onBack }: DifficultyPicker
           </div>
         </div>
 
+        {/* NG+ exclusive items preview */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 10, color: '#444466', letterSpacing: 2, marginBottom: 8 }}>EXCLUSIVE REWARDS</div>
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 6,
+            padding: '10px 14px',
+            background: 'rgba(0,0,0,0.4)',
+            border: '1px solid #1a1a33',
+          }}>
+            {[
+              { name: 'Void-Touched Crown',   tier: 'LEGENDARY', color: '#e0aa40', desc: 'Helmet — +6 DEF  +15 HP  +3 ATK' },
+              { name: "Keeper's Second Seal", tier: 'LEGENDARY', color: '#e0aa40', desc: 'Necklace — +4 DEF  +18 HP  +2 ATK' },
+              { name: 'Fragment of Another',  tier: 'MYTHIC',    color: '#8866ff', desc: 'Trinket — +3 DEF  +20 HP  +5 ATK' },
+            ].map(item => (
+              <div key={item.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 11, color: item.color, fontWeight: 'bold' }}>{item.name}</span>
+                <span style={{ fontSize: 10, color: '#555577', whiteSpace: 'nowrap' }}>{item.desc}</span>
+              </div>
+            ))}
+            <div style={{ fontSize: 9, color: '#333355', marginTop: 4 }}>
+              Drop from Memory Wraith boss · NG+ only
+            </div>
+          </div>
+        </div>
+
         {/* Slot name */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 10, color: '#444466', letterSpacing: 2, marginBottom: 8 }}>RUN NAME</div>

@@ -116,7 +116,14 @@ export function updateGame(state: GameStateData) {
     return;
   }
 
-  if (state.mode === GameMode.VICTORY) return;
+  if (state.mode === GameMode.VICTORY) {
+    // SPACE / Enter / Z transitions to the TRUE_ENDING menu (Sandbox / End Legacy / New Game+)
+    if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
+      state.mode = GameMode.TRUE_ENDING;
+      state.trueEndingMenuIndex = 0;
+    }
+    return;
+  }
   if (state.mode === GameMode.TRUE_ENDING) {
     if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
       state.trueEndingMenuIndex = (state.trueEndingMenuIndex + 2) % 3;

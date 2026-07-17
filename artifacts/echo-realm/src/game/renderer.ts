@@ -272,6 +272,10 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     ctx.fillText('Every memory was worth saving.', W / 2, 320);
     ctx.fillStyle = C.gray; ctx.font = '13px monospace';
     ctx.fillText('Thank you for playing Echo Realm.', W / 2, 370);
+    if (Math.floor(state.frameCount / 25) % 2 === 0) {
+      ctx.fillStyle = C.dim; ctx.font = '12px monospace';
+      ctx.fillText('[ SPACE ]  what happens next?', W / 2, 410);
+    }
     drawScanlines(ctx); return;
   }
 
