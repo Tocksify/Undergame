@@ -22,9 +22,12 @@ interface GameProps {
   // Called when the player confirms slot erasure at the end of END_LEGACY_SEQ —
   // App.tsx deletes the active save slot and returns to the main menu.
   onDeleteLegacy: () => void;
+  // Called when the player chooses "New Game+" on the true-ending screen —
+  // App.tsx opens the NG+ difficulty picker screen.
+  onNewGamePlus: () => void;
 }
 
-export default function Game({ initialState, onSave, onExit, onEndLegacy, onDeleteLegacy }: GameProps) {
+export default function Game({ initialState, onSave, onExit, onEndLegacy, onDeleteLegacy, onNewGamePlus }: GameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameStateData>(initialState);
   const savingRef = useRef(false);
@@ -123,6 +126,11 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
         onDeleteLegacy();
         return; // parent will unmount this component
       }
+      if (state.ngPlusRequested) {
+        state.ngPlusRequested = false;
+        onNewGamePlus();
+        return; // parent will unmount this component
+      }
 
       renderGame(ctx, state);
       state.prevKeys = { ...state.keys };
@@ -138,7 +146,7 @@ export default function Game({ initialState, onSave, onExit, onEndLegacy, onDele
       // Stop procedural music so it doesn't bleed over the menu MP3.
       audio.stop();
     };
-  }, [onSave, onExit, onEndLegacy, onDeleteLegacy]);
+  }, [onSave, onExit, onEndLegacy, onDeleteLegacy, onNewGamePlus]);
 
   const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectron;
 

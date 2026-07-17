@@ -349,6 +349,11 @@ export const ITEMS: Record<string, Item> = {
   'keeper_token':      { name: "Keeper's Token",       desc: 'Given to Keepers who proved themselves. Most of them are gone. You are not.',      price: 0,   tier: 'epic',      category: 'trinket', atk: 2, def: 2, maxHp: 5 },
   'ancient_relic_charm':{ name: 'Ancient Relic Charm', desc: 'Predates the Void. Predates the Keepers. Predates nearly everything.',             price: 0,   tier: 'legendary', category: 'trinket', atk: 3, def: 3, maxHp: 8 },
 
+  // ── NEW GAME+ EXCLUSIVE ITEMS ── (obtainable only in NG+ runs)
+  'ngp_void_crown':     { name: 'Void-Touched Crown',   desc: 'Forged in a second Void. It holds a memory of the first ending — and the knowledge that another beginning followed.',       price: 0, tier: 'legendary', category: 'helmet',   def: 6, maxHp: 15, atk: 3 },
+  'ngp_echo_fragment':  { name: 'Fragment of Another',  desc: 'A sliver of a life almost forgotten. It hums with every choice that was kept across the threshold.',                        price: 0, tier: 'mythic',    category: 'trinket',  def: 3, maxHp: 20, atk: 5 },
+  'ngp_keepers_seal':   { name: "Keeper's Second Seal", desc: 'Only worn by those who carried the Realm to its end and chose to carry it again. The Void recognizes the weight of it.',   price: 0, tier: 'legendary', category: 'necklace', def: 4, maxHp: 18, atk: 2 },
+
   // ── READABLE BOOKS ──
   'book_keepers_codex':      { name: "The Keeper's Codex",        desc: 'An ancient journal about Memory Keepers.',        price: 0, tier: 'rare',      category: 'book', bookId: 'book_keepers_codex' },
   'book_childs_letter':      { name: "A Child's Letter",          desc: 'A folded note, worn soft at the edges.',          price: 0, tier: 'common',    category: 'book', bookId: 'book_childs_letter' },
@@ -877,7 +882,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 20, acts: [
       { id: 'hum', name: 'Hum', effect: 'weaken', power: 1 },
       { id: 'listen', name: 'Listen', effect: 'confuse', magic: true },
-    ]
+    ],
+    elementalWeakness: { void: 0.5, chromatic: 1, echo: 2, ember: 0.5 },
   },
   'crawler': {
     id: 'crawler', name: 'Void Crawler', hp: 20, maxHp: 20, atk: 5, color: '#555555',
@@ -886,7 +892,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 35, acts: [
       { id: 'name', name: 'Name It', effect: 'flavor', requiresItem: 'stone' },
       { id: 'observe', name: 'Observe', effect: 'flavor' },
-    ]
+    ],
+    elementalWeakness: { void: 2, chromatic: 0.5, echo: 1, ember: 1 },
   },
   'specter': {
     id: 'specter', name: 'Echo Specter', hp: 30, maxHp: 30, atk: 7, color: '#cccccc',
@@ -895,7 +902,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 60, acts: [
       { id: 'reflect', name: 'Echo Back', effect: 'damage', power: 5 },
       { id: 'console', name: 'Console', effect: 'resonance', power: 1 },
-    ]
+    ],
+    elementalWeakness: { void: 0.5, chromatic: 2, echo: 1, ember: 1 },
   },
   'archivist': {
     id: 'archivist', name: 'The Archivist', hp: 200, maxHp: 200, atk: 9, color: '#bbbbbb',
@@ -906,6 +914,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'plead', name: 'Plead', effect: 'resonance', power: 1, magic: true },
     ],
     resistances: { silence: 2 }, // silence blocks its resonance act — silencing it interrupts the remember path
+    elementalWeakness: { void: 1, chromatic: 1, echo: 0.5, ember: 2 }, // archives burn; too rigid for resonance
   },
   'archive_wisp': {
     id: 'archive_wisp', name: 'Archive Wisp', hp: 16, maxHp: 16, atk: 4, color: '#9fb8c8',
@@ -914,7 +923,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 25, acts: [
       { id: 'skim', name: 'Skim', effect: 'flavor' },
       { id: 'catalog', name: 'Catalog', effect: 'resonance', power: 1 },
-    ]
+    ],
+    elementalWeakness: { void: 0.5, chromatic: 2, echo: 2, ember: 0.5 }, // a memory-page: resonance and spectral light dissolve it
   },
   'ink_wraith': {
     id: 'ink_wraith', name: 'Ink Wraith', hp: 24, maxHp: 24, atk: 6, color: '#5c6b73',
@@ -923,7 +933,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 40, acts: [
       { id: 'read', name: 'Read', effect: 'damage', power: 4 },
       { id: 'blot', name: 'Blot', effect: 'confuse', magic: true },
-    ]
+    ],
+    elementalWeakness: { void: 1, chromatic: 0.5, echo: 1, ember: 2 }, // ink burns; chromatic energy is part of its nature
   },
   'frost_walker': {
     id: 'frost_walker', name: 'Frost Walker', hp: 28, maxHp: 28, atk: 7, color: '#a9d6e5',
@@ -934,6 +945,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'warm', name: 'Warm', effect: 'resonance', power: 1 },
     ],
     resistances: { burn: 2, freeze: 0 }, // ice enemy: melts fast under fire, immune to being frozen
+    elementalWeakness: { void: 1, chromatic: 1, echo: 0.5, ember: 2 }, // seeks warmth; ember melts the shell
   },
   'rime_hound': {
     id: 'rime_hound', name: 'Rime Hound', hp: 22, maxHp: 22, atk: 8, color: '#89c2d9',
@@ -944,6 +956,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'pet', name: 'Pet', effect: 'resonance', power: 1 },
     ],
     resistances: { burn: 2, freeze: 0.5 }, // ice hound: vulnerable to fire, naturally cold-resistant
+    elementalWeakness: { void: 1, chromatic: 0.5, echo: 1, ember: 2 }, // heat melts the hound's icy form
   },
   'ash_hound': {
     id: 'ash_hound', name: 'Ash Hound', hp: 34, maxHp: 34, atk: 9, color: '#7a5c58',
@@ -954,6 +967,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'calm', name: 'Calm', effect: 'resonance', power: 1 },
     ],
     resistances: { freeze: 2, burn: 0 }, // fire enemy: freeze hits it hard, can't burn what's already ash
+    elementalWeakness: { void: 0.5, chromatic: 1, echo: 2, ember: 0 }, // craves lost memory (echo); already ash (ember-immune)
   },
   'cinder_wraith': {
     id: 'cinder_wraith', name: 'Cinder Wraith', hp: 38, maxHp: 38, atk: 10, color: '#c1440e',
@@ -964,6 +978,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'ember_talk', name: 'Speak to the Ember', effect: 'resonance', power: 1 },
     ],
     resistances: { freeze: 2, burn: 0 }, // fire entity: flash-frozen effectively, immune to its own element
+    elementalWeakness: { void: 2, chromatic: 1, echo: 0.5, ember: 0 }, // void counters burning grief; immune to fire
   },
   'void_sentinel': {
     id: 'void_sentinel', name: 'Void Sentinel', hp: 350, maxHp: 350, atk: 12, color: '#4b4b4b',
@@ -974,6 +989,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'reason', name: 'Reason', effect: 'resonance', power: 1 },
     ],
     resistances: { silence: 0 }, // machine mind: cannot be silenced; magic finds no foothold
+    elementalWeakness: { void: 0, chromatic: 2, echo: 0.5, ember: 1 }, // IS void (immune); chromatic color disrupts its pattern
   },
   // City enemies
   'city_shade': {
@@ -983,7 +999,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 30, acts: [
       { id: 'wander', name: 'Wander', effect: 'flavor' },
       { id: 'recall', name: 'Recall', effect: 'resonance', power: 1 },
-    ]
+    ],
+    elementalWeakness: { void: 0.5, chromatic: 2, echo: 2, ember: 1 }, // city memory: chromatic light and resonance dissolve it
   },
   'street_wraith': {
     id: 'street_wraith', name: 'Street Wraith', hp: 26, maxHp: 26, atk: 7, color: '#6b7280',
@@ -994,6 +1011,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'linger', name: 'Linger', effect: 'confuse', magic: true },
     ],
     resistances: { poison: 2 }, // already half-dead; poison sinks in fast
+    elementalWeakness: { void: 0.5, chromatic: 2, echo: 1, ember: 1 }, // spectral city entity; chromatic light cuts through it
   },
   'hollow_guard': {
     id: 'hollow_guard', name: 'Hollow Guard', hp: 32, maxHp: 32, atk: 8, color: '#9ca3af',
@@ -1002,7 +1020,8 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 55, acts: [
       { id: 'halt', name: 'Halt', effect: 'damage', power: 4 },
       { id: 'stand_down', name: 'Stand Down', effect: 'resonance', power: 1 },
-    ]
+    ],
+    elementalWeakness: { void: 2, chromatic: 0.5, echo: 0.5, ember: 1 }, // hollow shell: void energy strikes directly; memory barely reaches it
   },
   'boss': {
     id: 'boss', name: 'Memory Wraith', hp: 1000, maxHp: 1000, atk: 14, color: '#ffffff',
@@ -1011,6 +1030,7 @@ export const ENEMIES: Record<string, EnemyData> = {
     echoes: 0, acts: [{ id: 'present_echo', name: 'Present Echo', effect: 'flavor', requiresItem: 'echo' }],
     resistances: { poison: 0.5, burn: 0.5, freeze: 0.5, silence: 0.5, confuse: 0.5, weaken: 0.5 },
     // The Memory Wraith is ancient — all proc effects are half as effective
+    elementalWeakness: { void: 0.5, chromatic: 1.5, echo: 0.5, ember: 0.5 }, // ancient: mostly hardened; chromatic light is its one crack
   },
   // ── Easter-egg dungeon boss (secret building beneath Crestfall) ──
   'echo_warden': {
@@ -1022,6 +1042,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'reckon', name: 'Reckon', effect: 'resonance', power: 1, magic: true },
     ],
     resistances: { silence: 2, freeze: 0.5 }, // its voice IS its power — silence cripples it; cold barely slows it
+    elementalWeakness: { void: 2, chromatic: 0.5, echo: 1, ember: 0.5 }, // the warden guards against void intrusion — irony strikes deep
   },
   // ── Ring boss (Ashfall Ring, second city) ──
   'ring_boss': {
@@ -1034,6 +1055,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'entreat', name: 'Entreat', effect: 'resonance', power: 1, magic: true },
     ],
     resistances: { freeze: 2, silence: 0.5 }, // kinetic entity: freezing stops its endless rotation cold
+    elementalWeakness: { void: 0.5, chromatic: 1, echo: 1, ember: 2 }, // kinetic entity: fire disrupts perpetual motion
   },
   // ── The Kid — appears in Crestfall after reading the child's letter ──
   'child_void_kid': {
@@ -1046,6 +1068,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'remember',    name: 'Remember Him',    effect: 'flavor' },
     ],
     resistances: { poison: 0, burn: 0 }, // a child — fire and poison deal no damage here
+    elementalWeakness: { void: 0, chromatic: 1, echo: 2, ember: 0 }, // memory resonance reaches the child; void and fire cannot hurt him
   },
   // ── Challenge Arena enemies (five escalating trials) ──────────────────
   'challenge_w1': {
@@ -1056,6 +1079,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'flicker', name: 'Flicker', effect: 'weaken', power: 1 },
       { id: 'watch',   name: 'Watch',   effect: 'resonance', power: 1 },
     ],
+    elementalWeakness: { void: 1, chromatic: 1, echo: 1, ember: 1 }, // training construct: balanced
   },
   'challenge_w2': {
     id: 'challenge_w2', name: 'Trial Crawler', hp: 40, maxHp: 40, atk: 7, color: '#666699',
@@ -1065,6 +1089,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'grind', name: 'Grind', effect: 'damage', power: 4 },
       { id: 'yield', name: 'Yield', effect: 'resonance', power: 1 },
     ],
+    elementalWeakness: { void: 1, chromatic: 1, echo: 1, ember: 1 }, // training construct: balanced
   },
   'challenge_w3': {
     id: 'challenge_w3', name: 'Trial Specter', hp: 60, maxHp: 60, atk: 9, color: '#9988cc',
@@ -1074,6 +1099,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'echo_strike', name: 'Echo Strike', effect: 'damage', power: 6 },
       { id: 'listen',      name: 'Listen',      effect: 'resonance', power: 1, magic: true },
     ],
+    elementalWeakness: { void: 1, chromatic: 1, echo: 1, ember: 1 }, // training construct: balanced
   },
   'challenge_w4': {
     id: 'challenge_w4', name: 'Trial Warden', hp: 90, maxHp: 90, atk: 11, color: '#7766aa',
@@ -1084,6 +1110,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'concede', name: 'Concede',     effect: 'resonance', power: 1 },
     ],
     resistances: { weaken: 0.5, freeze: 0.5 },
+    elementalWeakness: { void: 1, chromatic: 1, echo: 1, ember: 1 }, // training construct: balanced
   },
   'challenge_final': {
     id: 'challenge_final', name: 'The Echoing Gate', hp: 130, maxHp: 130, atk: 13, color: '#aabbff',
@@ -1094,6 +1121,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'question', name: 'Ask',     effect: 'resonance', power: 2, magic: true },
     ],
     resistances: { poison: 0.5, burn: 0.5, freeze: 0.5, silence: 0.5 },
+    elementalWeakness: { void: 1, chromatic: 1, echo: 1, ember: 1 }, // the gate reflects all equally
   },
   // ── Forest enemies (Thornwood Forest encounter pool) ───────────────────
   'thorn_wraith': {
@@ -1105,6 +1133,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'root',   name: 'Root',   effect: 'weaken', power: 1 },
     ],
     resistances: { burn: 2 }, // wood — fire hits it hard
+    elementalWeakness: { void: 0.5, chromatic: 1, echo: 1, ember: 2 }, // wood burns; void barely touches natural pain
   },
   'shadow_stalker': {
     id: 'shadow_stalker', name: 'Shadow Stalker', hp: 16, maxHp: 16, atk: 6, color: '#335544',
@@ -1114,6 +1143,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'ambush',  name: 'Ambush',  effect: 'damage', power: 4 },
       { id: 'observe', name: 'Observe', effect: 'confuse', magic: true },
     ],
+    elementalWeakness: { void: 0.5, chromatic: 2, echo: 1, ember: 1 }, // creature of shadow: chromatic light exposes it
   },
   'bark_guardian': {
     id: 'bark_guardian', name: 'Bark Guardian', hp: 38, maxHp: 38, atk: 7, color: '#7a6030',
@@ -1124,6 +1154,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'sway',  name: 'Sway',  effect: 'resonance', power: 1 },
     ],
     resistances: { burn: 2, freeze: 0.5 }, // living wood: fire crumbles it, ice barely cracks bark
+    elementalWeakness: { void: 0.5, chromatic: 1, echo: 1, ember: 2 }, // ancient wood: fire reaches the heartwood
   },
   'briar_specter': {
     id: 'briar_specter', name: 'Briar Specter', hp: 26, maxHp: 26, atk: 5, color: '#664422',
@@ -1134,6 +1165,7 @@ export const ENEMIES: Record<string, EnemyData> = {
       { id: 'listen',   name: 'Listen',   effect: 'resonance', power: 1 },
     ],
     resistances: { freeze: 2, poison: 0 }, // spectral plant: ice shatters the hosting thorns; immune to own nature
+    elementalWeakness: { void: 1, chromatic: 2, echo: 0.5, ember: 1 }, // spectral host: chromatic light disperses the ghost
   },
 };
 
@@ -2981,4 +3013,6 @@ export const INITIAL_STATE: GameStateData = {
   challengeResultMenuIndex: 0,
   extrasState: { menuIndex: 0, subScreen: 'menu' as const, codexScroll: 0 },
   lastBattleEndType: null,
+  ngPlusRequested: false,
+  ngPlus: undefined,
 };

@@ -120,11 +120,17 @@ export interface EnemyData {
   rememberText: string;
   echoes: number;
   acts: EnemyAct[];
-  // ── Resistances & weaknesses ──────────────────────────────────────────────
+  // ── Status-effect resistances ─────────────────────────────────────────────
   // Maps enchant-proc type → damage/effect multiplier.
   // 0 = immune, 0.5 = resistant, 1 = normal (default), 2 = weak.
   // Revealed in the Bestiary after 3+ encounters.
   resistances?: Record<string, number>;
+  // ── Elemental weaknesses (Void / Chromatic / Echo / Ember) ───────────────
+  // Maps skill-tree element → FORGET damage multiplier.
+  // 0 = immune, 0.5 = resistant, 1 = normal (default), 2 = weak.
+  // Only applied to FORGET attacks when player's dominant skill path matches.
+  // Revealed in the Bestiary after 3+ encounters.
+  elementalWeakness?: Record<'void' | 'chromatic' | 'echo' | 'ember', number>;
 }
 
 export interface Projectile {
@@ -303,6 +309,11 @@ export interface GameStateData {
   endLegacyStep: number;
   // Set by engine when the player confirms slot erasure; Game.tsx calls onDeleteLegacy.
   deleteSlotRequested: boolean;
+  // Set by engine when the player chooses "New Game+" on the true-ending screen.
+  // Game.tsx watches this and calls onNewGamePlus.
+  ngPlusRequested: boolean;
+  // New Game+ metadata: set when starting a NG+ run, persisted in the save slot.
+  ngPlus?: { difficulty: 'normal' | 'challenger' | 'void'; generation: number };
   // Tracks how the most recent battle ended — used by challenge wave logic to
   // prevent fleeing from counting as a wave clear.
   lastBattleEndType: 'DEFEATED' | 'REMEMBERED' | 'FLED' | null;

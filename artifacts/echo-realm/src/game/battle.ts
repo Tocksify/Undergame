@@ -71,6 +71,33 @@ function getResistance(b: BattleState, effectType: string): number {
   return b.enemy.resistances?.[effectType] ?? 1;
 }
 
+// Returns the elemental FORGET damage multiplier for the player's dominant skill path,
+// but ONLY when the bestiary has revealed this enemy (3+ encounters).
+// Returns 1.0 if the weakness is not yet revealed, or the player has no dominant element.
+function getElementalBonus(state: GameStateData, b: BattleState): number {
+  const skills = state.player.learnedSkills ?? [];
+  const counts = {
+    void:      skills.filter(s => s.startsWith('void_')).length,
+    chromatic: skills.filter(s => s.startsWith('chroma_')).length,
+    echo:      skills.filter(s => s.startsWith('echo_')).length,
+    ember:     skills.filter(s => s.startsWith('ember_')).length,
+  };
+  const maxCount = Math.max(counts.void, counts.chromatic, counts.echo, counts.ember);
+  if (maxCount === 0) return 1; // no skills → no element
+
+  // If multiple paths tied for most, no elemental focus
+  const tied = (Object.values(counts) as number[]).filter(c => c === maxCount).length;
+  if (tied !== 1) return 1;
+
+  const element = (Object.entries(counts) as [string, number][]).find(([, c]) => c === maxCount)![0] as 'void' | 'chromatic' | 'echo' | 'ember';
+
+  // Elemental bonus only revealed after 3+ encounters (same threshold as bestiary)
+  const kills = state.player.bestiary[b.enemy.id] ?? 0;
+  if (kills < 3) return 1;
+
+  return b.enemy.elementalWeakness?.[element] ?? 1;
+}
+
 // Apply all weapon enchant procs from a given enchantData to the enemy/battle state.
 // Returns an array of proc message strings.
 function applyWeaponProcs(
@@ -245,8 +272,21 @@ export function handleBattleInput(state: GameStateData) {
           }
         }
 
+        // ── Elemental weakness bonus (revealed at 3+ bestiary entries) ───────
+        let elemNote = '';
+        if (hitType !== 'MISS') {
+          const elemMult = getElementalBonus(state, b);
+          if (elemMult !== 1) {
+            dmg = Math.max(1, Math.round(dmg * elemMult));
+            if (elemMult >= 2)       elemNote = ' [Elemental ×2!]';
+            else if (elemMult > 1)   elemNote = ` [Elemental ×${elemMult}!]`;
+            else if (elemMult === 0) elemNote = ' [Immune!]';
+            else                     elemNote = ' [Resisted]';
+          }
+        }
+
         b.enemy.hp -= dmg;
-        b.actionMsg = `Dealt ${dmg} damage.`;
+        b.actionMsg = `Dealt ${dmg} damage.${elemNote}`;
         if (b.enemy.hp <= 0) { b.phase = 'END'; b.endType = 'DEFEATED'; return; }
 
         // ── Post-hit skill procs (PERFECT or GOOD only) ───────────────

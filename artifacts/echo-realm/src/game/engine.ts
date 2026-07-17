@@ -118,17 +118,23 @@ export function updateGame(state: GameStateData) {
 
   if (state.mode === GameMode.VICTORY) return;
   if (state.mode === GameMode.TRUE_ENDING) {
-    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w') || justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
-      state.trueEndingMenuIndex = state.trueEndingMenuIndex === 0 ? 1 : 0;
+    if (justPressed(state, 'ArrowUp') || justPressed(state, 'w')) {
+      state.trueEndingMenuIndex = (state.trueEndingMenuIndex + 2) % 3;
+    }
+    if (justPressed(state, 'ArrowDown') || justPressed(state, 's')) {
+      state.trueEndingMenuIndex = (state.trueEndingMenuIndex + 1) % 3;
     }
     if (justPressed(state, ' ') || justPressed(state, 'Enter') || justPressed(state, 'z')) {
       if (state.trueEndingMenuIndex === 0) {
         // Sandbox — brief black-screen transition, then respawn at Verdant Hollow.
         state.mode = GameMode.COLOR_SANDBOX_FADE;
-      } else {
+      } else if (state.trueEndingMenuIndex === 1) {
         // End Legacy — multi-step farewell sequence before slot erasure.
         state.mode = GameMode.END_LEGACY_SEQ;
         state.endLegacyStep = 0;
+      } else {
+        // New Game+ — signal App.tsx to open the difficulty picker.
+        state.ngPlusRequested = true;
       }
     }
     return;
@@ -1172,9 +1178,19 @@ export function updateGame(state: GameStateData) {
 
 function startBattle(state: GameStateData, enemy: EnemyData) {
   const _sk = state.player.learnedSkills ?? [];
+  // ── NG+ difficulty scaling ────────────────────────────────────────────────
+  let scaledEnemy: EnemyData = JSON.parse(JSON.stringify(enemy));
+  if (state.ngPlus) {
+    const d = state.ngPlus.difficulty;
+    const hpMult  = d === 'void' ? 2.0 : d === 'challenger' ? 1.5 : 1.2;
+    const atkMult = d === 'void' ? 1.5 : d === 'challenger' ? 1.3 : 1.15;
+    scaledEnemy.hp    = Math.ceil(scaledEnemy.hp    * hpMult);
+    scaledEnemy.maxHp = Math.ceil(scaledEnemy.maxHp * hpMult);
+    scaledEnemy.atk   = Math.ceil(scaledEnemy.atk   * atkMult);
+  }
   state.mode = GameMode.BATTLE;
   state.battle = {
-    enemy: JSON.parse(JSON.stringify(enemy)),
+    enemy: scaledEnemy,
     phase: 'MENU', menuIndex: 0,
     soulX: 384, soulY: 420,
     projectiles: [], timer: 0,

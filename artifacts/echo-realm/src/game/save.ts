@@ -47,6 +47,7 @@ export interface SavedGameState {
     flags: Record<string, boolean>;
   };
   playTimeSeconds?: number;
+  ngPlus?: { difficulty: 'normal' | 'challenger' | 'void'; generation: number };
 }
 
 export function serializeGameState(state: GameStateData): SavedGameState {
@@ -82,6 +83,7 @@ export function serializeGameState(state: GameStateData): SavedGameState {
       flags: { ...state.battle.flags },
     } : undefined,
     playTimeSeconds: state.playTimeSeconds,
+    ngPlus: state.ngPlus ? { ...state.ngPlus } : undefined,
   };
 }
 
@@ -139,6 +141,7 @@ export function buildInitialState(saved: SavedGameState | null | undefined, isGu
     state.player.learnedSkills = saved.player.learnedSkills ? [...saved.player.learnedSkills] : [];
     state.player.skillPoints = saved.player.skillPoints ?? 0;
     state.playTimeSeconds = saved.playTimeSeconds ?? 0;
+    state.ngPlus = saved.ngPlus ? { ...saved.ngPlus } : undefined;
     recomputeMaxHp(state);
     // Baseline the notification badges to the loaded save so pre-existing
     // items/quest progress don't show up as "new" the moment the game loads.

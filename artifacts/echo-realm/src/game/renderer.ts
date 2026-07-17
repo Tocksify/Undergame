@@ -281,28 +281,35 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     const grad = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, 420);
     grad.addColorStop(0, '#1d4d27'); grad.addColorStop(1, '#050505');
     ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
-    pixelBox(ctx, 90, 150, W - 180, 260, '#0a1a0d', '#7fd68a', 3);
+    pixelBox(ctx, 90, 130, W - 180, 300, '#0a1a0d', '#7fd68a', 3);
     ctx.fillStyle = '#cdeed2'; ctx.font = 'bold 30px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('THE KEEPER RESTS', W / 2, 226);
+    ctx.fillText('THE KEEPER RESTS', W / 2, 206);
     ctx.fillStyle = '#a9d9b0'; ctx.font = '16px monospace';
-    ctx.fillText('The Void is banished. The Realm is whole.', W / 2, 274);
-    ctx.fillText('Mother. Father. It has been so long.', W / 2, 300);
-    ctx.fillText('You can finally close your eyes.', W / 2, 326);
+    ctx.fillText('The Void is banished. The Realm is whole.', W / 2, 254);
+    ctx.fillText('Mother. Father. It has been so long.', W / 2, 280);
+    ctx.fillText('You can finally close your eyes.', W / 2, 306);
 
-    const options = ['Enter Sandbox Mode', 'End Legacy'];
-    const optDesc = ['Keep playing, at your own pace.', 'Delete this save and let it rest.'];
+    const options = ['Enter Sandbox Mode', 'End Legacy', 'New Game+'];
+    const optDesc = [
+      'Keep playing, at your own pace.',
+      'Delete this save and let it rest.',
+      'Begin again — harder, with exclusive rewards.',
+    ];
     for (let i = 0; i < options.length; i++) {
-      const oy = 348 + i * 22;
+      const oy = 332 + i * 24;
       const selected = state.trueEndingMenuIndex === i;
-      ctx.fillStyle = selected ? '#cdeed2' : '#5f8f68';
+      ctx.fillStyle = i === 2
+        ? (selected ? '#ffe066' : '#7a6a22')   // NG+ in gold
+        : (selected ? '#cdeed2' : '#5f8f68');
       ctx.font = selected ? 'bold 15px monospace' : '15px monospace';
       ctx.fillText(`${selected ? '> ' : '  '}${options[i]}`, W / 2, oy);
     }
-    ctx.fillStyle = '#7fa984'; ctx.font = '11px monospace';
-    ctx.fillText(optDesc[state.trueEndingMenuIndex], W / 2, 348 + options.length * 22 + 6);
+    ctx.fillStyle = state.trueEndingMenuIndex === 2 ? '#c4a820' : '#7fa984';
+    ctx.font = '11px monospace';
+    ctx.fillText(optDesc[state.trueEndingMenuIndex], W / 2, 332 + options.length * 24 + 4);
     if (Math.floor(state.frameCount / 25) % 2 === 0) {
       ctx.fillStyle = '#a9d9b0'; ctx.font = '11px monospace';
-      ctx.fillText('↑↓ choose   [ SPACE ] confirm', W / 2, 403);
+      ctx.fillText('↑↓ choose   [ SPACE ] confirm', W / 2, 420);
     }
     drawScanlines(ctx); return;
   }
@@ -1057,7 +1064,7 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.strokeStyle = C.dim; ctx.lineWidth = 1; ctx.strokeRect(340 + i * 36, 82, 28, 10);
   }
 
-  drawEnemySprite(ctx, b.enemy.id, W / 2, 160, state.frameCount);
+  drawEnemySprite(ctx, b.enemy.id, W / 2, 160, state.frameCount, b);
 
   // ── Active status effects ──────────────────────────────────────────
   const statusEffects: { label: string; color: string }[] = [];
@@ -1170,7 +1177,77 @@ function renderBattle(ctx: CanvasRenderingContext2D, state: GameStateData) {
   }
 }
 
-function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, cy: number, frame: number) {
+function drawEnemySprite(ctx: CanvasRenderingContext2D, id: string, cx: number, cy: number, frame: number, b?: import('./types').BattleState | null) {
+  // ── Animated sprite: The Kid ─────────────────────────────────────────────
+  if (id === 'child_void_kid') {
+    const phase    = b?.phase ?? 'MENU';
+    const defeated = phase === 'END' && b?.endType === 'DEFEATED';
+    const attacking = phase === 'DODGE';
+    const bob      = attacking ? -5 : Math.floor(Math.sin(frame * 0.055) * 3);
+    const blink    = (frame % 90) < 4; // blink for 4 frames out of every 90
+
+    if (defeated) {
+      // Death: scattered particles fading outward
+      const t = (frame % 150) / 150;
+      ctx.globalAlpha = Math.max(0, 1 - t * 0.9);
+      for (let i = 0; i < 10; i++) {
+        const angle = (i / 10) * Math.PI * 2 + frame * 0.015;
+        const dist  = t * 36 + i * 2.5;
+        const px    = cx + Math.cos(angle) * dist;
+        const py    = cy - 10 + Math.sin(angle) * dist * 0.55;
+        const sz    = Math.max(2, 9 - t * 7);
+        ctx.fillStyle = i % 3 === 0 ? '#c8e0ee' : (i % 3 === 1 ? '#b8d4e8' : '#90b8d0');
+        ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+
+    if (attacking) {
+      // Lunge pose: body shifted forward, arm extended
+      ctx.fillStyle = 'rgba(184,212,232,0.12)';
+      ctx.fillRect(cx - 18, cy + bob - 36, 40, 68); // aura
+      ctx.fillStyle = '#b8d4e8';
+      ctx.fillRect(cx - 4, cy + bob - 28, 18, 20);  // head
+      ctx.fillRect(cx - 2, cy + bob - 8,  14, 22);  // body
+      ctx.fillStyle = '#9fc4d8';
+      ctx.fillRect(cx + 12, cy + bob - 4, 16, 6);   // extended arm
+      ctx.fillRect(cx - 12, cy + bob - 2,  6, 6);   // back arm
+      ctx.fillRect(cx - 2,  cy + bob + 14, 6, 14);  // front leg
+      ctx.fillRect(cx + 5,  cy + bob + 10, 6, 14);  // back leg
+      ctx.fillStyle = '#1a1a2e';
+      ctx.fillRect(cx + 0,  cy + bob - 22, 4, 5);   // left eye
+      ctx.fillRect(cx + 7,  cy + bob - 22, 4, 5);   // right eye
+    } else {
+      // Idle: standing with gentle breathing bob
+      ctx.fillStyle = `rgba(184,212,232,${0.08 + 0.04 * Math.sin(frame * 0.04)})`;
+      ctx.fillRect(cx - 18, cy + bob - 38, 36, 68); // void aura
+
+      ctx.fillStyle = '#c8e0ee';
+      ctx.fillRect(cx - 10, cy + bob - 34, 20, 20); // head
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(cx - 4,  cy + bob - 32,  8,  6); // head highlight
+
+      ctx.fillStyle = '#b8d4e8';
+      ctx.fillRect(cx - 8,  cy + bob - 14, 16, 22); // body
+      ctx.fillRect(cx - 14, cy + bob - 12,  7, 14); // left arm
+      ctx.fillRect(cx + 7,  cy + bob - 12,  7, 14); // right arm
+      ctx.fillRect(cx - 7,  cy + bob + 8,   7, 16); // left leg
+      ctx.fillRect(cx + 1,  cy + bob + 8,   7, 16); // right leg
+
+      if (blink) {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(cx - 6, cy + bob - 28, 5, 2);  // blink left
+        ctx.fillRect(cx + 2, cy + bob - 28, 5, 2);  // blink right
+      } else {
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(cx - 6, cy + bob - 29, 5, 6);  // left eye
+        ctx.fillRect(cx + 2, cy + bob - 29, 5, 6);  // right eye
+      }
+    }
+    return;
+  }
+
   const pulse = Math.sin(frame * 0.05) * 3;
   if (id === 'wisp') {
     for (let i = 0; i < 5; i++) {
@@ -2402,7 +2479,7 @@ function renderBestiary(ctx: CanvasRenderingContext2D, state: GameStateData) {
     ctx.fillStyle = revealed ? '#77aa88' : (encountered ? '#445566' : '#222233');
     ctx.fillText(encountered ? `${kills}× seen` : 'not yet seen', listLeft + 130, ry + 15);
 
-    // Trait badges
+    // Trait badges + elemental grid
     if (revealed) {
       let tx = listLeft + 145;
       if (enemy.resistances) {
@@ -2416,12 +2493,27 @@ function renderBestiary(ctx: CanvasRenderingContext2D, state: GameStateData) {
         });
       } else {
         ctx.font = '9px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#334433';
-        ctx.fillText('no special traits', listLeft + 145, ry + 15);
+        ctx.fillText('no status traits', listLeft + 145, ry + 15);
       }
-      // Flavor on second line
-      ctx.font = '9px monospace'; ctx.textAlign = 'left'; ctx.fillStyle = '#332244';
-      const flav = enemy.flavor.slice(0, 55) + (enemy.flavor.length > 55 ? '…' : '');
-      ctx.fillText(flav, listLeft + 145, ry + 30);
+      // Elemental weakness grid on second line (Void / Chromatic / Echo / Ember)
+      if (enemy.elementalWeakness) {
+        const elemLabels: Array<{ key: 'void'|'chromatic'|'echo'|'ember'; short: string; col0: string; col1: string; col2: string }> = [
+          { key: 'void',      short: 'Void',   col0: '#9966cc', col1: '#aa6633', col2: '#cc2222' },
+          { key: 'chromatic', short: 'Chroma', col0: '#44aacc', col1: '#aa6633', col2: '#cc2222' },
+          { key: 'echo',      short: 'Echo',   col0: '#4488aa', col1: '#aa6633', col2: '#cc2222' },
+          { key: 'ember',     short: 'Ember',  col0: '#cc7733', col1: '#aa6633', col2: '#cc2222' },
+        ];
+        let ex = listLeft + 145;
+        elemLabels.forEach(({ key, short }) => {
+          const v = enemy.elementalWeakness![key];
+          const label = v === 0 ? `${short}:IMM` : v >= 2 ? `${short}:WEAK` : v <= 0.5 ? `${short}:RES` : `${short}:—`;
+          const col = v === 0 ? '#662222' : v >= 2 ? '#cc9922' : v <= 0.5 ? '#336655' : '#334444';
+          ctx.font = '9px monospace'; ctx.textAlign = 'left';
+          ctx.fillStyle = col;
+          ctx.fillText(label, ex, ry + 30);
+          ex += ctx.measureText(label).width + 6;
+        });
+      }
     }
   });
 

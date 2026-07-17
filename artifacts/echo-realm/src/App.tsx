@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Game from './game/Game';
 import CharacterCustomization from './game/CharacterCustomization';
+import DifficultyPicker from './game/DifficultyPicker';
 import { GameStateData } from './game/types';
 import { buildInitialState, serializeGameState, summarizeSavedState } from './game/save';
 import { audio } from './game/audio';
@@ -16,12 +17,16 @@ import Options from './Options';
 import Extras from './Extras';
 import './index.css';
 
-type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras';
+type Screen = 'menu' | 'slots' | 'customization' | 'game' | 'options' | 'extras' | 'ng_plus_setup';
 
 function App() {
   const [screen, setScreen]             = useState<Screen>('menu');
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);
   const [initialState, setInitialState] = useState<GameStateData | null>(null);
+  const [pendingNgPlus, setPendingNgPlus] = useState<{
+    difficulty: 'normal' | 'challenger' | 'void';
+    slotName: string;
+  } | null>(null);
   const menuAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // ── Register battle / special MP3 tracks once on mount ───────────
@@ -83,10 +88,19 @@ function App() {
       state.player.inventory.push(emblemId);
       state.player.enchantedSlots.push(null);
     }
+
+    // NG+ run: attach difficulty + generation to the state
+    let slotName = 'New Save';
+    if (pendingNgPlus) {
+      state.ngPlus = { difficulty: pendingNgPlus.difficulty, generation: 2 };
+      slotName = pendingNgPlus.slotName;
+      setPendingNgPlus(null);
+    }
+
     const serialized = serializeGameState(state);
     const id         = await createSlot({
       version: 1,
-      name: 'New Save',
+      name: slotName,
       summary: summarizeSavedState(serialized),
       savedAt: new Date().toISOString(),
       state: serialized,
@@ -94,6 +108,12 @@ function App() {
     setActiveSlotId(id);
     setInitialState(state);
     setScreen('game');
+  }, [pendingNgPlus]);
+
+  // ── New Game+ requested from inside the game ──────────────────────
+  const onNewGamePlus = useCallback(() => {
+    setInitialState(null);
+    setScreen('ng_plus_setup');
   }, []);
 
   // ── Autosave ─────────────────────────────────────────────────────
@@ -151,11 +171,24 @@ function App() {
     );
   }
 
+  if (screen === 'ng_plus_setup') {
+    return (
+      <DifficultyPicker
+        onConfirm={(difficulty, slotName) => {
+          setPendingNgPlus({ difficulty, slotName });
+          setActiveSlotId(null);
+          setScreen('customization');
+        }}
+        onBack={() => setScreen('menu')}
+      />
+    );
+  }
+
   if (screen === 'customization') {
     return (
       <CharacterCustomization
         onConfirm={(appearance, emblemId) => { void confirmCustomization(appearance, emblemId); }}
-        onBack={() => setScreen('slots')}
+        onBack={() => pendingNgPlus ? setScreen('ng_plus_setup') : setScreen('slots')}
       />
     );
   }
@@ -169,6 +202,7 @@ function App() {
           onExit={onExit}
           onEndLegacy={onEndLegacy}
           onDeleteLegacy={onDeleteLegacy}
+          onNewGamePlus={onNewGamePlus}
         />
       </div>
     );

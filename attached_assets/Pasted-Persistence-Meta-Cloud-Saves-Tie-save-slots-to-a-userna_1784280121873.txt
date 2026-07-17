@@ -1,0 +1,19 @@
+Persistence & Meta Cloud Saves — Tie save slots to a username via the existing API server. Progress syncs across devices. Includes a login/register screen at the title. Very high effort, massive quality-of-life upgrade.
+
+New Game+ — After the true ending, start over with a scaling difficulty multiplier, retained learned skills, and 2–3 exclusive NG+ items that can't be obtained otherwise. Gives the endgame real replayability.
+
+⚔️ Combat Depth Animated Battle Sprites — Replace static enemy rendering with spritesheet-based animations: idle loop, attack, hurt flash, and death sequence. Every enemy gets 3–4 frames per state. This alone makes the game feel like a different tier.
+
+Skill Combo System — Using two specific skills in sequence (e.g. Echo Armor → Void Strike) triggers a named combo with a bonus effect and a special flash. Adds a layer of strategic depth to the existing skill tree.
+
+Elemental Weakness Grid — Each enemy has hidden weaknesses to attack types (Void/Chromatic/Echo/Ember). Discovering them through the Bestiary unlocks bonus damage. Adds a whole research-and-exploit loop. 🌍 World & Exploration Fog of War / Minimap — Unexplored tiles are hidden behind a fog that clears as you walk. A minimap overlay (toggle with M) shows what you've discovered. Makes exploration feel like discovery instead of navigation.
+
+Weather & Time-of-Day System — A day cycle (day/dusk/night) with real-time effects: enemies get stat buffs at night, certain NPCs only appear at dusk, rain overlays slow movement slightly. Renders as a canvas tint + particle layer.
+
+Procedural Bonus Dungeon — A randomly generated floor (seeded per save slot) that refreshes weekly. Roguelite structure: no saves inside, escalating rooms, unique loot table. Would use the existing encounter and map systems as building blocks.
+
+🎮 Input & Accessibility Gamepad / Controller Support — The Gamepad API maps analog sticks to movement and face buttons to A/B/Start/Select. Works on desktop and some mobile. Would dramatically improve the PC experience without touching any gameplay logic.
+
+📊 Social & Competition Daily Challenge + Leaderboard — A server-seeded daily run (fixed enemy sequence, fixed starting gear) where completion time and echoes-remaining are scored. Top 10 shown on a leaderboard screen in the main menu. Uses the existing API server.
+
+Add elemental weakness grid, new game+ make it so we can pick our difficulty before the character customization screen, and we can also name the slot there, then we press continue and we're at character customization. Also no retaining learned skills. But do make NG+ items. And are you gonna make the animated battle sprites ? What I didn't explicitly say to add, don't add.
