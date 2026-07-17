@@ -24,6 +24,24 @@ function ensureSaves() {
   return d;
 }
 
+/** Where global game data lives: next to the .exe in production, or
+ *  artifacts/echo-realm/gamedata/ during development. */
+function gamedataDir() {
+  return app.isPackaged
+    ? path.join(path.dirname(app.getPath('exe')), 'gamedata')
+    : path.join(__dirname, '..', 'gamedata');
+}
+
+/** Ensure the gamedata folder exists. If gamedata.json is missing, seed it
+ *  with an empty object so the folder is never blank. */
+function ensureGamedata() {
+  const d = gamedataDir();
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+  const f = path.join(d, 'gamedata.json');
+  if (!fs.existsSync(f)) fs.writeFileSync(f, '{}', 'utf8');
+  return d;
+}
+
 // ── Static HTTP server (so /MainMenu.mp3 and all asset paths work) ───
 
 function startServer() {
@@ -88,7 +106,10 @@ async function createWindow() {
   win.loadURL(url);
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  ensureGamedata();
+  createWindow();
+});
 
 ipcMain.on('er-quit', () => app.quit());
 
