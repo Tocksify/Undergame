@@ -620,8 +620,15 @@ export function renderGame(ctx: CanvasRenderingContext2D, state: GameStateData) 
     }
   }
 
-  ctx.fillStyle = C.gray;   ctx.textAlign = 'right'; ctx.font = 'bold 13px monospace';
-  ctx.fillText(map.name.toUpperCase(), W - 14, hy);
+  // Paint a background strip behind the map name so left-side HUD content
+  // (badges, SKILLS label) never bleeds through when the row is crowded.
+  ctx.font = 'bold 13px monospace';
+  const mapLabel = map.name.toUpperCase();
+  const mapLabelW = ctx.measureText(mapLabel).width;
+  ctx.fillStyle = 'rgba(8,8,8,0.88)';
+  ctx.fillRect(W - 14 - mapLabelW - 8, 0, mapLabelW + 22, HUD_H);
+  ctx.fillStyle = C.gray; ctx.textAlign = 'right';
+  ctx.fillText(mapLabel, W - 14, hy);
 
   ctx.textAlign = 'center'; ctx.font = '11px monospace'; ctx.fillStyle = C.dim;
   ctx.fillText('WASD Move  |  SPACE Interact  |  I Inventory  |  Q Quests  |  B Bestiary  |  M Stats  |  ESC Menu', W / 2, H - 6);

@@ -812,10 +812,7 @@ export function updateGame(state: GameStateData) {
     const csTier = CHALLENGE_TIERS[state.challengeSelectState.tierCursor];
     const csUnlocked = state.challengeSelectState.tierCursor <= unlockedIdx;
     if (csUnlocked && csTier && (justPressed(state, ' ') || justPressed(state, 'z'))) {
-      const claimFlag = `ch_claimed_${csTier.name}`;
-      if (state.player.flags[claimFlag]) {
-        state.uiMessage = "Already completed this tier's challenge this journey."; state.uiMessageTimer = 150;
-      } else {
+      {
         // ── Snapshot current player state ──
         state.challengeSnapshot = {
           player: JSON.parse(JSON.stringify(state.player)),

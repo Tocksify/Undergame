@@ -428,7 +428,17 @@ export function getDialogueStartNode(state: GameStateData, npcId: string): Dialo
   // ── MORTHUS (Color) — speaking with him triggers the true ending cutscene ──
   if (npcId === 'morthus') {
     if (state.player.flags['morthus_ending_seen']) {
-      return { text: "...", speaker: 'Morthus', color: '#7fd68a' };
+      const postEndingLines = [
+        "The Void was never the world's enemy. It was its grief. You gave it somewhere to go.",
+        "Some Keepers come back here just to stand in the light for a while. I don't blame them.",
+        "You don't have to carry it anymore. Whatever you were running from — it's done.",
+        "Color was always here. The world just forgot how to see it.",
+        "Rest a while, Keeper. The echoes aren't going anywhere.",
+        "You gave the world its memory back. That's not a small thing.",
+      ];
+      const idx = (state.player.flags['morthus_post_line'] as number | undefined) ?? 0;
+      state.player.flags['morthus_post_line'] = (idx + 1) % postEndingLines.length;
+      return { text: postEndingLines[idx], speaker: 'Morthus', color: '#7fd68a' };
     }
     return {
       text: "You made it, Keeper. Rest your feet — you won't need them to run from anything, not here. Everyone in Color is safe. The hollows, the Void reaching for us... all of that was only ever a dream.",
